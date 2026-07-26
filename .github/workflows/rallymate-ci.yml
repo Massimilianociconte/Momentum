@@ -118,6 +118,11 @@ jobs:
           cache: npm
           cache-dependency-path: wear/fitbit-os/package-lock.json
 
+      - name: Install Fitbit CLI native dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libsecret-1-dev
+
       - name: Install and test scoring protocol
         working-directory: wear/fitbit-os
         run: |
