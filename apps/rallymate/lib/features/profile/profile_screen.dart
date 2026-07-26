@@ -138,6 +138,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ? ListView(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+              // ignore: deprecated_member_use
               cacheExtent: 240,
               children: children,
             )

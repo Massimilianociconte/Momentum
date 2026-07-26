@@ -39,6 +39,7 @@ class HomeScreen extends StatelessWidget {
             bottom: false,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 112),
+              // ignore: deprecated_member_use
               cacheExtent: 320,
               children: [
                 const _HomeHeaderSection(),

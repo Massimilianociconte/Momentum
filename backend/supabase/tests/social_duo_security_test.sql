@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(53);
+select plan(55);
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
@@ -388,6 +388,24 @@ select is(
   public.has_cloud_media_access(),
   true,
   'Premium account can use cloud team media'
+);
+select is(
+  public.duo_ack_state(
+    ((select value->>'sessionId' from test_state where key = 'duo'))::uuid,
+    0,
+    null
+  )->>'status',
+  'ACTIVE',
+  'null completion input is treated as an incomplete acknowledgement'
+);
+select is(
+  public.duo_ack_state(
+    ((select value->>'sessionId' from test_state where key = 'duo'))::uuid,
+    null,
+    true
+  )->>'error',
+  'invalid_cursor',
+  'null acknowledgement cursor is rejected without mutating the session'
 );
 select lives_ok(
   $$insert into public.duo_events(
