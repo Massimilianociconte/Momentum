@@ -1,0 +1,83 @@
+---
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  kind: 'privacy' | 'terms';
+}
+
+const { title, description, path, kind } = Astro.props;
+const supportEmail = import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim();
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  robots="noindex, follow"
+>
+  <SiteHeader />
+  <main id="contenuto" class="legal-page">
+    <article class="legal-page__inner container">
+      <p class="section-label">Documento pre-pubblicazione</p>
+      <h1>{title}</h1>
+      <div class="legal-page__notice" role="note">
+        <strong>Questa pagina non è ancora la versione legale definitiva.</strong>
+        <p>
+          Il testo completo esiste nel progetto, ma titolare, indirizzo,
+          dominio pubblico e riferimenti fiscali devono essere confermati prima
+          di renderlo indicizzabile.
+        </p>
+      </div>
+
+      {
+        kind === 'privacy' ? (
+          <>
+            <h2>Principi già implementati</h2>
+            <p>
+              Padelandia è progettata per conservare localmente le funzioni
+              essenziali. Account e servizi cloud sono separati dalle funzioni
+              offline; social, salute e provider esterni richiedono azioni e
+              consensi specifici.
+            </p>
+            <ul>
+              <li>Account facoltativo per le funzioni locali essenziali.</li>
+              <li>Visibilità social esplicita e revocabile.</li>
+              <li>Permessi salute richiesti dal sistema operativo.</li>
+              <li>Eliminazione autonoma dell’account e dei dati cloud.</li>
+            </ul>
+          </>
+        ) : (
+          <>
+            <h2>Ambito del servizio</h2>
+            <p>
+              Le funzioni locali, connesse e premium saranno descritte nei
+              termini definitivi insieme a responsabilità, abbonamenti,
+              disponibilità e limitazioni. Statistiche e indice Padelandia
+              restano strumenti descrittivi e non ranking federali.
+            </p>
+          </>
+        )
+      }
+
+      <h2>Contatto</h2>
+      <p>
+        {
+          supportEmail ? (
+            <>
+              Per domande sulla bozza o sui dati personali:{' '}
+              <a href={`mailto:${supportEmail}`}>{supportEmail}</a>.
+            </>
+          ) : (
+            'Il recapito ufficiale verrà inserito insieme all’identità del titolare prima della pubblicazione.'
+          )
+        }
+      </p>
+    </article>
+  </main>
+  <SiteFooter />
+</BaseLayout>

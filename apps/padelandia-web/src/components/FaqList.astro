@@ -1,0 +1,91 @@
+---
+interface Faq {
+  readonly category: string;
+  readonly question: string;
+  readonly answer: string;
+}
+
+interface Props {
+  items: readonly Faq[];
+  searchable?: boolean;
+}
+
+const { items, searchable = false } = Astro.props;
+---
+
+<div class="faq-block" data-faq-root>
+  {
+    searchable && (
+      <div class="faq-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-4-4"></path>
+        </svg>
+        <label class="sr-only" for="faq-search">Cerca nel supporto</label>
+        <input
+          id="faq-search"
+          type="search"
+          placeholder="Cerca: offline, watch, punteggio…"
+          autocomplete="off"
+          data-faq-search
+        />
+      </div>
+    )
+  }
+
+  <div class="faq-list">
+    {
+      items.map((item) => (
+        <details
+          class="faq-item"
+          data-faq-item
+          data-search={`${item.category} ${item.question} ${item.answer}`.toLocaleLowerCase('it')}
+        >
+          <summary>
+            <span>
+              <small>{item.category}</small>
+              {item.question}
+            </span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14M5 12h14"></path>
+            </svg>
+          </summary>
+          <p>{item.answer}</p>
+        </details>
+      ))
+    }
+  </div>
+  <p class="faq-empty" hidden data-faq-empty>
+    Nessun risultato. Prova con un termine diverso oppure inviaci la tua domanda.
+  </p>
+</div>
+
+{
+  searchable && (
+    <script>
+      const roots = document.querySelectorAll('[data-faq-root]');
+
+      roots.forEach((root) => {
+        const input = root.querySelector('[data-faq-search]');
+        if (!(input instanceof HTMLInputElement)) return;
+
+        const items = [...root.querySelectorAll('[data-faq-item]')];
+        const empty = root.querySelector('[data-faq-empty]');
+
+        input.addEventListener('input', () => {
+          const query = input.value.trim().toLocaleLowerCase('it');
+          let visible = 0;
+
+          items.forEach((item) => {
+            const haystack = item.getAttribute('data-search') ?? '';
+            const match = !query || haystack.includes(query);
+            item.toggleAttribute('hidden', !match);
+            if (match) visible += 1;
+          });
+
+          if (empty instanceof HTMLElement) empty.hidden = visible > 0;
+        });
+      });
+    </script>
+  )
+}

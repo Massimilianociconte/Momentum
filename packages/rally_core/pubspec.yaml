@@ -1,0 +1,13 @@
+name: rally_core
+description: >-
+  Padelandia core: padel scoring engine (event-sourced), analytics,
+  rules FAQ, wrapped card generators. Pure Dart, zero dependencies.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.4
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

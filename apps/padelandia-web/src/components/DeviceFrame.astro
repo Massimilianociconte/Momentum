@@ -1,0 +1,52 @@
+---
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  kind?: 'phone' | 'watch';
+  class?: string;
+  width?: number;
+  loading?: 'eager' | 'lazy';
+}
+
+const {
+  src,
+  alt,
+  kind = 'phone',
+  class: className,
+  width = kind === 'watch' ? 260 : 420,
+  loading = 'lazy',
+} = Astro.props;
+
+const candidateWidths = kind === 'watch' ? [96, 144, 180, width] : [160, 240, 280, width];
+const widths = [...new Set(candidateWidths)].sort((a, b) => a - b);
+const variants = await Promise.all(
+  widths.map((candidateWidth) =>
+    getImage({ src, width: candidateWidth, format: 'webp', quality: 76 }),
+  ),
+);
+const fallback = variants.at(-1);
+if (!fallback) throw new Error('DeviceFrame richiede almeno una variante immagine.');
+const sizes =
+  kind === 'watch'
+    ? '(min-width: 64rem) 11vw, 27vw'
+    : '(min-width: 64rem) 17vw, 36vw';
+---
+
+<figure class:list={['device', `device--${kind}`, className]}>
+  <span class="device__hardware" aria-hidden="true"></span>
+  <div class="device__screen">
+    <img
+      src={fallback.src}
+      srcset={variants.map((image, index) => `${image.src} ${widths[index]}w`).join(', ')}
+      sizes={sizes}
+      alt={alt}
+      width={src.width}
+      height={src.height}
+      loading={loading}
+      decoding="async"
+    />
+  </div>
+</figure>

@@ -1,0 +1,69 @@
+# Dart / Flutter
+.dart_tool/
+build/
+.flutter-plugins*
+.packages
+
+# Android / Gradle
+.gradle/
+.kotlin/
+local.properties
+*.apk
+*.aab
+
+# iOS / Xcode / SwiftPM
+.build/
+.swiftpm/
+DerivedData/
+Pods/
+.symlinks/
+xcuserdata/
+*.xcuserstate
+*.xcresult/
+*.xcarchive/
+*.dSYM/
+
+# Node / static web
+node_modules/
+dist/
+.astro/
+coverage/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Supabase CLI local state
+**/supabase/.temp/
+**/supabase/.branches/
+backend/supabase/backend/
+
+# Release artifacts and signed packages
+artifacts/builds/
+*.ipa
+**/*.mobileprovision
+**/*.p12
+**/*.jks
+**/*.keystore
+**/key.properties
+
+# Large unoptimized 3D sources (optimized GLBs are in mesh-3d/*.glb)
+apps/rallymate/assets/mesh-3d/source/
+
+# Tool-local state
+.claude/settings.local.json
+
+# QA screenshots that contain private profile data. Keep them local until
+# they are redacted and deliberately approved for publication.
+docs/qa/screenshots/2026-07-13/iphone-17-pro-profile.png
+docs/qa/screenshots/2026-07-13/iphone-debug-current.png
+docs/qa/screenshots/2026-07-13/iphone-17-pro-edit-profile.png
+docs/qa/screenshots/2026-07-13/iphone-17-pro-edit-profile-refined.png
+
+# Local secrets (never commit)
+**/.env
+**/*.env
+!**/*.env.example
+**/client.env
+**/.config/rallymate/

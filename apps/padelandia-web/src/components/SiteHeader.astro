@@ -1,0 +1,62 @@
+---
+import Brand from '@/components/Brand.astro';
+import { navItems } from '@/content/site';
+import { officialStoreUrl } from '@/lib/store';
+
+const storeReady = Boolean(
+  officialStoreUrl(import.meta.env.PUBLIC_APP_STORE_URL, 'apple') ||
+    officialStoreUrl(import.meta.env.PUBLIC_PLAY_STORE_URL, 'google'),
+);
+const storeLabel = storeReady ? 'Scarica l’app' : 'Store in arrivo';
+const here = Astro.url.pathname.replace(/\/+$/, '') || '/';
+
+/** `aria-current` solo per le voci che puntano a un’altra pagina. */
+const isCurrentPage = (href: string) => {
+  if (href.includes('#')) return false;
+  return (href.replace(/\/+$/, '') || '/') === here;
+};
+---
+
+<header class="site-header" data-site-header>
+  <div class="site-header__inner container">
+    <Brand compact priority />
+
+    <nav class="desktop-nav" aria-label="Navigazione principale">
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            data-nav-link
+            aria-current={isCurrentPage(item.href) ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <a class="button button--primary header-cta" href="/#download">
+      {storeLabel}
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M4 10h12M11 5l5 5-5 5"></path>
+      </svg>
+    </a>
+
+    <details class="mobile-menu">
+      <summary aria-label="Apri il menu">
+        <span></span>
+        <span></span>
+      </summary>
+      <nav aria-label="Navigazione mobile">
+        {
+          navItems.map((item) => (
+            <a href={item.href} aria-current={isCurrentPage(item.href) ? 'page' : undefined}>
+              {item.label}
+            </a>
+          ))
+        }
+        <a class="button button--primary" href="/#download">{storeLabel}</a>
+      </nav>
+    </details>
+  </div>
+</header>

@@ -1,0 +1,302 @@
+---
+import '@fontsource-variable/manrope/wght.css';
+import '@/styles/global.css';
+import '@/styles/enhance.css';
+import manropeLatinUrl from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
+import {
+  SITE_LANG,
+  SITE_LOCALE,
+  SITE_NAME,
+  absoluteUrl,
+  breadcrumbSchema,
+  organizationSchema,
+  webPageSchema,
+  websiteSchema,
+  type Crumb,
+} from '@/lib/seo';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Titolo lungo per `<title>` e social, quando serve più contesto SEO. */
+  seoTitle?: string;
+  path?: string;
+  robots?: string;
+  /** Nodi JSON-LD specifici della pagina, aggiunti al grafo comune. */
+  schema?: Record<string, unknown> | Array<Record<string, unknown>>;
+  /** Briciole di pane: la home è già inclusa automaticamente. */
+  breadcrumbs?: readonly Crumb[];
+  ogType?: 'website' | 'article';
+}
+
+const {
+  title,
+  description,
+  seoTitle,
+  path = Astro.url.pathname,
+  robots = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+  schema,
+  breadcrumbs = [],
+  ogType = 'website',
+} = Astro.props;
+
+const site = Astro.site;
+const canonical = absoluteUrl(path, site);
+const socialImage = absoluteUrl('/og-padelandia.jpg', site);
+const fullTitle = seoTitle ?? (title === SITE_NAME ? title : `${title} | ${SITE_NAME}`);
+const indexable = !robots.includes('noindex');
+
+const trail: Crumb[] = [{ name: 'Home', path: '/' }, ...breadcrumbs];
+
+const pageNodes = schema ? (Array.isArray(schema) ? schema : [schema]) : [];
+
+const graph = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    organizationSchema(site),
+    websiteSchema(site),
+    webPageSchema(site, { path, name: fullTitle, description }),
+    ...(trail.length > 1 ? [breadcrumbSchema(site, trail)] : []),
+    ...pageNodes,
+  ],
+};
+---
+
+<!doctype html>
+<html lang={SITE_LANG}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0C1220" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content={description} />
+    <meta name="robots" content={robots} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="author" content={SITE_NAME} />
+    <meta name="application-name" content={SITE_NAME} />
+    <meta name="apple-mobile-web-app-title" content={SITE_NAME} />
+    <meta name="format-detection" content="telephone=no" />
+
+    <title>{fullTitle}</title>
+    <link rel="canonical" href={canonical} />
+    {
+      indexable && (
+        <>
+          <link rel="alternate" hreflang="it-IT" href={canonical} />
+          <link rel="alternate" hreflang="x-default" href={canonical} />
+          <link rel="sitemap" type="application/xml" href="/sitemap-index.xml" />
+        </>
+      )
+    }
+
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link
+      rel="preload"
+      href={manropeLatinUrl}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:locale" content={SITE_LOCALE.replace('-', '_')} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Giocatore di padel su un campo notturno Padelandia"
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content="Padelandia su smartphone e smartwatch" />
+
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(graph).replace(/</g, '\\u003c')}
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#contenuto">Vai al contenuto</a>
+    <div class="scroll-progress" aria-hidden="true"><span data-scroll-progress></span></div>
+    <slot />
+
+    <button class="to-top" type="button" data-to-top aria-label="Torna all’inizio della pagina" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 19V5"></path>
+        <path d="m5 12 7-7 7 7"></path>
+      </svg>
+    </button>
+
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+        /* --- Reveal on scroll -------------------------------------------
+         * IntersectionObserver evita misure geometriche durante ogni frame
+         * di scroll. Deep link e riduzione del movimento restano gestiti in
+         * modo esplicito, senza lasciare contenuti invisibili.
+         */
+        const revealElements = [...document.querySelectorAll('[data-reveal]')];
+
+        const reveal = (element) => {
+          element.classList.add('is-visible');
+        };
+
+        const revealHashTarget = () => {
+          if (!window.location.hash) return;
+          try {
+            const target = document.getElementById(
+              decodeURIComponent(window.location.hash.slice(1)),
+            );
+            const revealTarget = target?.closest('[data-reveal]');
+            if (revealTarget) reveal(revealTarget);
+          } catch {
+            // Un frammento non decodificabile non deve compromettere la UI.
+          }
+        };
+
+        if (
+          reduceMotion.matches ||
+          !('IntersectionObserver' in window)
+        ) {
+          revealElements.forEach(reveal);
+        } else if (revealElements.length) {
+          root.classList.add('reveal-ready');
+          const revealObserver = new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (!entry.isIntersecting) continue;
+                reveal(entry.target);
+                revealObserver.unobserve(entry.target);
+              }
+            },
+            { rootMargin: '0px 0px -8% 0px', threshold: 0.04 },
+          );
+
+          revealElements.forEach((element) => revealObserver.observe(element));
+          revealHashTarget();
+          window.addEventListener('hashchange', revealHashTarget, { passive: true });
+        }
+
+        /* --- Header sticky, progresso di lettura, back-to-top ----------- */
+        const header = document.querySelector('[data-site-header]');
+        const progress = document.querySelector('[data-scroll-progress]');
+        const toTop = document.querySelector('[data-to-top]');
+        let ticking = false;
+        let scrollRange = Math.max(
+          document.documentElement.scrollHeight - window.innerHeight,
+          1,
+        );
+
+        const onScroll = () => {
+          const y = window.scrollY;
+
+          header?.toggleAttribute('data-scrolled', y > 24);
+          if (progress) {
+            progress.style.transform = `scaleX(${Math.min(y / scrollRange, 1)})`;
+          }
+          // `innerHeight` può valere 0 al primo giro, prima del layout.
+          if (toTop) toTop.hidden = y < Math.max(window.innerHeight, 480);
+          ticking = false;
+        };
+
+        const measureScrollRange = () => {
+          scrollRange = Math.max(
+            document.documentElement.scrollHeight - window.innerHeight,
+            1,
+          );
+          onScroll();
+        };
+
+        window.addEventListener(
+          'scroll',
+          () => {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(onScroll);
+          },
+          { passive: true },
+        );
+        window.addEventListener('resize', measureScrollRange, { passive: true });
+        window.addEventListener('load', measureScrollRange);
+        onScroll();
+
+        toTop?.addEventListener('click', () => {
+          window.scrollTo({
+            top: 0,
+            behavior: reduceMotion.matches ? 'auto' : 'smooth',
+          });
+        });
+
+        /* --- Menu mobile: chiusura con ESC, click fuori, scroll lock ---- */
+        const menu = document.querySelector('.mobile-menu');
+
+        const closeMenu = () => {
+          if (menu instanceof HTMLDetailsElement && menu.open) menu.open = false;
+        };
+
+        if (menu instanceof HTMLDetailsElement) {
+          menu.addEventListener('toggle', () => {
+            document.body.classList.toggle('is-menu-open', menu.open);
+          });
+          document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeMenu();
+          });
+          document.addEventListener('click', (event) => {
+            if (!menu.open) return;
+            if (!(event.target instanceof Node)) return;
+            if (!menu.contains(event.target)) closeMenu();
+          });
+
+          const desktopViewport = window.matchMedia('(min-width: 64rem)');
+          desktopViewport.addEventListener('change', (event) => {
+            if (event.matches) closeMenu();
+          });
+        }
+
+        document.querySelectorAll('a[href^="#"], a[href^="/#"]').forEach((link) => {
+          link.addEventListener('click', closeMenu);
+        });
+
+        /* --- Scrollspy sulla navigazione ancorata ----------------------- */
+        const anchorLinks = [...document.querySelectorAll('[data-nav-link][href*="#"]')];
+        const sections = anchorLinks
+          .map((link) => {
+            const id = link.getAttribute('href')?.split('#')[1];
+            const section = id ? document.getElementById(id) : null;
+            return section ? { link, section } : null;
+          })
+          .filter(Boolean);
+
+        if (sections.length && 'IntersectionObserver' in window) {
+          const spy = new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (!entry.isIntersecting) continue;
+                for (const pair of sections) {
+                  pair.link.toggleAttribute('data-active', pair.section === entry.target);
+                }
+              }
+            },
+            { rootMargin: '-45% 0px -50% 0px', threshold: 0 },
+          );
+
+          for (const pair of sections) spy.observe(pair.section);
+        }
+      })();
+    </script>
+  </body>
+</html>

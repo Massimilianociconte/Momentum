@@ -1,0 +1,25 @@
+---
+import { Image } from 'astro:assets';
+import appIcon from '@/assets/brand/padelandia-app-icon.png';
+
+interface Props {
+  compact?: boolean;
+  priority?: boolean;
+}
+
+const { compact = false, priority = false } = Astro.props;
+---
+
+<a class:list={['brand', { 'brand--compact': compact }]} href="/" aria-label="Padelandia, home">
+  <Image
+    class="brand__mark"
+    src={appIcon}
+    alt=""
+    width={compact ? 96 : 120}
+    height={compact ? 96 : 120}
+    format="webp"
+    quality={82}
+    loading={priority ? 'eager' : 'lazy'}
+  />
+  <span class="brand__name">Padelandia</span>
+</a>

@@ -1,0 +1,283 @@
+name: RallyMate CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: rallymate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  padelandia-web:
+    name: Padelandia web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/padelandia-web/package-lock.json
+
+      - name: Install, build and validate static output
+        working-directory: apps/padelandia-web
+        run: |
+          npm ci
+          npm test
+          npm audit --omit=dev
+
+  app-and-core:
+    name: Flutter, Dart core, Android phone
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Secret scan
+        run: |
+          if rg -l --hidden \
+            --glob '!**/.git/**' \
+            --glob '!**/.dart_tool/**' \
+            --glob '!**/.build/**' \
+            --glob '!**/build/**' \
+            --glob '!**/Pods/**' \
+            --glob '!**/*.lock' \
+            '(sk_live_[0-9A-Za-z]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}|ghp_[0-9A-Za-z]{30,}|xox[baprs]-[0-9A-Za-z-]{10,}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----)' .; then
+            echo "Potential live secret found." >&2
+            exit 1
+          fi
+
+      - name: Dart core
+        working-directory: packages/rally_core
+        run: |
+          dart pub get
+          dart analyze
+          dart test
+
+      - name: Flutter app
+        working-directory: apps/rallymate
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter analyze
+          flutter test
+          printf '%s\n' \
+            'SUPABASE_URL=https://ci-placeholder.supabase.co' \
+            'SUPABASE_ANON_KEY=sb_publishable_ci_placeholder' \
+            > "$RUNNER_TEMP/rallymate-client.env"
+          chmod 600 "$RUNNER_TEMP/rallymate-client.env"
+          RALLYMATE_CLIENT_ENV="$RUNNER_TEMP/rallymate-client.env" \
+            tool/rallymate build-apk --debug
+          (cd android && ./gradlew :app:lintDebug)
+
+  wearos:
+    name: Wear OS
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle test and assemble
+        working-directory: wear/wearos
+        run: ./gradlew testDebugUnitTest assembleDebug
+
+  fitbit:
+    name: Fitbit OS 5 and OS 4
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: wear/fitbit-os/package-lock.json
+
+      - name: Install and test scoring protocol
+        working-directory: wear/fitbit-os
+        run: |
+          npm ci
+          npm test
+          npm audit --omit=dev
+
+      - name: Validate release configuration contract
+        working-directory: wear/fitbit-os
+        env:
+          RALLYMATE_WEARABLE_GATEWAY_URL: https://ci.rallymate.invalid/functions/v1/wearable-gateway
+        run: npm run check:release
+
+      - name: Build Fitbit OS 5 and OS 4 binaries
+        working-directory: wear/fitbit-os
+        run: |
+          npm run build
+          npm run build:legacy
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rallymate-fitbit-binaries
+          path: |
+            wear/fitbit-os/build/app.fba
+            wear/fitbit-os/build/rallymate-fitbit-os4.fba
+          if-no-files-found: error
+
+  garmin:
+    name: Garmin Connect IQ
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      GARMIN_CONNECTIQ_SDK_ARCHIVE_URL: ${{ secrets.GARMIN_CONNECTIQ_SDK_ARCHIVE_URL }}
+      GARMIN_DEVELOPER_KEY_BASE64: ${{ secrets.GARMIN_DEVELOPER_KEY_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate manifest and source contract
+        run: |
+          xmllint --noout wear/garmin-connectiq/manifest.xml
+          test -s wear/garmin-connectiq/source/RallyMateScoreModel.mc
+          test -s wear/garmin-connectiq/source/RallyMateSync.mc
+          test -s wear/garmin-connectiq/source/RallyMateTests.mc
+          test -s wear/garmin-connectiq/resources-ita/strings/strings.xml
+          test -s docs/store-assets/garmin/rallymate_connectiq_store_icon_500.png
+          test -s docs/store-assets/garmin/rallymate_connectiq_hero_1440x720.jpg
+
+      - name: Install private Garmin toolchain
+        id: garmin-toolchain
+        run: |
+          if [[ -z "$GARMIN_CONNECTIQ_SDK_ARCHIVE_URL" || -z "$GARMIN_DEVELOPER_KEY_BASE64" ]]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Garmin compile skipped. Configure the licensed SDK archive URL and developer key secrets."
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/garmin-sdk"
+          curl --fail --location --retry 3 \
+            "$GARMIN_CONNECTIQ_SDK_ARCHIVE_URL" \
+            --output "$RUNNER_TEMP/garmin-sdk.zip"
+          ditto -x -k "$RUNNER_TEMP/garmin-sdk.zip" "$RUNNER_TEMP/garmin-sdk"
+          MONKEYC="$(find "$RUNNER_TEMP/garmin-sdk" -type f -path '*/bin/monkeyc' -perm -111 | head -1)"
+          test -n "$MONKEYC"
+          printf '%s' "$GARMIN_DEVELOPER_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/garmin-key.der"
+          chmod 600 "$RUNNER_TEMP/garmin-key.der"
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "sdk=$(dirname "$(dirname "$MONKEYC")")" >> "$GITHUB_OUTPUT"
+
+      - name: Compile full device matrix and unit-test binaries
+        if: steps.garmin-toolchain.outputs.available == 'true'
+        working-directory: wear/garmin-connectiq
+        env:
+          GARMIN_CONNECTIQ_SDK: ${{ steps.garmin-toolchain.outputs.sdk }}
+          GARMIN_DEVELOPER_KEY: ${{ runner.temp }}/garmin-key.der
+        run: |
+          scripts/validate_matrix.sh
+          for device in venu3 instinct2 venusq; do
+            "$GARMIN_CONNECTIQ_SDK/bin/monkeyc" \
+              -f test.jungle -d "$device" -o "build/RallyMate-$device-tests.prg" \
+              -y "$GARMIN_DEVELOPER_KEY" -l 0 -w -t
+          done
+          scripts/export.sh
+
+      - uses: actions/upload-artifact@v4
+        if: steps.garmin-toolchain.outputs.available == 'true'
+        with:
+          name: rallymate-garmin-connectiq
+          path: wear/garmin-connectiq/build/RallyMate.iq
+          if-no-files-found: error
+
+  apple:
+    name: iOS and watchOS
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: iOS simulator build
+        working-directory: apps/rallymate
+        run: |
+          flutter pub get
+          printf '%s\n' \
+            'SUPABASE_URL=https://ci-placeholder.supabase.co' \
+            'SUPABASE_ANON_KEY=sb_publishable_ci_placeholder' \
+            > "$RUNNER_TEMP/rallymate-client.env"
+          chmod 600 "$RUNNER_TEMP/rallymate-client.env"
+          RALLYMATE_CLIENT_ENV="$RUNNER_TEMP/rallymate-client.env" \
+            tool/rallymate build-ios --simulator --no-codesign
+
+      - name: iOS native bridge and queue tests
+        working-directory: apps/rallymate
+        run: |
+          SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/{print $2; exit}')"
+          test -n "$SIMULATOR_ID"
+          xcodebuild test \
+            -quiet \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: watchOS Swift tests
+        working-directory: wear/watchos/RallyMateCore
+        run: swift test
+
+  supabase:
+    name: Supabase schema, RLS and Edge Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Start local Supabase
+        working-directory: backend
+        run: supabase start
+
+      - name: Migration, schema lint and pgTAP security tests
+        working-directory: backend
+        run: |
+          supabase db reset
+          supabase db lint --schema public --level warning --fail-on error
+          supabase test db
+          supabase db advisors --local
+
+      - name: Format, lint and typecheck
+        working-directory: backend/supabase
+        run: |
+          deno fmt --check functions
+          deno lint functions
+          deno check functions/*/index.ts
+          deno test functions/_shared/*_test.ts functions/*/*_test.ts

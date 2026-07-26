@@ -1,0 +1,72 @@
+name: rallymate
+description: "Padelandia — segna i punti dal polso, analizza ogni partita."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  rally_core:
+    path: ../../packages/rally_core
+  flutter_riverpod: ^2.6.1
+  go_router: ^16.0.0
+  drift: ^2.28.2
+  drift_flutter: ^0.2.7
+  path_provider: ^2.1.5
+  shared_preferences: ^2.5.3
+  share_plus: ^12.0.1
+  intl: ^0.20.2
+  pdf: ^3.11.3
+  supabase_flutter: ^2.8.0
+  purchases_flutter: ^9.0.0
+  speech_to_text: ^7.4.0
+  url_launcher: ^6.3.1
+  image_picker: ^1.2.3
+  image_cropper: ^12.2.1
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.2.0
+  app_links: ^7.0.0
+  flutter_secure_storage: ^10.3.1
+  crypto: ^3.0.6
+  video_player: ^2.11.1
+  model_viewer_plus: ^1.10.0
+  wakelock_plus: ^1.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.28.3
+  build_runner: ^2.7.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand/rallymate_app_mark_256.png
+    - assets/brand/padelandia_app_mark_256.png
+    - assets/brand/rallymate_loading_splash.jpg
+    - assets/brand/padelandia_loading_splash.jpg
+    - assets/brand/padelandia_app_icon_1024.png
+    - assets/brand/rallymate_pro_fitness_cover.jpg
+    - assets/brand/rallymate_icon_foreground_1024.png
+    - assets/brand/rallymate_new_match_emblem.png
+    - assets/videos/
+    - assets/onboarding/
+    - assets/onboarding/wearables/
+    - assets/maps/padel_matchmaking_map.jpg
+    - assets/config/watch_compatibility.json
+    - assets/config/health_provider_compatibility.json
+    - assets/onboarding/health/
+    - assets/mascot/rally_mascot_sheet.png
+    - assets/mascot/rally_mascot_neutral.png
+    - assets/mascot/rally_mascot_encourage.png
+    - assets/mascot/rally_mascot_victory.png
+    - assets/mascot/rally_mascot_tip.png
+    - assets/mascot/rally_mascot_alert.png
+    - assets/mascot/rally_mascot_sync.png
+    - assets/mesh-3d/pallino.glb
+    - assets/mesh-3d/pallino_tip.glb

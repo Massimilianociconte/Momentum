@@ -1,0 +1,26 @@
+---
+import type { Crumb } from '@/lib/seo';
+
+interface Props {
+  trail: readonly Crumb[];
+}
+
+const { trail } = Astro.props;
+const items: Crumb[] = [{ name: 'Home', path: '/' }, ...trail];
+---
+
+<nav class="breadcrumbs" aria-label="Percorso di navigazione">
+  <ol>
+    {
+      items.map((crumb, index) =>
+        index === items.length - 1 ? (
+          <li aria-current="page">{crumb.name}</li>
+        ) : (
+          <li>
+            <a href={crumb.path}>{crumb.name}</a>
+          </li>
+        ),
+      )
+    }
+  </ol>
+</nav>

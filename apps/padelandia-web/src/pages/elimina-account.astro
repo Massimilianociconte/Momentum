@@ -1,0 +1,86 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE_LOCALE, siteOrigin } from '@/lib/seo';
+
+const supportEmail = import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim();
+const origin = siteOrigin(Astro.site);
+const trail = [{ name: 'Elimina account', path: '/elimina-account/' }];
+
+const steps = [
+  'Apri Padelandia.',
+  'Vai in Profilo.',
+  'Apri Gestisci account.',
+  'Scegli Elimina account e dati cloud e conferma.',
+];
+
+const schema = [
+  {
+    '@type': 'HowTo',
+    '@id': `${origin}/elimina-account/#howto`,
+    name: 'Come eliminare account e dati cloud di Padelandia',
+    description:
+      'Procedura per eliminare in modo permanente account e dati cloud di Padelandia dall’app.',
+    inLanguage: SITE_LOCALE,
+    step: steps.map((text, index) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      text,
+      url: `${origin}/elimina-account/`,
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Elimina account"
+  seoTitle="Elimina account e dati cloud Padelandia — procedura"
+  description="Come eliminare account e dati cloud di Padelandia direttamente dall’app, in quattro passaggi."
+  path="/elimina-account/"
+  robots={supportEmail ? 'index, follow' : 'noindex, follow'}
+  schema={schema}
+  breadcrumbs={trail}
+>
+  <SiteHeader />
+  <main id="contenuto" class="account-page">
+    <article class="account-page__inner container">
+      <Breadcrumbs trail={trail} />
+      <p class="section-label">Gestione dati</p>
+      <h1>Elimina account e dati cloud.</h1>
+      <p class="account-page__lead">
+        Puoi avviare l’eliminazione direttamente da Padelandia. L’operazione è
+        immediata e permanente per account e dati cloud.
+      </p>
+
+      <ol class="account-steps">
+        <li><span>1</span><p>Apri <strong>Padelandia</strong>.</p></li>
+        <li><span>2</span><p>Vai in <strong>Profilo</strong>.</p></li>
+        <li><span>3</span><p>Apri <strong>Gestisci account</strong>.</p></li>
+        <li>
+          <span>4</span>
+          <p>Scegli <strong>Elimina account e dati cloud</strong> e conferma.</p>
+        </li>
+      </ol>
+
+      <aside>
+        <h2>Non riesci ad accedere all’app?</h2>
+        <p>
+          {
+            supportEmail ? (
+              <>
+                Scrivi a <a href={`mailto:${supportEmail}`}>{supportEmail}</a>{' '}
+                usando l’indirizzo associato all’account. Non inviare password,
+                codici di accesso o dati salute.
+              </>
+            ) : (
+              'Il canale ufficiale per richieste senza accesso all’app verrà pubblicato prima del lancio. Non inviare mai password, codici di accesso o dati salute.'
+            )
+          }
+        </p>
+      </aside>
+    </article>
+  </main>
+  <SiteFooter />
+</BaseLayout>

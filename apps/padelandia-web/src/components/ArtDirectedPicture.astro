@@ -1,0 +1,90 @@
+---
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  desktop: ImageMetadata;
+  mobile: ImageMetadata;
+  alt: string;
+  class?: string;
+  desktopWidths?: number[];
+  mobileWidths?: number[];
+  desktopSizes?: string;
+  mobileSizes?: string;
+  loading?: 'eager' | 'lazy';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  quality?: number;
+}
+
+const {
+  desktop,
+  mobile,
+  alt,
+  class: className,
+  desktopWidths = [768, 1024, 1280, 1536],
+  mobileWidths = [480, 720],
+  desktopSizes = '100vw',
+  mobileSizes = '100vw',
+  loading = 'lazy',
+  fetchpriority = 'auto',
+  quality = 76,
+} = Astro.props;
+
+const optimize = (src: ImageMetadata, width: number, format: 'avif' | 'webp') =>
+  getImage({ src, width, format, quality });
+
+const [desktopAvif, desktopWebp, mobileAvif, mobileWebp] = await Promise.all([
+  Promise.all(desktopWidths.map((width) => optimize(desktop, width, 'avif'))),
+  Promise.all(desktopWidths.map((width) => optimize(desktop, width, 'webp'))),
+  Promise.all(mobileWidths.map((width) => optimize(mobile, width, 'avif'))),
+  Promise.all(mobileWidths.map((width) => optimize(mobile, width, 'webp'))),
+]);
+
+const srcset = (images: Awaited<ReturnType<typeof getImage>>[], widths: number[]) =>
+  images.map((image, index) => `${image.src} ${widths[index]}w`).join(', ');
+
+const fallback = mobileWebp.at(-1);
+if (!fallback) throw new Error('ArtDirectedPicture richiede almeno una larghezza mobile.');
+---
+
+<picture class:list={['art-picture', className]}>
+  <source
+    media="(min-width: 64rem)"
+    type="image/avif"
+    srcset={srcset(desktopAvif, desktopWidths)}
+    sizes={desktopSizes}
+    width={desktop.width}
+    height={desktop.height}
+  />
+  <source
+    media="(min-width: 64rem)"
+    type="image/webp"
+    srcset={srcset(desktopWebp, desktopWidths)}
+    sizes={desktopSizes}
+    width={desktop.width}
+    height={desktop.height}
+  />
+  <source
+    type="image/avif"
+    srcset={srcset(mobileAvif, mobileWidths)}
+    sizes={mobileSizes}
+    width={mobile.width}
+    height={mobile.height}
+  />
+  <source
+    type="image/webp"
+    srcset={srcset(mobileWebp, mobileWidths)}
+    sizes={mobileSizes}
+    width={mobile.width}
+    height={mobile.height}
+  />
+  <img
+    src={fallback.src}
+    alt={alt}
+    width={mobile.width}
+    height={mobile.height}
+    loading={loading}
+    decoding="async"
+    fetchpriority={fetchpriority}
+  />
+</picture>

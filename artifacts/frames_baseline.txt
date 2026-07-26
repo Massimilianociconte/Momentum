@@ -1,0 +1,36 @@
+RMFRAME|start ts=2026-07-21T00:44:51.528765
+RMFRAME|frames=213|build_p50=0.36|build_p90=0.67|build_p99=4.82|raster_p50=3.86|raster_p90=5.47|raster_p99=13.48|total_p50=5.20|total_p90=7.58|total_p99=42.66|over16=4|over33=3
+RMFRAME|frames=13|build_p50=0.38|build_p90=1.21|build_p99=1.72|raster_p50=4.66|raster_p90=8.68|raster_p99=42.22|total_p50=6.67|total_p90=38.98|total_p99=44.30|over16=2|over33=2
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=1|build_p50=0.32|build_p90=0.32|build_p99=0.32|raster_p50=4.29|raster_p90=4.29|raster_p99=4.29|total_p50=15.62|total_p90=15.62|total_p99=15.62|over16=0|over33=0
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=180|build_p50=0.58|build_p90=1.23|build_p99=3.29|raster_p50=3.68|raster_p90=6.77|raster_p99=20.32|total_p50=5.69|total_p90=10.43|total_p99=25.73|over16=8|over33=0
+RMFRAME|frames=234|build_p50=0.57|build_p90=1.24|build_p99=4.11|raster_p50=4.05|raster_p90=4.97|raster_p99=5.85|total_p50=5.88|total_p90=7.46|total_p99=9.91|over16=0|over33=0
+RMFRAME|frames=247|build_p50=0.57|build_p90=1.26|build_p99=3.93|raster_p50=4.08|raster_p90=5.14|raster_p99=8.50|total_p50=5.92|total_p90=7.86|total_p99=12.85|over16=0|over33=0
+RMFRAME|frames=231|build_p50=0.61|build_p90=1.07|build_p99=3.82|raster_p50=3.98|raster_p90=5.30|raster_p99=16.24|total_p50=5.91|total_p90=9.42|total_p99=27.68|over16=5|over33=1
+RMFRAME|frames=244|build_p50=0.63|build_p90=1.55|build_p99=3.68|raster_p50=3.85|raster_p90=5.50|raster_p99=16.32|total_p50=5.94|total_p90=9.13|total_p99=19.04|over16=5|over33=0
+RMFRAME|frames=97|build_p50=0.66|build_p90=1.12|build_p99=3.49|raster_p50=4.45|raster_p90=5.47|raster_p99=7.68|total_p50=6.54|total_p90=8.08|total_p99=15.69|over16=1|over33=0
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)
+RMFRAME|frames=0 (idle)

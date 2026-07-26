@@ -1,0 +1,32 @@
+---
+import { factSheet } from '@/content/site';
+
+/**
+ * Scheda sintetica: coppie domanda/risposta brevi e autoconclusive.
+ * Serve ai lettori frettolosi e, allo stesso tempo, offre a motori di ricerca
+ * e assistenti generativi blocchi di testo facilmente citabili.
+ */
+---
+
+<section class="fact-sheet" id="in-sintesi" aria-labelledby="fact-sheet-title">
+  <div class="fact-sheet__inner container">
+    <div class="fact-sheet__intro" data-reveal>
+      <p class="section-label">In sintesi</p>
+      <h2 id="fact-sheet-title">Padelandia in sei risposte.</h2>
+      <p>
+        Le informazioni essenziali sull’app, senza scorrere tutta la pagina.
+      </p>
+    </div>
+
+    <dl class="fact-sheet__grid" data-reveal>
+      {
+        factSheet.map((fact) => (
+          <div class="fact-sheet__item">
+            <dt>{fact.term}</dt>
+            <dd>{fact.definition}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>

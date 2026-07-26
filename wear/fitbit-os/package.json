@@ -1,0 +1,36 @@
+{
+  "name": "rallymate-fitbit-os",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "devDependencies": {
+    "@fitbit/sdk": "6.1.0",
+    "@fitbit/sdk-cli": "1.7.3"
+  },
+  "fitbit": {
+    "appType": "app",
+    "appDisplayName": "Padelandia",
+    "iconFile": "resources/icon.png",
+    "wipeColor": "#07101F",
+    "requestedPermissions": [
+      "access_aod",
+      "access_exercise",
+      "access_internet",
+      "run_background"
+    ],
+    "buildTargets": [
+      "atlas",
+      "vulcan"
+    ],
+    "i18n": {},
+    "appUUID": "8f2a7962-9f82-449d-9a3d-de9de9c77814"
+  },
+  "scripts": {
+    "build": "fitbit-build",
+    "build:legacy": "node scripts/build-legacy.mjs",
+    "build:release": "node scripts/configure.mjs --release && fitbit-build",
+    "test": "node --test test/*.test.mjs",
+    "check:release": "node scripts/configure.mjs --check"
+  }
+}

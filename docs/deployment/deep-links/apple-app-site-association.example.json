@@ -1,0 +1,22 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "5KWK3L6AU2.com.rallymate.rallymate"
+        ],
+        "components": [
+          {
+            "/": "/invite/*",
+            "comment": "Inviti opachi Padelandia"
+          },
+          {
+            "/": "/recap/*",
+            "comment": "Riepiloghi condivisi Padelandia"
+          }
+        ]
+      }
+    ]
+  }
+}
+

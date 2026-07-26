@@ -1,0 +1,35 @@
+---
+import SupportIcon from '@/components/SupportIcon.astro';
+import { capabilityMatrix } from '@/content/site';
+---
+
+<div class="capability" data-reveal>
+  <p class="capability__title" id="capability-title">Cosa resta locale e cosa richiede rete</p>
+  <div class="capability__scroll">
+    <table aria-labelledby="capability-title">
+      <thead>
+        <tr>
+          <th scope="col">Funzione</th>
+          <th scope="col">Senza connessione</th>
+          <th scope="col">Nota</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          capabilityMatrix.map((row) => (
+            <tr>
+              <th scope="row">{row.capability}</th>
+              <td>
+                <span class:list={['capability__flag', row.offline ? 'is-yes' : 'is-no']}>
+                  <SupportIcon name={row.offline ? 'check' : 'cloud'} size={18} />
+                  {row.offline ? 'Sì' : 'No'}
+                </span>
+              </td>
+              <td>{row.note}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,335 @@
+---
+import { Picture } from 'astro:assets';
+import ArtDirectedPicture from '@/components/ArtDirectedPicture.astro';
+import CapabilityTable from '@/components/CapabilityTable.astro';
+import DeviceFrame from '@/components/DeviceFrame.astro';
+import FactSheet from '@/components/FactSheet.astro';
+import FaqList from '@/components/FaqList.astro';
+import FeatureGrid from '@/components/FeatureGrid.astro';
+import HowToSteps from '@/components/HowToSteps.astro';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import StoreButtons from '@/components/StoreButtons.astro';
+import SupportIcon from '@/components/SupportIcon.astro';
+import {
+  homeFaqs,
+  howToSteps,
+  productMoments,
+  softwareFeatureList,
+  supportRows,
+} from '@/content/site';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE_LOCALE, absoluteUrl, siteOrigin } from '@/lib/seo';
+import { officialStoreUrl } from '@/lib/store';
+import heroDesktop from '@/assets/generated/hero-desktop-source.png';
+import heroMobile from '@/assets/generated/hero-mobile-source.png';
+import pallinoImage from '@/assets/generated/pallino-support-source.png';
+import tableauDesktop from '@/assets/generated/product-tableau-desktop-source.png';
+import tableauMobile from '@/assets/generated/product-tableau-mobile-source.png';
+import homeScreen from '@/assets/screens/home.png';
+import watchScreen from '@/assets/screens/watch-score.png';
+
+const site = Astro.site;
+const origin = siteOrigin(site);
+const storeUrls = [
+  officialStoreUrl(import.meta.env.PUBLIC_APP_STORE_URL, 'apple'),
+  officialStoreUrl(import.meta.env.PUBLIC_PLAY_STORE_URL, 'google'),
+].filter((url): url is string => Boolean(url));
+
+const description =
+  'Padelandia è l’app per il padel che segna i punti dal polso: funziona offline, sincronizza Apple Watch e Wear OS e trasforma ogni partita in uno storico leggibile.';
+
+const schema = [
+  {
+    '@type': 'MobileApplication',
+    '@id': `${origin}/#app`,
+    name: 'Padelandia',
+    alternateName: 'Padelandia — app padel',
+    description:
+      'App mobile e smartwatch per segnare i punti del padel, conservare lo storico e leggere la partita attraverso dati descrittivi.',
+    applicationCategory: 'SportsApplication',
+    applicationSubCategory: 'Padel',
+    operatingSystem: 'iOS, Android, watchOS, Wear OS',
+    featureList: [...softwareFeatureList],
+    inLanguage: SITE_LOCALE,
+    url: `${origin}/`,
+    image: absoluteUrl('/icon-512.png', site),
+    screenshot: absoluteUrl(homeScreen.src, site),
+    ...(storeUrls.length ? { installUrl: storeUrls, sameAs: storeUrls } : {}),
+    publisher: { '@id': `${origin}/#organization` },
+  },
+  {
+    '@type': 'HowTo',
+    '@id': `${origin}/#come-segnare`,
+    name: 'Come segnare una partita di padel con Padelandia',
+    description:
+      'Procedura in cinque passaggi per registrare il punteggio di una partita di padel dallo smartwatch o dallo smartphone, anche senza connessione.',
+    inLanguage: SITE_LOCALE,
+    step: howToSteps.map((step, index) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      name: step.title,
+      text: step.text,
+      url: `${origin}/#segnare`,
+    })),
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': `${origin}/#faq`,
+    mainEntity: homeFaqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Padelandia"
+  seoTitle="Padelandia — App padel: segnapunti offline per Apple Watch e Wear OS"
+  description={description}
+  path="/"
+  schema={schema}
+>
+  <SiteHeader />
+
+  <main id="contenuto">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="hero__inner container">
+        <div class="hero__copy">
+          <p class="hero__eyebrow">
+            <span aria-hidden="true"></span>
+            App padel · iOS, Android, Apple Watch e Wear OS
+          </p>
+          <h1 id="hero-title">Ogni punto conta. <span>Padelandia lo ricorda.</span></h1>
+          <p class="hero__lead">
+            L’app per il padel che segna i punti dal polso, funziona anche senza
+            rete e trasforma ogni partita in uno storico che puoi rileggere.
+          </p>
+          <div id="download">
+            <StoreButtons />
+          </div>
+          <ul class="hero__proof" aria-label="Caratteristiche principali">
+            <li><SupportIcon name="check" size={18} />Nessun account per iniziare</li>
+            <li><SupportIcon name="check" size={18} />Undo oltre game e set</li>
+            <li><SupportIcon name="check" size={18} />Punteggio event-sourced</li>
+          </ul>
+          <a class="hero__text-link" href="#come-funziona">
+            Scopri come funziona
+            <SupportIcon name="arrow" size={20} />
+          </a>
+        </div>
+
+        <div class="hero__visual" aria-label="Padelandia su smartphone e smartwatch">
+          <ArtDirectedPicture
+            class="hero__image"
+            desktop={heroDesktop}
+            mobile={heroMobile}
+            alt="Giocatore che esegue una volée su un campo da padel notturno"
+            desktopWidths={[768, 1024, 1280, 1536]}
+            mobileWidths={[480, 720]}
+            desktopSizes="62vw"
+            mobileSizes="100vw"
+            quality={78}
+            loading="eager"
+            fetchpriority="high"
+          />
+          <DeviceFrame
+            class="hero__phone"
+            src={homeScreen}
+            alt="Schermata home di Padelandia con accesso a nuova partita, giocatori e team"
+            width={360}
+            loading="eager"
+          />
+          <DeviceFrame
+            class="hero__watch"
+            kind="watch"
+            src={watchScreen}
+            alt="Schermata Padelandia su smartwatch con punteggio della partita"
+            width={220}
+            loading="eager"
+          />
+        </div>
+      </div>
+      <div class="hero__baseline" aria-hidden="true"></div>
+    </section>
+
+    <section class="promise-strip" aria-label="Le basi di Padelandia">
+      <div class="promise-strip__inner container">
+        <p>Offline-first</p>
+        <span aria-hidden="true"></span>
+        <p>Telefono + smartwatch</p>
+        <span aria-hidden="true"></span>
+        <p>Punteggio event-sourced</p>
+      </div>
+    </section>
+
+    <FactSheet />
+
+    <section class="product-story section" id="come-funziona" aria-labelledby="story-title">
+      <div class="product-story__heading container" data-reveal>
+        <h2 id="story-title">Dal polso al prossimo punto.</h2>
+        <p>
+          Il punteggio resta con te, anche offline. Poi Padelandia trasforma
+          ogni partita in qualcosa che puoi capire, condividere e migliorare.
+        </p>
+      </div>
+
+      <div class="product-story__layout container">
+        <div class="device-stage">
+          <ArtDirectedPicture
+            class="product-tableau"
+            desktop={tableauDesktop}
+            mobile={tableauMobile}
+            alt="Padelandia su smartwatch e smartphone, dal punteggio allo storico della partita"
+            desktopWidths={[768, 1024, 1280, 1536]}
+            mobileWidths={[480, 720]}
+            desktopSizes="calc(100vw - (2 * var(--gutter)))"
+            mobileSizes="calc(100vw - (2 * var(--gutter)))"
+            quality={72}
+            loading="lazy"
+          />
+        </div>
+
+        <ol class="moment-list" data-reveal>
+          {
+            productMoments.map((moment) => (
+              <li>
+                <span class="moment-list__number">{moment.number}</span>
+                <div>
+                  <h3>{moment.title}</h3>
+                  <p>{moment.text}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <FeatureGrid />
+
+    <HowToSteps />
+
+    <section class="local-first section" id="offline" aria-labelledby="offline-title">
+      <div class="local-first__inner container">
+        <div class="local-first__copy" data-reveal>
+          <h2 id="offline-title">Quando la rete sparisce, la partita no.</h2>
+          <p>
+            Padelandia registra il punteggio come una sequenza di eventi. È
+            questo che rende possibili undo affidabile, pausa e ripresa, code
+            dal watch e ricostruzione del match senza dipendere da una
+            connessione continua.
+          </p>
+        </div>
+
+        <dl class="local-first__facts" data-reveal>
+          <div>
+            <dt>Parti senza account</dt>
+            <dd>Scoring e funzioni locali essenziali restano disponibili.</dd>
+          </div>
+          <div>
+            <dt>Correggi davvero</dt>
+            <dd>L’undo funziona anche oltre il confine di game e set.</dd>
+          </div>
+          <div>
+            <dt>Capisci i dati</dt>
+            <dd>Le analisi sono descrittive, con campione e limiti espliciti.</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="local-first__matrix container">
+        <CapabilityTable />
+      </div>
+    </section>
+
+    <section class="support-showcase section" aria-labelledby="support-title">
+      <div class="support-showcase__inner container">
+        <div class="support-showcase__visual">
+          <Picture
+            src={pallinoImage}
+            alt="Pallino, la mascotte di Padelandia, spiega una regola con la racchetta in mano"
+            widths={[480, 720, 960, 1024]}
+            sizes="(min-width: 1024px) 46vw, 100vw"
+            formats={['avif', 'webp']}
+            quality={76}
+            loading="lazy"
+          />
+        </div>
+
+        <div class="support-showcase__content" data-reveal>
+          <h2 id="support-title">Il tuo gioco ha una voce.</h2>
+          <p class="support-showcase__lead">
+            Pallino chiarisce le regole del padel con risposte semplici e fonti
+            indicate. Per problemi, idee e richieste, il supporto parte da qui.
+          </p>
+
+          <div class="support-links">
+            {
+              supportRows.map((row) => (
+                <a href={row.href}>
+                  <SupportIcon name={row.icon} size={30} />
+                  <span>
+                    <strong>{row.title}</strong>
+                    <small>{row.text}</small>
+                  </span>
+                  <SupportIcon name="arrow" size={25} />
+                </a>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="community-cta" id="community" aria-labelledby="community-title">
+      <div class="community-cta__inner container">
+        <div>
+          <p class="community-cta__status">Community in arrivo</p>
+          <h2 id="community-title">Entra nel prossimo set.</h2>
+          <p>
+            Il forum di Padelandia è in costruzione. Nel frattempo, raccontaci
+            cosa vuoi vedere nell’app.
+          </p>
+        </div>
+        <div class="community-cta__actions">
+          <a class="button button--primary" href="/supporto/#richiesta">
+            Proponi una feature
+            <SupportIcon name="arrow" size={20} />
+          </a>
+          <a class="button button--outline" href="/supporto/">
+            Vai al supporto
+            <SupportIcon name="arrow" size={20} />
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section section" id="faq" aria-labelledby="faq-title">
+      <div class="faq-section__inner container">
+        <header data-reveal>
+          <h2 id="faq-title">Prima del primo servizio.</h2>
+          <p>
+            Risposte dirette alle domande più comuni su offline, account,
+            punteggio e smartwatch.
+          </p>
+        </header>
+        <div data-reveal>
+          <FaqList items={homeFaqs} />
+          <a class="faq-section__more" href="/supporto/">
+            Tutte le domande
+            <SupportIcon name="arrow" size={20} />
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>

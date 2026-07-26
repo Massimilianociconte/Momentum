@@ -1,0 +1,31 @@
+---
+import SupportIcon from '@/components/SupportIcon.astro';
+import { coreFeatures } from '@/content/site';
+---
+
+<section class="feature-grid section" id="funzioni" aria-labelledby="feature-grid-title">
+  <div class="feature-grid__inner container">
+    <header class="feature-grid__head" data-reveal>
+      <p class="section-label">Funzioni</p>
+      <h2 id="feature-grid-title">Tutto quello che serve in campo.</h2>
+      <p>
+        Sei capacità che coprono la partita dall’inizio alla rilettura, senza
+        chiedere connessione né configurazioni complicate.
+      </p>
+    </header>
+
+    <ul class="feature-grid__list" data-reveal>
+      {
+        coreFeatures.map((feature) => (
+          <li class="feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <SupportIcon name={feature.icon} size={24} />
+            </span>
+            <h3>{feature.title}</h3>
+            <p>{feature.text}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

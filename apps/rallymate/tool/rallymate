@@ -1,0 +1,161 @@
+#!/bin/sh
+set -eu
+
+APP_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+CONFIG_FILE=${RALLYMATE_CLIENT_ENV:-"$HOME/.config/rallymate/client.env"}
+
+die() {
+  printf 'RallyMate build error: %s\n' "$1" >&2
+  exit 1
+}
+
+env_value() {
+  key=$1
+  awk -F= -v key="$key" '
+    $0 !~ /^[[:space:]]*#/ && $1 == key {
+      sub(/^[^=]*=/, ""); print; exit
+    }
+  ' "$CONFIG_FILE"
+}
+
+jwt_role() {
+  token=$1
+  payload=$(printf '%s' "$token" | cut -d. -f2)
+  [ -n "$payload" ] || return 1
+  remainder=$((${#payload} % 4))
+  case "$remainder" in
+    0) padded=$payload ;;
+    2) padded="${payload}==" ;;
+    3) padded="${payload}=" ;;
+    *) return 1 ;;
+  esac
+  normalized=$(printf '%s' "$padded" | tr '_-' '/+')
+  decoded=$(printf '%s' "$normalized" | base64 --decode 2>/dev/null) ||
+    decoded=$(printf '%s' "$normalized" | base64 -D 2>/dev/null) || return 1
+  printf '%s' "$decoded" |
+    sed -n 's/.*"role"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+}
+
+validate_config() {
+  [ -f "$CONFIG_FILE" ] || die "missing $CONFIG_FILE (start from config/client.env.example)"
+  if grep -Eq '^[[:space:]]*(SUPABASE_SERVICE_ROLE_KEY|DEEPSEEK_API_KEY|DEEPSEEK_[A-Z_]+)=' "$CONFIG_FILE"; then
+    die "server-only secret found in client config"
+  fi
+
+  supabase_url=$(env_value SUPABASE_URL)
+  supabase_key=$(env_value SUPABASE_ANON_KEY)
+  [ -n "$supabase_url" ] || die "SUPABASE_URL is missing"
+  [ -n "$supabase_key" ] || die "SUPABASE_ANON_KEY is missing"
+  case "$supabase_url" in
+    https://*.supabase.co|http://localhost:*|http://127.0.0.1:*) ;;
+    *) die "SUPABASE_URL must be HTTPS (HTTP is allowed only for local development)" ;;
+  esac
+  case "$supabase_key" in
+    sb_publishable_*) ;;
+    sb_secret_*) die "sb_secret_* is server-only and cannot be shipped" ;;
+    eyJ*.*.*)
+      role=$(jwt_role "$supabase_key") || die "Supabase JWT key is malformed"
+      [ "$role" = "anon" ] || die "only a legacy anon JWT may be shipped"
+      ;;
+    *) die "SUPABASE_ANON_KEY must be a publishable key or legacy anon JWT" ;;
+  esac
+
+  printf 'Client config: valid\n'
+  printf 'Config file: %s\n' "$CONFIG_FILE"
+  printf 'Supabase project: %s\n' "$(printf '%s' "$supabase_url" | sed -E 's#https?://([^.]+).*#\1#')"
+  printf 'Secrets exposed: no\n'
+}
+
+has_release_flag() {
+  for arg in "$@"; do
+    [ "$arg" = "--release" ] && return 0
+  done
+  return 1
+}
+
+require_public_https_url() {
+  key=$1
+  value=$(env_value "$key")
+  case "$value" in
+    https://*) ;;
+    *) die "$key must be a public HTTPS URL for release builds" ;;
+  esac
+  case "$value" in
+    *YOUR_*|*'<PROJECT_REF>'*|*'<DOMINIO>'*|*localhost*|*127.0.0.1*)
+      die "$key still contains a placeholder or local URL"
+      ;;
+  esac
+}
+
+validate_release_common() {
+  require_public_https_url RALLYMATE_PRIVACY_URL
+  require_public_https_url RALLYMATE_TERMS_URL
+  require_public_https_url RALLYMATE_LINK_BASE_URL
+}
+
+validate_release_android() {
+  validate_release_common
+  key=$(env_value REVENUECAT_ANDROID_KEY)
+  case "$key" in
+    goog_*) ;;
+    test_*) die "REVENUECAT_ANDROID_KEY cannot use a Test Store key in release" ;;
+    *) die "REVENUECAT_ANDROID_KEY must be the Android public SDK key (goog_...)" ;;
+  esac
+}
+
+validate_release_ios() {
+  validate_release_common
+  key=$(env_value REVENUECAT_IOS_KEY)
+  case "$key" in
+    appl_*) ;;
+    test_*) die "REVENUECAT_IOS_KEY cannot use a Test Store key in release" ;;
+    *) die "REVENUECAT_IOS_KEY must be the iOS public SDK key (appl_...)" ;;
+  esac
+}
+
+command=${1:-doctor}
+[ "$#" -eq 0 ] || shift
+
+case "$command" in
+  doctor)
+    validate_config
+    ;;
+  run)
+    validate_config >/dev/null
+    cd "$APP_ROOT"
+    exec flutter run --dart-define-from-file="$CONFIG_FILE" "$@"
+    ;;
+  build-apk)
+    validate_config >/dev/null
+    if has_release_flag "$@"; then validate_release_android; fi
+    cd "$APP_ROOT"
+    exec flutter build apk --dart-define-from-file="$CONFIG_FILE" "$@"
+    ;;
+  build-appbundle)
+    validate_config >/dev/null
+    validate_release_android
+    cd "$APP_ROOT"
+    exec flutter build appbundle --dart-define-from-file="$CONFIG_FILE" "$@"
+    ;;
+  configure-ios)
+    validate_config >/dev/null
+    if has_release_flag "$@"; then validate_release_ios; fi
+    cd "$APP_ROOT"
+    exec flutter build ios --config-only --dart-define-from-file="$CONFIG_FILE" "$@"
+    ;;
+  build-ios)
+    validate_config >/dev/null
+    if has_release_flag "$@"; then validate_release_ios; fi
+    cd "$APP_ROOT"
+    exec flutter build ios --dart-define-from-file="$CONFIG_FILE" "$@"
+    ;;
+  build-ipa)
+    validate_config >/dev/null
+    validate_release_ios
+    cd "$APP_ROOT"
+    exec flutter build ipa --dart-define-from-file="$CONFIG_FILE" "$@"
+    ;;
+  *)
+    die "unknown command '$command' (doctor, run, build-apk, build-appbundle, configure-ios, build-ios, build-ipa)"
+    ;;
+esac

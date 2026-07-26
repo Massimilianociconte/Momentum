@@ -1,0 +1,45 @@
+---
+import Brand from '@/components/Brand.astro';
+import { footerGroups } from '@/content/site';
+
+const supportEmail = import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim();
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="site-footer__inner container">
+    <div class="site-footer__brand">
+      <Brand />
+      <p>
+        Il companion per il padel: segnapunti offline, smartwatch e storico
+        leggibile di ogni partita.
+      </p>
+      <p class="site-footer__claim">Made for the game.</p>
+      {
+        supportEmail && (
+          <a class="site-footer__mail" href={`mailto:${supportEmail}`}>
+            {supportEmail}
+          </a>
+        )
+      }
+    </div>
+
+    <div class="site-footer__columns">
+      {
+        footerGroups.map((group) => (
+          <nav aria-label={group.title}>
+            <p class="site-footer__title">{group.title}</p>
+            {group.links.map((link) => (
+              <a href={link.href}>{link.label}</a>
+            ))}
+          </nav>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="site-footer__base container">
+    <p>© {year} Padelandia. Tutti i diritti riservati.</p>
+    <p>App per il padel su iOS, Android, Apple Watch e Wear OS.</p>
+  </div>
+</footer>

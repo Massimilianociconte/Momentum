@@ -1,0 +1,27 @@
+---
+import { glossary } from '@/content/site';
+---
+
+<section class="glossary section" id="glossario" aria-labelledby="glossary-title">
+  <div class="glossary__inner container">
+    <header data-reveal>
+      <p class="section-label">Glossario</p>
+      <h2 id="glossary-title">Le parole del padel.</h2>
+      <p>
+        Definizioni brevi dei termini che compaiono più spesso a bordo campo e
+        nelle impostazioni del punteggio.
+      </p>
+    </header>
+
+    <dl class="glossary__list" data-reveal>
+      {
+        glossary.map((entry) => (
+          <div class="glossary__item">
+            <dt>{entry.term}</dt>
+            <dd>{entry.definition}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>

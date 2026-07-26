@@ -1,0 +1,135 @@
+---
+import SupportIcon from '@/components/SupportIcon.astro';
+
+const supportEmail = import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim();
+const supportReady = Boolean(supportEmail);
+---
+
+{
+  supportReady ? (
+    <form
+      class="request-form"
+      id="richiesta"
+      data-request-form
+      data-support-email={supportEmail}
+      aria-labelledby="request-title"
+    >
+      <div class="request-form__intro">
+        <SupportIcon name="spark" size={32} />
+        <div>
+          <h2 id="request-title">La prossima feature può partire da te.</h2>
+          <p>
+            Il sito non salva questi dati: al termine apriremo il tuo client
+            email con il messaggio già composto.
+          </p>
+        </div>
+      </div>
+
+      <div class="request-form__fields">
+        <label>
+          <span>Tipo di richiesta</span>
+          <select name="type">
+            <option value="Proposta feature">Proposta feature</option>
+            <option value="Problema tecnico">Problema tecnico</option>
+            <option value="Domanda sull'app">Domanda sull’app</option>
+            <option value="Compatibilità smartwatch">Compatibilità smartwatch</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Oggetto</span>
+          <input
+            name="subject"
+            type="text"
+            maxlength="100"
+            required
+            placeholder="Es. Aggiungere un riepilogo per coppia"
+          />
+        </label>
+
+        <label class="request-form__full">
+          <span>Raccontaci il contesto</span>
+          <textarea
+            name="message"
+            rows="6"
+            maxlength="1800"
+            required
+            placeholder="Che cosa stavi facendo? Quale risultato ti aspettavi?"
+          ></textarea>
+        </label>
+
+        <button class="button button--primary request-form__submit" type="submit">
+          Prepara l’email
+          <SupportIcon name="arrow" size={20} />
+        </button>
+      </div>
+      <p
+        class="request-form__feedback"
+        role="status"
+        aria-live="polite"
+        data-form-feedback
+      ></p>
+    </form>
+  ) : (
+    <section
+      class="request-form request-form--pending"
+      id="richiesta"
+      aria-labelledby="request-title"
+    >
+      <div class="request-form__intro">
+        <SupportIcon name="headset" size={32} />
+        <div>
+          <h2 id="request-title">Il canale privato sta arrivando.</h2>
+          <p>
+            Il recapito ufficiale per ticket e proposte verrà attivato prima
+            della pubblicazione. Nessun campo fittizio e nessun messaggio perso.
+          </p>
+        </div>
+      </div>
+      <div class="request-form__pending">
+        <p>
+          Nel frattempo puoi consultare le risposte tecniche, le regole e la
+          compatibilità dichiarata. La community pubblica è ancora in costruzione.
+        </p>
+        <div>
+          <a class="button button--primary" href="#problemi">
+            Consulta le FAQ
+            <SupportIcon name="arrow" size={20} />
+          </a>
+          <a class="button button--outline" href="/#funzioni">
+            Scopri le funzioni
+            <SupportIcon name="arrow" size={20} />
+          </a>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  const form = document.querySelector('[data-request-form]');
+
+  if (form instanceof HTMLFormElement) {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const data = new FormData(form);
+      const type = String(data.get('type') ?? 'Richiesta');
+      const subject = String(data.get('subject') ?? '').trim();
+      const message = String(data.get('message') ?? '').trim();
+      const email = form.dataset.supportEmail;
+      const feedback = form.querySelector('[data-form-feedback]');
+
+      if (!email || !subject || !message) return;
+
+      const mailSubject = `[Padelandia · ${type}] ${subject}`;
+      const body = `${message}\n\n---\nInviato dal centro supporto Padelandia`;
+      const href = `mailto:${email}?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(body)}`;
+
+      if (feedback instanceof HTMLElement) {
+        feedback.textContent = 'Apro il tuo client email…';
+      }
+      window.location.href = href;
+    });
+  }
+</script>

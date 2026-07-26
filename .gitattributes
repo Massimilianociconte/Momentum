@@ -1,0 +1,33 @@
+* text=auto
+
+*.sh text eol=lf
+*.rb text eol=lf
+*.swift text eol=lf
+*.kt text eol=lf
+*.kts text eol=lf
+*.dart text eol=lf
+*.ts text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.astro text eol=lf
+*.css text eol=lf
+*.sql text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.glb binary
+*.jar binary
+*.mp4 binary
+*.ipa binary
+*.mobileprovision binary

@@ -1,0 +1,75 @@
+<svg>
+  <rect id="background" x="0" y="0" width="100%" height="100%" />
+  <g id="court-motif">
+    <rect class="courtLine" x="24%" y="9%" width="52%" height="82%" />
+    <line class="courtLine" x1="50%" y1="9%" x2="50%" y2="91%" />
+    <line class="courtLine courtNet" x1="24%" y1="50%" x2="76%" y2="50%" />
+    <circle class="courtBall" cx="68%" cy="84%" r="1.2%" />
+  </g>
+  <text id="title" x="50%" y="7%">RALLYMATE</text>
+  <text id="point-score" class="pointScore" x="50%" y="17%">0 - 0</text>
+
+  <rect id="team-a" class="scoreButton teamA" x="4%" y="21%" width="92%" height="25%" />
+  <text id="team-a-label" class="teamLabel" x="50%" y="37%">NOI</text>
+
+  <text id="match-score" x="50%" y="52%">0 SET 0  ·  0 GAME 0</text>
+  <text id="point-situation" x="50%" y="57%"></text>
+  <rect id="sync-pill" x="25%" y="58.2%" width="50%" height="5%" />
+  <text id="sync-status" x="50%" y="61%">SALVATO SUL WATCH</text>
+
+  <rect id="team-b" class="scoreButton teamB" x="4%" y="65%" width="92%" height="26%" />
+  <text id="team-b-label" class="teamLabel" x="50%" y="81%">LORO</text>
+
+  <rect id="undo" class="footerButton" x="3%" y="93%" width="29%" height="7%" />
+  <text id="undo-label" class="footerLabel" x="17.5%" y="98%">UNDO</text>
+  <rect id="pause-resume" class="footerButton" x="35.5%" y="93%" width="29%" height="7%" />
+  <text id="pause-resume-label" class="footerLabel" x="50%" y="98%">PAUSA</text>
+  <rect id="finish" class="footerButton finishButton" x="68%" y="93%" width="29%" height="7%" />
+  <text id="finish-label" class="footerLabel" x="82.5%" y="98%">FINE</text>
+
+  <g id="start-panel">
+    <rect class="modalBg" x="4%" y="12%" width="92%" height="80%" />
+    <text class="modalTitle" x="50%" y="25%">NUOVA PARTITA</text>
+    <text class="modalHint" x="50%" y="35%">SCEGLI IL FORMATO</text>
+    <rect id="format-next" class="choiceButton" x="12%" y="38%" width="76%" height="12%" />
+    <text id="format-label" class="choiceLabel" x="50%" y="46%">VANTAGGI · 3 SET</text>
+    <rect id="recording-next" class="choiceButton" x="12%" y="52%" width="76%" height="12%" />
+    <text id="recording-label" class="choiceLabel" x="50%" y="60%">REGISTRA CON PADELANDIA</text>
+    <text class="modalHint" x="50%" y="67%">UN SOLO ALLENAMENTO ALLA VOLTA</text>
+    <rect id="start-match" class="primaryButton" x="18%" y="71%" width="64%" height="14%" />
+    <text class="primaryLabel" x="50%" y="80%">AVVIA</text>
+    <text class="modalHint" x="50%" y="89%">FUNZIONA ANCHE OFFLINE</text>
+  </g>
+
+  <g id="finish-confirm">
+    <rect class="modalBg" x="4%" y="12%" width="92%" height="80%" />
+    <text class="modalTitle" x="50%" y="26%">TERMINARE?</text>
+    <text id="finish-summary" class="modalScore" x="50%" y="43%">0 - 0</text>
+    <text class="modalHint" x="50%" y="53%">SALVATAGGIO LOCALE IMMEDIATO</text>
+    <rect id="confirm-finish" class="dangerButton" x="13%" y="61%" width="74%" height="14%" />
+    <text class="primaryLabel" x="50%" y="70%">TERMINA E SALVA</text>
+    <rect id="cancel-finish" class="choiceButton" x="25%" y="79%" width="50%" height="10%" />
+    <text class="choiceLabel" x="50%" y="86%">CONTINUA</text>
+  </g>
+
+  <g id="match-done">
+    <rect class="modalBg" x="4%" y="12%" width="92%" height="80%" />
+    <text class="modalTitle success" x="50%" y="26%">PARTITA SALVATA</text>
+    <text id="done-summary" class="modalScore" x="50%" y="44%">SET 0 - 0</text>
+    <text id="done-sync" class="modalHint" x="50%" y="54%">SYNC IN ATTESA</text>
+    <text id="done-health" class="modalHint" x="50%" y="62%">NESSUN DATO SALUTE</text>
+    <rect id="new-match" class="primaryButton" x="18%" y="68%" width="64%" height="15%" />
+    <text class="primaryLabel" x="50%" y="78%">NUOVA PARTITA</text>
+  </g>
+
+  <g id="subscription-notice">
+    <rect id="subscription-notice-bg" x="4%" y="12%" width="92%" height="80%" />
+    <text class="noticeTitle" x="50%" y="28%">RALLYMATE PLUS</text>
+    <text class="noticeBody" x="50%" y="42%">RICHIEDE UN PIANO PLUS ATTIVO</text>
+    <text class="noticeBody" x="50%" y="50%">DA 4,99 EUR / MESE</text>
+    <text class="noticeBody" x="50%" y="58%">NESSUNA PROVA AUTOMATICA</text>
+    <text class="noticeHint" x="50%" y="68%">GESTISCI IL PIANO NELL'APP MOBILE</text>
+    <rect id="subscription-notice-ok" x="24%" y="74%" width="52%" height="13%" />
+    <text id="subscription-notice-ok-label" x="50%" y="83%">HO CAPITO</text>
+  </g>
+</svg>

@@ -1,0 +1,209 @@
+#background {
+  fill: #07101f;
+}
+
+text {
+  fill: #f6f8fb;
+  font-family: System-Regular;
+  text-anchor: middle;
+  text-length: 32;
+}
+
+#title {
+  fill: #c8f135;
+  font-size: 20;
+  font-weight: bold;
+}
+
+.scoreButton {
+  rx: 14;
+  ry: 14;
+}
+
+.teamA {
+  fill: #233516;
+  stroke: #8fb72b;
+  stroke-width: 2;
+}
+
+.teamB {
+  fill: #102a43;
+  stroke: #5ab0ff;
+  stroke-width: 2;
+}
+
+.teamLabel {
+  fill: #dce6f2;
+  font-size: 20;
+  font-weight: bold;
+}
+
+.pointScore {
+  fill: #ffffff;
+  font-family: System-Bold;
+  font-size: 38;
+  text-length: 12;
+}
+
+#match-score {
+  fill: #ffffff;
+  font-size: 17;
+  font-weight: bold;
+  text-length: 28;
+}
+
+#point-situation {
+  fill: #c8f135;
+  font-family: System-Bold;
+  font-size: 13;
+  text-length: 30;
+}
+
+#sync-status {
+  fill: #7fdcff;
+  font-size: 14;
+  text-length: 28;
+}
+
+#sync-pill {
+  fill: #12263a;
+  rx: 8;
+  ry: 8;
+}
+
+.courtLine {
+  fill: none;
+  stroke: #173042;
+  stroke-width: 1;
+}
+
+.courtNet {
+  stroke: #24505c;
+}
+
+.courtBall {
+  fill: #50651d;
+}
+
+.footerButton {
+  fill: #172233;
+  rx: 8;
+  ry: 8;
+}
+
+.finishButton {
+  fill: #3b2028;
+}
+
+.footerLabel {
+  fill: #d8e0eb;
+  font-size: 11;
+  font-weight: bold;
+  text-length: 9;
+}
+
+.modalBg {
+  fill: #111d2c;
+  stroke: #2b3b50;
+  stroke-width: 2;
+  rx: 16;
+  ry: 16;
+}
+
+.modalTitle {
+  fill: #ffffff;
+  font-family: System-Bold;
+  font-size: 24;
+  text-length: 27;
+}
+
+.modalTitle.success {
+  fill: #c8f135;
+}
+
+.modalHint {
+  fill: #9fb0c5;
+  font-size: 13;
+  text-length: 34;
+}
+
+.modalScore {
+  fill: #ffffff;
+  font-family: System-Bold;
+  font-size: 35;
+  text-length: 15;
+}
+
+.choiceButton {
+  fill: #18283a;
+  stroke: #55708d;
+  stroke-width: 1;
+  rx: 10;
+  ry: 10;
+}
+
+.choiceLabel {
+  fill: #ffffff;
+  font-family: System-Bold;
+  font-size: 15;
+  text-length: 27;
+}
+
+.primaryButton {
+  fill: #c8f135;
+  rx: 12;
+  ry: 12;
+}
+
+.dangerButton {
+  fill: #d95757;
+  rx: 12;
+  ry: 12;
+}
+
+.primaryLabel {
+  fill: #07101f;
+  font-family: System-Bold;
+  font-size: 17;
+  text-length: 25;
+}
+
+#subscription-notice-bg {
+  fill: #111d2c;
+  stroke: #c8f135;
+  stroke-width: 2;
+  rx: 16;
+  ry: 16;
+}
+
+.noticeTitle {
+  fill: #c8f135;
+  font-family: System-Bold;
+  font-size: 24;
+  text-length: 24;
+}
+
+.noticeBody {
+  fill: #ffffff;
+  font-size: 15;
+  text-length: 34;
+}
+
+.noticeHint {
+  fill: #9fb0c5;
+  font-size: 12;
+  text-length: 38;
+}
+
+#subscription-notice-ok {
+  fill: #c8f135;
+  rx: 10;
+  ry: 10;
+}
+
+#subscription-notice-ok-label {
+  fill: #07101f;
+  font-family: System-Bold;
+  font-size: 16;
+  text-length: 16;
+}

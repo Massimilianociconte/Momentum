@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Padelandia</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Padelandia</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.rallymate.recap</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>rallymate</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.rallymate.garmin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>rallymate-garmin</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>gcm-ciq</string>
+	</array>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Padelandia usa Bluetooth solo quando colleghi volontariamente un Garmin o un sensore cardiaco compatibile per sincronizzare punteggio e battito durante la partita.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Padelandia usa Bluetooth solo quando colleghi volontariamente un Garmin o un sensore cardiaco compatibile per sincronizzare punteggio e battito durante la partita.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Padelandia legge da Apple Salute workout e dati fitness autorizzati (passi, calorie attive, esercizio, frequenza cardiaca, HRV e sonno) per riepiloghi sportivi e associazione alle partite. I campioni grezzi restano sul dispositivo; il backup di aggregati richiede una scelta separata.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>La fotocamera serve solo quando scegli di scattare la foto di un team o scansionare un invito QR.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>La libreria foto serve solo per scegliere e ritagliare l’immagine di un team.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Il microfono serve per i comandi vocali di punteggio ("punto noi", "punto loro").</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Il riconoscimento vocale converte i comandi in punti segnati. Nessun ascolto continuo.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

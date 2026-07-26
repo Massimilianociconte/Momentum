@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title>Invito Padelandia</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #051120; color: #fff; }
+    main { width: min(32rem, calc(100% - 2rem)); text-align: center; }
+    .mark { width: 4.5rem; height: 4.5rem; margin: auto; display: grid; place-items: center; border-radius: 50%; background: #c8f135; color: #051120; font-size: 2rem; }
+    h1 { margin: 1.25rem 0 .5rem; }
+    p { color: #b9c4d3; line-height: 1.5; }
+    a, button { display: block; width: 100%; box-sizing: border-box; margin-top: .75rem; padding: .9rem 1rem; border: 0; border-radius: .5rem; font: inherit; font-weight: 750; text-decoration: none; }
+    button { background: #c8f135; color: #051120; cursor: pointer; }
+    a { color: #42e8df; border: 1px solid #294052; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark" aria-hidden="true">R</div>
+    <h1>Invito Padelandia</h1>
+    <p>Apri l'app per vedere chi ti invita e decidere se accettare. Nessuna relazione viene creata automaticamente.</p>
+    <button id="open" type="button">Apri Padelandia</button>
+    <a href="YOUR_APP_STORE_URL">Scarica per iPhone</a>
+    <a href="YOUR_GOOGLE_PLAY_URL">Scarica per Android</a>
+  </main>
+  <script>
+    document.getElementById('open').addEventListener('click', function () {
+      var parts = location.pathname.split('/').filter(Boolean);
+      if (parts.length === 2 && parts[0] === 'invite') {
+        location.href = 'rallymate://invite/' + encodeURIComponent(parts[1]);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import FaqList from '@/components/FaqList.astro';
+import FeatureRequestForm from '@/components/FeatureRequestForm.astro';
+import Glossary from '@/components/Glossary.astro';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import SupportIcon from '@/components/SupportIcon.astro';
+import {
+  faqs,
+  glossary,
+  ruleSources,
+  rulesReviewedOn,
+} from '@/content/site';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE_LOCALE, siteOrigin } from '@/lib/seo';
+
+const origin = siteOrigin(Astro.site);
+const supportReady = Boolean(import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim());
+const trail = [{ name: 'Supporto', path: '/supporto/' }];
+
+const schema = [
+  {
+    '@type': 'FAQPage',
+    '@id': `${origin}/supporto/#faq`,
+    inLanguage: SITE_LOCALE,
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  },
+  {
+    '@type': 'DefinedTermSet',
+    '@id': `${origin}/supporto/#glossario`,
+    name: 'Glossario del padel',
+    description:
+      'Definizioni dei termini di punteggio e di gioco usati nel padel e nelle impostazioni di Padelandia.',
+    inLanguage: SITE_LOCALE,
+    hasDefinedTerm: glossary.map((entry) => ({
+      '@type': 'DefinedTerm',
+      name: entry.term,
+      description: entry.definition,
+      inDefinedTermSet: { '@id': `${origin}/supporto/#glossario` },
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Supporto"
+  seoTitle="Supporto Padelandia — FAQ padel, punteggio, offline e smartwatch"
+  description="Centro supporto Padelandia: risposte su punteggio, offline, account, Apple Watch, Wear OS, privacy e compatibilità."
+  path="/supporto/"
+  schema={schema}
+  breadcrumbs={trail}
+>
+  <SiteHeader />
+
+  <main id="contenuto" class="support-page">
+    <section class="support-hero">
+      <div class="support-hero__inner container">
+        <div>
+          <Breadcrumbs trail={trail} />
+          <h1>Risolvi. Riparti. Torna in campo.</h1>
+          <p>
+            {
+              supportReady
+                ? 'Cerca una risposta verificata oppure prepara una richiesta privata. Padelandia non pubblica ticket, dati personali o dettagli del tuo dispositivo.'
+                : 'Cerca una risposta verificata. Il canale privato per problemi e proposte verrà attivato con il recapito ufficiale prima della pubblicazione.'
+            }
+          </p>
+        </div>
+        <div class="support-hero__quick" aria-label="Accessi rapidi">
+          <a href="#problemi">
+            <SupportIcon name="book" size={26} />
+            Domande frequenti
+          </a>
+          <a href="#richiesta">
+            <SupportIcon name={supportReady ? 'bug' : 'headset'} size={26} />
+            {supportReady ? 'Segnala un problema' : 'Canale richieste in arrivo'}
+          </a>
+          <a href="#richiesta">
+            <SupportIcon name="spark" size={26} />
+            Proponi una feature
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="support-faq section" id="problemi" aria-labelledby="support-faq-title">
+      <div class="support-faq__inner container">
+        <header>
+          <h2 id="support-faq-title">Trova subito la risposta.</h2>
+          <p>
+            Le risposte distinguono ciò che funziona in locale dalle funzioni
+            che richiedono account, rete o servizi esterni.
+          </p>
+        </header>
+        <FaqList items={faqs} searchable />
+      </div>
+    </section>
+
+    <section class="support-rules section" id="regole" aria-labelledby="rules-title">
+      <div class="support-rules__inner container">
+        <div>
+          <p class="section-label">Pallino · Regole</p>
+          <h2 id="rules-title">Una regola chiara vale più di una discussione.</h2>
+        </div>
+        <div>
+          <p>
+            Le FAQ regole di Padelandia sono locali, indicano le fonti e usano
+            una soglia di confidenza. L’assistente generativo è una funzione
+            separata e connessa: non viene presentato come arbitro ufficiale.
+          </p>
+          <ul>
+            <li>Vantaggi, Star Point e golden point</li>
+            <li>Tie-break e super tie-break</li>
+            <li>Servizio, let e cambio campo</li>
+            <li>Punteggio, correzioni e undo</li>
+          </ul>
+
+          <aside class="rule-sources" aria-labelledby="rule-sources-title">
+            <div>
+              <p class="rule-sources__label" id="rule-sources-title">
+                Fonti primarie
+              </p>
+              <p>Ultima revisione editoriale: {rulesReviewedOn}.</p>
+            </div>
+            <ul>
+              {
+                ruleSources.map((source) => (
+                  <li>
+                    <a href={source.href} target="_blank" rel="noopener noreferrer">
+                      {source.label}
+                      <SupportIcon name="arrow" size={18} />
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+            <p class="rule-sources__note">
+              Le regole del torneo e le decisioni dell’arbitro prevalgono
+              sempre sulle risposte informative dell’app.
+            </p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <Glossary />
+
+    <section class="request-section section">
+      <div class="container">
+        <FeatureRequestForm />
+      </div>
+    </section>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>

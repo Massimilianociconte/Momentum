@@ -1,0 +1,60 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Local client configuration. These files may contain public SDK keys that
+# belong to a specific environment and must never be committed by accident.
+config/client.env
+config/client.*.env
+.env
+.env.*
+!.env.example
+
+# Firebase client descriptors are environment-specific build inputs. They do
+# not contain server secrets, but keeping them outside source control prevents
+# accidental project/flavor mixups.
+android/app/google-services.json
+android/app/src/*/google-services.json
+ios/Runner/GoogleService-Info.plist

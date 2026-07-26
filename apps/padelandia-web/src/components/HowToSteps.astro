@@ -1,0 +1,32 @@
+---
+import { howToSteps } from '@/content/site';
+---
+
+<section class="how-to section" id="segnare" aria-labelledby="how-to-title">
+  <div class="how-to__inner container">
+    <header class="how-to__head" data-reveal>
+      <p class="section-label">Guida rapida</p>
+      <h2 id="how-to-title">Come segnare una partita di padel.</h2>
+      <p>
+        Cinque passaggi dal primo servizio al riepilogo finale. Nessuno di
+        questi richiede una connessione attiva.
+      </p>
+    </header>
+
+    <ol class="how-to__list" data-reveal>
+      {
+        howToSteps.map((step, index) => (
+          <li class="how-to__step">
+            <span class="how-to__index" aria-hidden="true">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <div>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
