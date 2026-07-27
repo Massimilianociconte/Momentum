@@ -38,7 +38,7 @@ android {
         // Keep versionName in sync with the phone app (pubspec.yaml). Play
         // requires a versionCode distinct from the phone AAB: wear uses the
         // 1xxx range so both artifacts can live in the same release.
-        versionCode = 1001
+        versionCode = 1002
         versionName = "0.1.0"
     }
 

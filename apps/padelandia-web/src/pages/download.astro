@@ -16,21 +16,21 @@ const trail = [{ name: 'Download', path: '/download/' }];
  */
 const RELEASES = 'https://github.com/Massimilianociconte/Momentum-releases/releases';
 const downloads = {
-  version: '0.1.0 · preview 1',
+  version: '0.1.0 · preview 2',
   checksums: `${RELEASES}/latest/download/SHA256SUMS.txt`,
   phone: {
     url: `${RELEASES}/latest/download/momentum-phone-preview.apk`,
     file: 'momentum-phone-preview.apk',
     size: '115 MB',
     requires: 'Android 8.0 o successivo',
-    sha256: '3b4ec11352ba2c38518b4b24ae35bbfc38e3281272175d84fcaf0b8992e6e24c',
+    sha256: '9ec9a6cf4b16ee1c3452efe61fe4178a99daf19f7fd914746abaffe6c7ddf353',
   },
   wear: {
     url: `${RELEASES}/latest/download/momentum-wear-preview.apk`,
     file: 'momentum-wear-preview.apk',
     size: '3,3 MB',
     requires: 'Wear OS 3 o successivo',
-    sha256: '956849edf49248cc86ba53b817739fee81258f3fe8d6b3042dce89a440aa8068',
+    sha256: '5bc7cb4065c2b0a574792acba69603fa0a8a46b7a205034fa070930611d1a275',
   },
 } as const;
 
@@ -51,7 +51,7 @@ const schema = [
     name: 'Momentum',
     operatingSystem: 'Android 8.0+, Wear OS 3+',
     applicationCategory: 'SportsApplication',
-    softwareVersion: '0.1.0-preview.1',
+    softwareVersion: '0.1.0-preview.2',
     downloadUrl: downloads.phone.url,
     fileSize: downloads.phone.size.replace(',', '.'),
     releaseNotes: `${origin}/download/`,
