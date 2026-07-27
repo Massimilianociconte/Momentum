@@ -1,0 +1,34 @@
+// Deploy manuale o via GitHub Actions: npm run deploy
+// Secrets richiesti (mai nel repo): GITHUB_TOKEN, CHATGPT_ACTION_TOKEN,
+// ADMIN_PASSWORD, SESSION_SECRET
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "momentum-blog-publisher",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-27",
+
+  // UI del pannello admin: gli asset servono tutto tranne le rotte API.
+  "assets": {
+    "directory": "./admin",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/articles/*", "/health", "/blog/*"]
+  },
+
+  // Pannello raggiungibile da admin.playmomentum.it; l'URL workers.dev
+  // resta attivo perché è quello configurato nella Action del GPT.
+  "routes": [
+    { "pattern": "admin.playmomentum.it", "custom_domain": true }
+  ],
+
+  "vars": {
+    "GITHUB_OWNER": "Massimilianociconte",
+    "GITHUB_REPO": "Momentum",
+    "GITHUB_BRANCH": "main",
+    "BLOG_CONTENT_DIR": "apps/padelandia-web/src/content/blog",
+    "BLOG_IMAGES_DIR": "apps/padelandia-web/public/blog"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

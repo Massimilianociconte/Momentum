@@ -67,3 +67,7 @@ docs/qa/screenshots/2026-07-13/iphone-17-pro-edit-profile-refined.png
 !**/*.env.example
 **/client.env
 **/.config/rallymate/
+
+# Cloudflare Workers local secrets and state (never commit)
+**/.dev.vars
+**/.wrangler/

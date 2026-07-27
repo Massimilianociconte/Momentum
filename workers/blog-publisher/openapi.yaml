@@ -1,0 +1,109 @@
+openapi: 3.1.0
+
+info:
+  title: Momentum Blog Publisher
+  version: 1.0.0
+  description: >-
+    Crea bozze e pubblica articoli nel blog Astro di playmomentum.it.
+    Le bozze nascono sempre con draft: true; la pubblicazione richiede
+    una conferma esplicita dell'utente.
+
+servers:
+  - url: https://momentum-blog-publisher.nexify-api.workers.dev
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    ArticleDraft:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+        - description
+        - bodyMarkdown
+      properties:
+        title:
+          type: string
+          description: Titolo pubblico dell'articolo.
+        description:
+          type: string
+          description: Meta description e breve riassunto (max ~160 caratteri).
+        bodyMarkdown:
+          type: string
+          description: Corpo completo in Markdown, senza frontmatter e senza H1.
+        slug:
+          type: string
+          description: Slug opzionale in minuscolo; se assente deriva dal titolo.
+        author:
+          type: string
+          description: Firma dell'articolo; default "Momentum".
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        seoTitle:
+          type: string
+          description: Titolo lungo per <title> e social, se diverso dal titolo.
+        featuredImage:
+          type: string
+          description: URL o path dell'immagine di copertina.
+        featuredImageAlt:
+          type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  /articles/drafts:
+    post:
+      operationId: createArticleDraft
+      summary: "Crea una nuova bozza nel blog (draft: true)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticleDraft"
+      responses:
+        "201":
+          description: Bozza creata; restituisce slug, path e link al commit.
+        "400":
+          description: Dati non validi.
+        "409":
+          description: Slug già esistente.
+
+  /articles/publish:
+    post:
+      operationId: publishArticle
+      summary: "Pubblica una bozza esistente (draft -> false)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - slug
+                - confirmPublish
+              properties:
+                slug:
+                  type: string
+                confirmPublish:
+                  type: boolean
+                  description: Deve essere true solo dopo conferma esplicita dell'utente.
+      responses:
+        "200":
+          description: Articolo pubblicato.
+        "400":
+          description: Conferma mancante.
+        "404":
+          description: Articolo non trovato.
+        "409":
+          description: Articolo già pubblicato.

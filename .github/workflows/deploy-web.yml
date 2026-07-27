@@ -1,0 +1,104 @@
+name: Deploy Momentum web
+
+# Deploy continuo di sito e Worker editoriale: ogni push su main
+# (inclusi i commit creati da momentum-blog-publisher) ricostruisce
+# e pubblica solo ciò che è cambiato.
+#
+# Secrets richiesti nel repository GitHub:
+#   CLOUDFLARE_API_TOKEN  (token limitato a Workers Scripts:Edit)
+#   CLOUDFLARE_ACCOUNT_ID
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "apps/padelandia-web/**"
+      - "workers/blog-publisher/**"
+      - ".github/workflows/deploy-web.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      publisher: ${{ steps.filter.outputs.publisher }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/padelandia-web/**'
+              - '.github/workflows/deploy-web.yml'
+            publisher:
+              - 'workers/blog-publisher/**'
+              - '.github/workflows/deploy-web.yml'
+
+  deploy-site:
+    name: Build and deploy playmomentum-web
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/padelandia-web/package-lock.json
+
+      - name: Install, build and validate
+        working-directory: apps/padelandia-web
+        run: |
+          npm ci
+          npm test
+
+      - name: Deploy with Wrangler
+        working-directory: apps/padelandia-web
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy-blog-publisher:
+    name: Deploy momentum-blog-publisher
+    needs: changes
+    if: needs.changes.outputs.publisher == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: workers/blog-publisher/package-lock.json
+
+      - name: Install and typecheck
+        working-directory: workers/blog-publisher
+        run: |
+          npm ci
+          npm run check
+
+      - name: Deploy with Wrangler
+        working-directory: workers/blog-publisher
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

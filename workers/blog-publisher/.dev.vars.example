@@ -1,0 +1,9 @@
+# Copia questo file in `.dev.vars` (gitignored) per il test locale.
+# CHATGPT_ACTION_TOKEN: chiave usata dal GPT -> genera con `openssl rand -hex 32`
+# GITHUB_TOKEN: fine-grained PAT con permesso Contents: Read and write sul solo repo del sito
+CHATGPT_ACTION_TOKEN=token-locale-di-prova
+GITHUB_TOKEN=github_pat_xxxxxxxxx
+# Pannello admin: password di accesso e chiave di firma dei cookie di sessione
+# (genera SESSION_SECRET con `openssl rand -hex 32`)
+ADMIN_PASSWORD=password-locale-di-prova
+SESSION_SECRET=secret-locale-di-prova

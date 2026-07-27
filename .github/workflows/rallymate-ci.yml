@@ -6,6 +6,13 @@ on:
     branches:
       - main
       - master
+    # I commit di soli articoli o immagini (creati dal Worker
+    # momentum-blog-publisher o dal pannello admin) non devono far girare
+    # l'intera CI Flutter/wearable: il deploy del sito è gestito da
+    # deploy-web.yml.
+    paths-ignore:
+      - "apps/padelandia-web/src/content/blog/**"
+      - "apps/padelandia-web/public/blog/**"
 
 concurrency:
   group: rallymate-${{ github.workflow }}-${{ github.ref }}
@@ -89,6 +96,18 @@ jobs:
             tool/rallymate build-apk --debug
           (cd android && ./gradlew :app:lintDebug)
 
+      # Compile-only check: R8/shrinker and bundletool must stay green so the
+      # real store build (tool/rallymate build-appbundle) cannot rot. Uses
+      # placeholder config + debug signing; never a shippable artifact.
+      - name: Release bundle compile check (R8)
+        working-directory: apps/rallymate
+        env:
+          RALLYMATE_ALLOW_DEBUG_RELEASE_SIGNING: "true"
+        run: |
+          flutter build appbundle --release \
+            --dart-define=SUPABASE_URL=https://ci-placeholder.supabase.co \
+            --dart-define=SUPABASE_ANON_KEY=sb_publishable_ci_placeholder
+
   wearos:
     name: Wear OS
     runs-on: ubuntu-latest
@@ -104,6 +123,12 @@ jobs:
       - name: Gradle test and assemble
         working-directory: wear/wearos
         run: ./gradlew testDebugUnitTest assembleDebug
+
+      # Release build check: R8 + resource shrinking must compile. Unsigned
+      # (no keystore env in CI); store signing happens at release time.
+      - name: Release assemble check (R8)
+        working-directory: wear/wearos
+        run: ./gradlew assembleRelease
 
   fitbit:
     name: Fitbit OS 5 and OS 4
