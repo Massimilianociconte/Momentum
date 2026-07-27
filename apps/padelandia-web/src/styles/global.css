@@ -35,6 +35,10 @@
 }
 
 html {
+  /* Rete di sicurezza: su mobile `overflow-x: hidden` sul solo body non
+     impedisce il pan orizzontale causato da decorazioni assolute. `clip`
+     blocca lo scroll laterale senza creare un nuovo scroll container. */
+  overflow-x: clip;
   background: var(--bg);
   scroll-behavior: smooth;
   scroll-padding-top: 6rem;

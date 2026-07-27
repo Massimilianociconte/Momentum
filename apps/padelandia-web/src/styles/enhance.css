@@ -152,7 +152,10 @@ body.is-menu-open {
   top: -10%;
   left: -15%;
   width: 45rem;
-  max-width: 130%;
+
+  /* 115% = arriva esattamente al bordo destro dell'hero: oltre creava
+     overflow orizzontale (e leggero pan laterale) sui viewport mobile. */
+  max-width: 115%;
   aspect-ratio: 1;
   background: radial-gradient(circle, rgb(200 241 53 / 9%), transparent 62%);
   pointer-events: none;
