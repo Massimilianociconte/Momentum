@@ -371,24 +371,97 @@
 
   // ---------- Immagini ----------
 
+  // Limiti di compressione lato client: allineati alle best practice web
+  // (immagini non oltre ~1600px sul lato lungo, WebP con qualità ~0.82).
+  var IMAGE_MAX_DIMENSION = 1600;
+  var WEBP_QUALITY = 0.82;
+
   // Toast UI chiama questo hook quando si conferma il file picker (o si
   // trascina/incolla un'immagine). DEVE sempre concludersi chiamando
   // callback (per inserire) oppure segnalando un errore: se uscisse senza
   // fare nulla, il popup si chiuderebbe senza inserire e il pulsante OK
   // sembrerebbe «morto».
   function onImageUpload(blob, callback) {
+    var prepared = blob;
+
     ensureSlugForUpload()
       .then(function () {
-        return uploadImage(blob);
+        return compressImage(blob);
+      })
+      .then(function (file) {
+        prepared = file;
+        return uploadImage(file);
       })
       .then(function (path) {
-        callback(path, blob.name || 'immagine');
+        callback(path, prepared.name || 'immagine');
         toast('Immagine caricata \u2713');
         loadGallery();
       })
       .catch(function (error) {
         toast(error.message, true);
       });
+  }
+
+  // Converte l'immagine scelta in WebP e la ridimensiona lato client prima
+  // dell'upload. Se il browser non sa produrre WebP (o l'input non è un
+  // raster gestibile), ritorna l'originale senza bloccare il flusso.
+  function compressImage(blob) {
+    if (!blob || !/^image\/(png|jpe?g|webp)$/i.test(blob.type || '')) {
+      return Promise.resolve(blob);
+    }
+
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+
+        var scale = Math.min(
+          1,
+          IMAGE_MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight),
+        );
+        var width = Math.max(1, Math.round(img.naturalWidth * scale));
+        var height = Math.max(1, Math.round(img.naturalHeight * scale));
+
+        var canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          function (out) {
+            // Fallback: toBlob non supportato o WebP più pesante dell'originale.
+            if (!out || out.size >= blob.size) {
+              resolve(blob);
+              return;
+            }
+            var base = (blob.name || 'immagine').replace(/\.[^.]+$/, '');
+            var ext = out.type === 'image/webp' ? '.webp' : '.png';
+            resolve(toNamedFile(out, base + ext));
+          },
+          'image/webp',
+          WEBP_QUALITY,
+        );
+      };
+
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        resolve(blob);
+      };
+
+      img.src = url;
+    });
+  }
+
+  // Assegna un nome file al Blob prodotto dal canvas (che ne è privo).
+  function toNamedFile(blob, name) {
+    try {
+      return new File([blob], name, { type: blob.type });
+    } catch (error) {
+      blob.name = name;
+      return blob;
+    }
   }
 
   // Le immagini vengono committate in <BLOG_IMAGES_DIR>/<slug>/: serve
@@ -454,6 +527,15 @@
   }
 
   // ---------- Avvio ----------
+
+  // Registrazione del service worker: abilita l'installazione come PWA.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {
+        /* la PWA è un miglioramento progressivo: si ignora l'errore */
+      });
+    });
+  }
 
   api('/api/session')
     .then(function () { openList(); })

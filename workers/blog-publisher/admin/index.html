@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Momentum · Blog admin</title>
+
+  <!-- PWA installabile su Android/iOS/desktop -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0f1115" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Blog Admin" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/3.2.2/toastui-editor.min.css" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/3.2.2/theme/toastui-editor-dark.min.css" />
   <link rel="stylesheet" href="/styles.css" />
@@ -83,7 +93,7 @@
       </div>
 
       <div id="editor"></div>
-      <p class="hint">Incolla o trascina un'immagine nel testo per caricarla automaticamente.</p>
+      <p class="hint">Incolla, trascina o scegli un'immagine: viene compressa e convertita in WebP, poi caricata automaticamente.</p>
 
       <div class="editor-actions">
         <button class="btn btn--primary" id="btn-save" type="button">Salva</button>
