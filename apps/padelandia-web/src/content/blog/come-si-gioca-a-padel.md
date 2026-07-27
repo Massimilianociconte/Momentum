@@ -2,8 +2,8 @@
 title: "Come si gioca a padel: regole, punteggio e consigli per iniziare"
 description: "Come si gioca a padel? Regole, punteggio, servizio, uso delle pareti e consigli pratici per iniziare e giocare subito con sicurezza."
 pubDate: "2026-07-27"
-updatedDate: "2026-07-27T10:20:11.002Z"
-draft: true
+updatedDate: "2026-07-27T10:40:51.939Z"
+draft: false
 author: "Momentum"
 tags: ["padel","regole padel","punteggio padel","come giocare a padel","principianti"]
 category: "Guide al padel"
