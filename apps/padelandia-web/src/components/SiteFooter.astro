@@ -41,5 +41,21 @@ const year = new Date().getFullYear();
   <div class="site-footer__base container">
     <p>© {year} Momentum. Tutti i diritti riservati.</p>
     <p>App per il padel su iOS, Android, Apple Watch e Wear OS.</p>
+    {/*
+      Credito allo studio che ha realizzato il sito. Link dofollow
+      volontario: nessun `rel="nofollow"` né `sponsored`. `noopener` resta
+      perché apre una nuova scheda ed è una tutela di sicurezza, non una
+      direttiva per i crawler. L'URL punta direttamente a www, che è la
+      forma canonica: l'apex ci redirige, e linkarlo aggiungerebbe un salto.
+    */}
+    <a
+      class="site-footer__credit"
+      href="https://www.webnovis.com/"
+      target="_blank"
+      rel="noopener"
+      title="Sito realizzato da WebNovis"
+    >
+      Creato da <strong>WebNovis</strong>
+    </a>
   </div>
 </footer>
