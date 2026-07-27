@@ -12,6 +12,8 @@ const DEFAULT_SITE_URL = 'https://playmomentum.it';
 const PRIORITIES = [
   { match: /^\/$/, priority: 1, changefreq: 'weekly' },
   { match: /^\/supporto\/$/, priority: 0.8, changefreq: 'weekly' },
+  // Pagina pilastro: è il contenuto su cui il sito può competere davvero.
+  { match: /^\/regole-padel\/$/, priority: 0.9, changefreq: 'monthly' },
   { match: /^\/blog\/$/, priority: 0.7, changefreq: 'weekly' },
   { match: /^\/blog\/.+/, priority: 0.6, changefreq: 'monthly' },
   { match: /^\/download\/$/, priority: 0.8, changefreq: 'weekly' },

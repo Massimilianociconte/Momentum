@@ -1,5 +1,13 @@
 # Store listing (Italiano) — Momentum
 
+> **Integrazioni non promesse al lancio.** Garmin e Fitbit sono stati rimossi
+> dalla descrizione: il sito pubblico dichiara che non vengono promessi come
+> disponibili al lancio, e una scheda che promette una compatibilità che
+> l'utente non trova ricade nella policy Google Play sulla rappresentazione
+> ingannevole (Misrepresentation). Reinserirli solo quando la compatibilità è
+> verificata su hardware reale.
+
+
 Lingua predefinita: it-IT.
 
 Su Google Play titolo, descrizione breve e descrizione completa sono TUTTI
@@ -30,8 +38,8 @@ punteggio dal telefono o dallo smartwatch, conservi lo storico delle
 partite e leggi le tue statistiche con analisi chiare.
 
 🎾 SEGNAPUNTI PROFESSIONALE
-• Regole ufficiali del padel: golden point o vantaggi, tie-break, super
-  tie-break
+• Regole ufficiali del padel: Star Point FIP 2026, golden point o
+  vantaggi, tie-break e super tie-break
 • Cronologia completa dei match con undo illimitato
 • Funziona completamente offline, senza account
 • Pausa e ripresa della partita, anche cambiando dispositivo
@@ -40,7 +48,7 @@ partite e leggi le tue statistiche con analisi chiare.
 • App Wear OS standalone: segni il punteggio direttamente dal polso
 • Sessione allenamento con frequenza cardiaca durante il match
 • Sincronizzazione automatica del punteggio con il telefono
-• Supporto anche per Apple Watch, Garmin e Fitbit con l'app companion
+• Supporto anche per Apple Watch con l'app companion
 
 📊 STATISTICHE E ANALISI
 • Andamento delle prestazioni partita dopo partita

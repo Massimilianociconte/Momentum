@@ -25,9 +25,15 @@ Punti dal polso, anche offline
 ### Campo keyword (max 100 caratteri, virgole senza spazi)
 
 ```
-punteggio,contapunti,tabellone,tennis,racchetta,partita,match,watch,orologio,statistiche,sport
+punteggio,contapunti,tabellone,star point,tennis,racchetta,partita,match,orologio,statistiche
 ```
-(94 caratteri — nessuna parola duplicata da nome/sottotitolo; singolari:
+
+> «star point» sostituisce «sport» e «watch»: la SERP italiana su
+> «star point padel» è occupata solo da notizie e social, nessuna app la
+> presidia, e la domanda è generata dal cambio di regolamento FIP 2026 che
+> Momentum implementa davvero. «sport» è troppo generico (Apple aggiunge già
+> la categoria) e «watch» rischiava il richiamo al marchio Apple Watch.
+(93 caratteri — nessuna parola duplicata da nome/sottotitolo; singolari:
 Apple indicizza automaticamente i plurali)
 
 ### Testo promozionale (max 170 caratteri, modificabile senza review)
@@ -105,9 +111,9 @@ Score from your wrist, offline
 ### Keyword field (max 100 characters)
 
 ```
-scoreboard,tennis,racket,match,tracker,stats,watch,counter,sport,points,game,court
+scoreboard,tennis,racket,match,tracker,stats,star point,counter,points,game,court
 ```
-(82 characters — no duplicates from name/subtitle)
+(81 characters — no duplicates from name/subtitle)
 
 ### Promotional text (max 170 characters)
 
@@ -140,9 +146,9 @@ Puntúa desde tu reloj, offline
 ### Campo keyword (max 100 caratteri, virgole senza spazi)
 
 ```
-puntuacion,contador,tenis,pala,partido,match,smartwatch,estadisticas,deporte,pista,puntos
+puntuacion,contador,tenis,pala,partido,match,star point,estadisticas,pista,puntos
 ```
-(90 caratteri — senza accenti: Apple normalizza; nessun duplicato da
+(81 caratteri — senza accenti: Apple normalizza; nessun duplicato da
 nome/sottotitolo — "puntuacion"/"puntos" non collidono con "puntúa")
 
 ### Texto promocional (max 170 caratteri)

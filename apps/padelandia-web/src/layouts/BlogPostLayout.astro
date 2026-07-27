@@ -3,8 +3,8 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import SiteFooter from '@/components/SiteFooter.astro';
 import SiteHeader from '@/components/SiteHeader.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { blogPostingSchema, type Crumb } from '@/lib/seo';
-import type { CollectionEntry } from 'astro:content';
+import { SITE_LOCALE, absoluteUrl, blogPostingSchema, type Crumb } from '@/lib/seo';
+import { getCollection, type CollectionEntry } from 'astro:content';
 
 interface Props {
   post: CollectionEntry<'blog'>;
@@ -22,6 +22,7 @@ const {
   tags,
   featuredImage,
   featuredImageAlt,
+  faq,
 } = post.data;
 
 const path = `/blog/${post.id}/`;
@@ -34,15 +35,57 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' });
 const showUpdated =
   updatedDate && updatedDate.toDateString() !== pubDate.toDateString();
 
-const schema = blogPostingSchema(Astro.site, {
-  path,
-  headline: title,
-  description,
-  datePublished: pubDate.toISOString(),
-  dateModified: updatedDate?.toISOString(),
-  author,
-  image: featuredImage,
-});
+/**
+ * Articoli correlati: stessa categoria, poi stessi tag.
+ *
+ * Un articolo senza link in uscita è un vicolo cieco per il crawler e per
+ * chi legge. La selezione è deterministica (nessun random) così la struttura
+ * di link interni resta stabile tra una build e l'altra.
+ */
+const published = (await getCollection('blog', ({ data }) => data.draft !== true))
+  .filter((entry) => entry.id !== post.id);
+
+const score = (entry: CollectionEntry<'blog'>) => {
+  const sameCategory = category && entry.data.category === category ? 10 : 0;
+  const sharedTags = entry.data.tags.filter((tag) => tags.includes(tag)).length;
+  return sameCategory + sharedTags;
+};
+
+const related = published
+  .map((entry) => ({ entry, weight: score(entry) }))
+  .filter(({ weight }) => weight > 0)
+  .sort(
+    (a, b) =>
+      b.weight - a.weight ||
+      b.entry.data.pubDate.valueOf() - a.entry.data.pubDate.valueOf(),
+  )
+  .slice(0, 3)
+  .map(({ entry }) => entry);
+
+const schema: Record<string, unknown>[] = [
+  blogPostingSchema(Astro.site, {
+    path,
+    headline: title,
+    description,
+    datePublished: pubDate.toISOString(),
+    dateModified: updatedDate?.toISOString(),
+    author,
+    image: featuredImage,
+  }),
+];
+
+if (faq.length > 0) {
+  schema.push({
+    '@type': 'FAQPage',
+    '@id': `${absoluteUrl(path, Astro.site)}#faq`,
+    inLanguage: SITE_LOCALE,
+    mainEntity: faq.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  });
+}
 ---
 
 <BaseLayout
@@ -102,12 +145,46 @@ const schema = blogPostingSchema(Astro.site, {
       </div>
 
       {
+        faq.length > 0 && (
+          <section class="blog-post__faq" aria-labelledby="faq-articolo">
+            <h2 id="faq-articolo">Domande frequenti</h2>
+            <dl>
+              {faq.map((item) => (
+                <div>
+                  <dt>{item.question}</dt>
+                  <dd>{item.answer}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )
+      }
+
+      {
         tags.length > 0 && (
           <ul class="blog-post__tags" aria-label="Argomenti dell'articolo">
             {tags.map((tag) => (
               <li>{tag}</li>
             ))}
           </ul>
+        )
+      }
+
+      {
+        related.length > 0 && (
+          <nav class="blog-post__related" aria-labelledby="correlati">
+            <h2 id="correlati">Continua a leggere</h2>
+            <ul>
+              {related.map((entry) => (
+                <li>
+                  <a href={`/blog/${entry.id}/`}>
+                    <strong>{entry.data.title}</strong>
+                    <span>{entry.data.description}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
         )
       }
 
@@ -245,6 +322,75 @@ const schema = blogPostingSchema(Astro.site, {
     padding: 0.6rem 0.75rem;
     border: 1px solid var(--hairline);
     text-align: start;
+  }
+
+  .blog-post__faq {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .blog-post__faq h2,
+  .blog-post__related h2 {
+    font-size: clamp(1.4rem, 3.6vw, 1.9rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .blog-post__faq dl {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .blog-post__faq dt {
+    font-weight: 800;
+  }
+
+  .blog-post__faq dd {
+    margin-top: 0.4rem;
+    margin-inline-start: 0;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .blog-post__related {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .blog-post__related ul {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blog-post__related a {
+    display: grid;
+    gap: 0.3rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    text-decoration: none;
+    transition: border-color var(--fast) ease;
+  }
+
+  .blog-post__related a:hover {
+    border-color: var(--border-active);
+  }
+
+  .blog-post__related strong {
+    color: var(--text);
+  }
+
+  .blog-post__related span {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
   }
 
   .blog-post__tags {

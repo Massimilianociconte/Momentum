@@ -1,0 +1,197 @@
+---
+/**
+ * Hub regolamento: la pagina con il vantaggio competitivo più difendibile
+ * del sito.
+ *
+ * Il contenuto non è riscritto a mano: arriva dal dataset di rally_core,
+ * verificato riga per riga sulle FIP Rules of Padel (revisione 01.01.2026) e
+ * con numero di regola per ogni risposta. La SERP italiana su queste query è
+ * occupata da blog di brand e rivenditori che parafrasano il regolamento
+ * senza mai citare l'articolo: la citazione puntuale è ciò che rende questa
+ * pagina citabile da un motore generativo e difendibile nel tempo.
+ */
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import SupportIcon from '@/components/SupportIcon.astro';
+import rules from '@/content/generated/padel-rules.json';
+import { ruleSources, rulesReviewedOn } from '@/content/site';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE_LOCALE, siteOrigin, type Crumb } from '@/lib/seo';
+
+const origin = siteOrigin(Astro.site);
+const trail: Crumb[] = [{ name: 'Regole del padel', path: '/regole-padel/' }];
+
+const allItems = rules.sections.flatMap((section) => section.items);
+
+const description =
+  'Le regole del padel spiegate voce per voce sul regolamento FIP in vigore dal 1° gennaio 2026: punteggio, Star Point, servizio, pareti, cambio campo e tempi di gioco, con il numero di regola per ogni risposta.';
+
+const schema = [
+  {
+    '@type': 'Article',
+    '@id': `${origin}/regole-padel/#article`,
+    mainEntityOfPage: { '@id': `${origin}/regole-padel/#webpage` },
+    headline: 'Regole del padel 2026: il regolamento FIP voce per voce',
+    description,
+    inLanguage: SITE_LOCALE,
+    author: { '@id': `${origin}/#organization` },
+    publisher: { '@id': `${origin}/#organization` },
+    // `citation` dichiara la fonte primaria: è il segnale che distingue una
+    // pagina di regolamento da una parafrasi.
+    citation: ruleSources.map((source) => ({
+      '@type': 'CreativeWork',
+      name: source.label,
+      url: source.href,
+    })),
+    about: {
+      '@type': 'Thing',
+      name: 'Regolamento del padel',
+    },
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': `${origin}/regole-padel/#faq`,
+    inLanguage: SITE_LOCALE,
+    mainEntity: allItems.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        // La citazione entra nella risposta strutturata: un assistente che
+        // riusa questo blocco porta con sé il numero di regola.
+        text: `${item.answer} (Fonte: ${item.citation})`,
+      },
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Regole del padel"
+  seoTitle="Regole del padel 2026: regolamento FIP completo, voce per voce"
+  description={description}
+  path="/regole-padel/"
+  schema={schema}
+  breadcrumbs={trail}
+>
+  <SiteHeader />
+
+  <main id="contenuto" class="rules-page">
+    <section class="rules-hero">
+      <div class="container">
+        <Breadcrumbs trail={trail} />
+        <h1>Le regole del padel, con il numero di regola accanto.</h1>
+        <p class="rules-hero__lead">
+          {allItems.length} risposte sul regolamento del padel, allineate alle{' '}
+          <strong>FIP Rules of Padel in vigore dal 1° gennaio 2026</strong>.
+          Ogni voce dichiara la fonte e l’articolo esatto, così puoi
+          verificarla invece di fidarti.
+        </p>
+        <dl class="rules-hero__meta">
+          <div>
+            <dt>Edizione</dt>
+            <dd>{rules.edition}</dd>
+          </div>
+          <div>
+            <dt>Ultima verifica</dt>
+            <dd>{rulesReviewedOn}</dd>
+          </div>
+          <div>
+            <dt>Voci</dt>
+            <dd>{allItems.length} regole</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <nav class="rules-toc container" aria-label="Sezioni del regolamento">
+      <ul>
+        {
+          rules.sections.map((section) => (
+            <li>
+              <a href={`#${section.id}`}>
+                {section.title}
+                <span>{section.items.length}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    {
+      rules.sections.map((section) => (
+        <section class="rules-section section" id={section.id} aria-labelledby={`${section.id}-title`}>
+          <div class="container">
+            <header class="rules-section__head">
+              <h2 id={`${section.id}-title`}>{section.title}</h2>
+              <p>{section.summary}</p>
+            </header>
+
+            <div class="rules-list">
+              {section.items.map((item) => (
+                <article class="rule-card" id={item.id}>
+                  <h3>{item.question}</h3>
+                  <p class="rule-card__answer">{item.answer}</p>
+                  {item.example && (
+                    <p class="rule-card__example">
+                      <strong>Esempio:</strong> {item.example}
+                    </p>
+                  )}
+                  <p class="rule-card__source">
+                    <SupportIcon name="book" size={16} />
+                    {item.ruleRef ? `${item.source}, ${item.ruleRef}` : item.source}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))
+    }
+
+    <section class="rules-sources section" aria-labelledby="fonti-title">
+      <div class="container">
+        <h2 id="fonti-title">Fonti</h2>
+        <p>
+          Le risposte di questa pagina sono verificate sui documenti ufficiali.
+          Dove circuito e regolamento generale dicono cose diverse, la pagina
+          lo segnala invece di sceglierne uno.
+        </p>
+        <ul class="rules-sources__list">
+          {
+            ruleSources.map((source) => (
+              <li>
+                <a href={source.href} rel="noopener nofollow" target="_blank">
+                  {source.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+
+        <div class="rules-cta">
+          <h2>Il regolamento, applicato mentre giochi.</h2>
+          <p>
+            Momentum applica queste regole nel motore di punteggio: Star Point,
+            golden point, vantaggi, tie-break e cambio campo sui game dispari,
+            anche senza connessione.
+          </p>
+          <div class="rules-cta__actions">
+            <a class="button button--primary" href="/">
+              Scopri Momentum
+              <SupportIcon name="arrow" size={20} />
+            </a>
+            <a class="button button--outline" href="/blog/come-si-gioca-a-padel/">
+              Guida per iniziare
+              <SupportIcon name="arrow" size={20} />
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>

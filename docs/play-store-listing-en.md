@@ -1,5 +1,13 @@
 # Store listing (English) — Momentum
 
+> **Integrazioni non promesse al lancio.** Garmin e Fitbit sono stati rimossi
+> dalla descrizione: il sito pubblico dichiara che non vengono promessi come
+> disponibili al lancio, e una scheda che promette una compatibilità che
+> l'utente non trova ricade nella policy Google Play sulla rappresentazione
+> ingannevole (Misrepresentation). Reinserirli solo quando la compatibilità è
+> verificata su hardware reale.
+
+
 Locale: en-US (add en-GB with the same text).
 
 Google Play indexes title, short description and full description: keep
@@ -29,8 +37,8 @@ from your phone or smartwatch, keep your full match history and read
 your stats through clear, honest insights.
 
 🎾 PROFESSIONAL SCOREKEEPER
-• Official padel rules: golden point or advantages, tie-break, super
-  tie-break
+• Official padel rules: FIP 2026 Star Point, golden point or advantages,
+  tie-break and super tie-break
 • Full match history with unlimited undo
 • Works fully offline, no account required
 • Pause and resume the match, even across devices
@@ -39,7 +47,7 @@ your stats through clear, honest insights.
 • Standalone Wear OS app: score points right from your wrist
 • Workout session with heart rate during the match
 • Automatic sync with your phone
-• Apple Watch, Garmin and Fitbit also supported via the companion app
+• Apple Watch also supported via the companion app
 
 📊 STATS AND INSIGHTS
 • Performance trends over time

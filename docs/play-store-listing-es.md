@@ -1,5 +1,13 @@
 # Store listing (Español) — Momentum
 
+> **Integrazioni non promesse al lancio.** Garmin e Fitbit sono stati rimossi
+> dalla descrizione: il sito pubblico dichiara che non vengono promessi come
+> disponibili al lancio, e una scheda che promette una compatibilità che
+> l'utente non trova ricade nella policy Google Play sulla rappresentazione
+> ingannevole (Misrepresentation). Reinserirli solo quando la compatibilità è
+> verificata su hardware reale.
+
+
 Locale: es-ES (añadir es-419 para Latinoamérica con el mismo texto: los
 términos «pádel», «marcador» y «puntuación» son comunes a ambos mercados).
 
@@ -31,8 +39,8 @@ registra la puntuación desde el móvil o el smartwatch, guarda el historial
 de tus partidos y consulta tus estadísticas con análisis claros.
 
 🎾 MARCADOR PROFESIONAL
-• Reglas oficiales del pádel: punto de oro o ventajas, tie-break y super
-  tie-break
+• Reglas oficiales del pádel: Star Point FIP 2026, punto de oro o
+  ventajas, tie-break y super tie-break
 • Historial completo de partidos con deshacer ilimitado
 • Funciona totalmente offline, sin necesidad de cuenta
 • Pausa y reanuda el partido, incluso cambiando de dispositivo
@@ -42,7 +50,7 @@ de tus partidos y consulta tus estadísticas con análisis claros.
   muñeca
 • Sesión de entrenamiento con frecuencia cardíaca durante el partido
 • Sincronización automática de la puntuación con el móvil
-• Compatible también con Apple Watch, Garmin y Fitbit con la app companion
+• Compatible también con Apple Watch con la app companion
 
 📊 ESTADÍSTICAS Y ANÁLISIS
 • Evolución de tu rendimiento partido a partido

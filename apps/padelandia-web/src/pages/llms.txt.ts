@@ -41,6 +41,7 @@ ${capabilityMatrix
 ## Pagine
 
 - [Home](${origin}/): panoramica del prodotto, guida al punteggio, funzioni, offline-first e domande frequenti.
+- [Regole del padel](${origin}/regole-padel/): regolamento FIP in vigore dal 1° gennaio 2026, voce per voce, con numero di regola e fonte per ogni risposta.
 - [Supporto](${origin}/supporto/): FAQ complete su punteggio, offline, account, smartwatch e privacy, glossario del padel e modulo richieste.
 - [Download](${origin}/download/): APK preview firmati per telefono Android e Wear OS, con guida all'installazione, in attesa degli store ufficiali.
 - [Blog](${origin}/blog/): guide e approfondimenti su padel, punteggio, smartwatch e allenamento (feed: ${origin}/blog/rss.xml).

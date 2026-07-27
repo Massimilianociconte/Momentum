@@ -2,6 +2,7 @@ export const navItems = [
   { label: 'Come funziona', href: '/#come-funziona' },
   { label: 'Funzioni', href: '/#funzioni' },
   { label: 'Offline', href: '/#offline' },
+  { label: 'Regole', href: '/regole-padel/' },
   { label: 'FAQ', href: '/#faq' },
   { label: 'Blog', href: '/blog/' },
   { label: 'Download', href: '/download/' },
@@ -213,8 +214,8 @@ export const supportRows = [
   {
     icon: 'book',
     title: 'Regole senza dubbi',
-    text: 'FAQ rapide su punteggio, Star Point, servizio, tie-break e golden point.',
-    href: '/supporto/#regole',
+    text: 'Il regolamento FIP 2026 voce per voce, con il numero di regola accanto.',
+    href: '/regole-padel/',
   },
   {
     icon: 'headset',
@@ -344,6 +345,7 @@ export const footerGroups = [
       { label: 'Offline-first', href: '/#offline' },
       { label: 'Scarica la preview Android', href: '/download/' },
       { label: 'Blog', href: '/blog/' },
+      { label: 'Regole del padel 2026', href: '/regole-padel/' },
       { label: 'Domande frequenti', href: '/#faq' },
     ],
   },
@@ -351,7 +353,7 @@ export const footerGroups = [
     title: 'Supporto',
     links: [
       { label: 'Centro supporto', href: '/supporto/' },
-      { label: 'Regole del padel', href: '/supporto/#regole' },
+      { label: 'Regole del padel', href: '/regole-padel/' },
       { label: 'Glossario', href: '/supporto/#glossario' },
       { label: 'Proponi una feature', href: '/supporto/#richiesta' },
     ],

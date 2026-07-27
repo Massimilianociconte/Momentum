@@ -1920,3 +1920,232 @@ a.store-button:hover {
     transform: none;
   }
 }
+
+/* --- Hub regolamento -------------------------------------------------- */
+
+.rules-hero {
+  padding-block: clamp(4rem, 9vw, 8rem);
+  border-bottom: 1px solid var(--hairline);
+  background:
+    radial-gradient(circle at 82% 22%, rgb(200 241 53 / 13%), transparent 20rem),
+    #070c17;
+}
+
+.rules-hero h1 {
+  max-width: 18ch;
+  font-size: clamp(2.6rem, 8.4vw, 5.2rem);
+  font-weight: 800;
+  letter-spacing: -0.058em;
+  line-height: 0.98;
+}
+
+.rules-hero__lead {
+  max-width: 48rem;
+  margin-top: 1.5rem;
+  color: var(--muted);
+  font-size: clamp(1.02rem, 3.2vw, 1.24rem);
+}
+
+.rules-hero__lead strong {
+  color: var(--text);
+}
+
+.rules-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(1.5rem, 5vw, 3.5rem);
+  margin-top: 2.5rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.rules-hero__meta dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.rules-hero__meta dd {
+  margin-top: 0.35rem;
+  font-weight: 700;
+}
+
+/* Indice: resta appiccicato in alto così una pagina lunga
+   non costringe a tornare su per cambiare sezione. */
+.rules-toc {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding-block: 0.9rem;
+  background: rgb(12 18 32 / 88%);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.rules-toc ul {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rules-toc ul::-webkit-scrollbar {
+  display: none;
+}
+
+.rules-toc a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: color var(--fast) ease, border-color var(--fast) ease;
+}
+
+.rules-toc a span {
+  color: var(--lime);
+  font-variant-numeric: tabular-nums;
+}
+
+.rules-toc a:hover {
+  border-color: var(--border-active);
+  color: var(--text);
+}
+
+.rules-section__head {
+  max-width: 46rem;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.rules-section__head h2 {
+  font-size: clamp(1.75rem, 5vw, 2.7rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.rules-section__head p {
+  margin-top: 0.75rem;
+  color: var(--muted);
+}
+
+.rules-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+}
+
+.rule-card {
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  /* `scroll-margin-top` evita che l'indice sticky copra la voce
+     raggiunta da un link diretto (#walls_own_side). */
+  scroll-margin-top: 5rem;
+}
+
+.rule-card h3 {
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.rule-card__answer {
+  margin-top: 0.7rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.rule-card__example {
+  margin-top: 0.8rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-high);
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.rule-card__example strong {
+  color: var(--text);
+}
+
+.rule-card__source {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--hairline);
+  color: rgb(255 255 255 / 42%);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.rule-card__source svg {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--lime);
+}
+
+.rules-sources {
+  background: #0a101b;
+}
+
+.rules-sources h2 {
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.rules-sources p {
+  max-width: 46rem;
+  margin-top: 0.75rem;
+  color: var(--muted);
+}
+
+.rules-sources__list {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.rules-sources__list a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.rules-sources__list a:hover {
+  color: var(--text);
+}
+
+.rules-cta {
+  margin-top: clamp(3rem, 7vw, 5rem);
+  padding-top: clamp(2rem, 5vw, 3rem);
+  border-top: 1px solid var(--hairline);
+}
+
+.rules-cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.blog-index__pillar {
+  margin-top: 1rem;
+  color: var(--muted);
+}
+
+.blog-index__pillar a {
+  color: var(--lime);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}

@@ -32,6 +32,21 @@ const blog = defineCollection({
 
     seoTitle: z.string().optional(),
     canonicalUrl: z.string().url().optional(),
+
+    /**
+     * Domande e risposte pubblicate in coda all'articolo ed emesse come
+     * `FAQPage`. È la forma che i motori generativi estraggono meglio:
+     * domanda esplicita, risposta autoconclusiva, nessun contesto implicito.
+     * La risposta deve reggere anche estratta dalla pagina.
+     */
+    faq: z
+      .array(
+        z.object({
+          question: z.string().min(1),
+          answer: z.string().min(1),
+        }),
+      )
+      .default([]),
   }),
 });
 
