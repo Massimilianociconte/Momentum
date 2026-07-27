@@ -8,23 +8,23 @@
 begin;
 
 update public.knowledge_topics
-set title = replace(replace(title, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'),
+set title = replace(replace(title, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'),
     summary_short = replace(
-      replace(summary_short, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+      replace(summary_short, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
     ),
     summary_extended = replace(
-      replace(summary_extended, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+      replace(summary_extended, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
     ),
     watch_summary = replace(
-      replace(watch_summary, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+      replace(watch_summary, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
     ),
     -- answer_blocks is a JSON array: rebrand its textual representation and
     -- cast back, so nested block copy is covered too.
     answer_blocks = replace(
-      replace(answer_blocks::text, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+      replace(answer_blocks::text, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
     )::jsonb,
     search_text = replace(
-      replace(search_text, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+      replace(search_text, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
     ),
     updated_at = now()
 where title ilike '%RallyMate%'
@@ -41,9 +41,9 @@ where title ilike '%RallyMate%'
    or search_text ilike '%Rally Pro%';
 
 update public.knowledge_clusters
-set title = replace(replace(title, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'),
+set title = replace(replace(title, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'),
     description = replace(
-      replace(description, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+      replace(description, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
     )
 where title ilike '%RallyMate%'
    or description ilike '%RallyMate%'
@@ -56,13 +56,13 @@ begin
   if to_regclass('public.padel_rules') is not null then
     update public.padel_rules
     set user_question = replace(
-          replace(user_question, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+          replace(user_question, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
         ),
         short_answer = replace(
-          replace(short_answer, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+          replace(short_answer, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
         ),
         detailed_answer = replace(
-          replace(detailed_answer, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+          replace(detailed_answer, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
         )
     where user_question ilike '%RallyMate%'
        or short_answer ilike '%RallyMate%'
@@ -75,16 +75,16 @@ begin
   if to_regclass('public.rule_faqs_v2') is not null then
     update public.rule_faqs_v2
     set question = replace(
-          replace(question, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+          replace(question, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
         ),
         answer_short = replace(
-          replace(answer_short, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+          replace(answer_short, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
         ),
         answer_long = replace(
-          replace(answer_long, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+          replace(answer_long, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
         ),
         watch_answer = replace(
-          replace(watch_answer, 'RallyMate', 'Padelandia'), 'Rally Pro', 'Pallino'
+          replace(watch_answer, 'RallyMate', 'Momentum'), 'Rally Pro', 'Pallino'
         )
     where question ilike '%RallyMate%'
        or answer_short ilike '%RallyMate%'

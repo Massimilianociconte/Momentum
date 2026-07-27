@@ -37,15 +37,15 @@ richiesta entro 30 giorni (art. 17 GDPR).</p>
 </div>`
     : `<div class="card">
 <h2>Senza accesso all'app?</h2>
-<p>Consulta il <a href="https://padelandia.app/supporto/">centro supporto
-Padelandia</a> per il recapito ufficiale e la procedura aggiornata. Non inviare
+<p>Consulta il <a href="https://playmomentum.it/supporto/">centro supporto
+Momentum</a> per il recapito ufficiale e la procedura aggiornata. Non inviare
 password o codici di accesso.</p>
 </div>`;
 
 const PAGE = `<!doctype html>
 <html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Padelandia — Eliminazione account</title>
+<title>Momentum — Eliminazione account</title>
 <style>
 body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0C1220;
 color:#E8EEF6;max-width:640px;margin:0 auto;padding:32px 20px;line-height:1.6}
@@ -54,11 +54,11 @@ h1{font-size:26px} h2{font-size:18px;margin-top:28px}
 border-radius:16px;padding:20px;margin:16px 0}
 a{color:#C8F135} li{margin:6px 0} .muted{color:#93A1B5;font-size:14px}
 </style></head><body>
-<h1>🎾 Padelandia — Eliminazione account e dati</h1>
+<h1>🎾 Momentum — Eliminazione account e dati</h1>
 <div class="card">
 <h2>Come eliminare l'account dall'app (consigliato)</h2>
 <ol>
-<li>Apri Padelandia e vai su <b>Profilo → Gestisci account</b>.</li>
+<li>Apri Momentum e vai su <b>Profilo → Gestisci account</b>.</li>
 <li>Tocca <b>Elimina account</b> nella sezione Sessione.</li>
 <li>Conferma: l'account e i dati cloud vengono eliminati subito e in modo
 definitivo.</li>

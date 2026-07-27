@@ -48,7 +48,7 @@ Deno.test("recap omits store CTA until a real URL is configured", () => {
     team: "Team",
     chips: [],
   });
-  if (html.includes("Scarica Padelandia")) {
+  if (html.includes("Scarica Momentum")) {
     throw new Error("unconfigured store CTA emitted");
   }
 });

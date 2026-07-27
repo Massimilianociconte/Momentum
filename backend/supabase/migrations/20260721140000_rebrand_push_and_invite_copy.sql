@@ -1,4 +1,4 @@
--- Rebrand remaining user-facing push/invite copy to Padelandia.
+-- Rebrand remaining user-facing push/invite copy to Momentum.
 -- Deep link scheme rallymate:// intentionally unchanged.
 
 begin;
@@ -29,7 +29,7 @@ begin
       'TEAM_INVITE',
       'Invito nel team',
       coalesce(v_inviter_name, 'Un giocatore') || ' ti invita in '
-        || coalesce(nullif(v_team_name, ''), 'un team Padelandia') || '.',
+        || coalesce(nullif(v_team_name, ''), 'un team Momentum') || '.',
       'rallymate://social?focus=inbox&kind=team_invite&inviteId='
         || new.invite_id::text,
       'team_invite:' || new.invite_id || ':created',
@@ -89,7 +89,7 @@ begin
     )
     select distinct p.player_id,
       'COACH_PACKAGE_UPDATED', 'Percorso coach aggiornato',
-      'Sono disponibili novità nel tuo percorso Padelandia.',
+      'Sono disponibili novità nel tuo percorso Momentum.',
       'rallymate://coach/package/' || new.package_id,
       jsonb_build_object('packageId', new.package_id),
       'coach_package:' || new.package_id || ':' ||
@@ -173,7 +173,7 @@ begin
     insert into public.social_contact_requests(
       requester_id, receiver_id, message, status, accepted_at
     ) values (
-      v_inv.inviter_id, v_uid, 'Invito Padelandia confermato', 'ACCEPTED', now()
+      v_inv.inviter_id, v_uid, 'Invito Momentum confermato', 'ACCEPTED', now()
     )
     on conflict do nothing;
     -- Never promote BLOCKED / DECLINED into ACCEPTED via invite side-channel.
@@ -196,7 +196,7 @@ begin
     insert into public.match_proposals(
       creator_id, receiver_id, message, status, linked_match_id
     ) values (
-      v_inv.inviter_id, v_uid, 'Invito partita Padelandia confermato',
+      v_inv.inviter_id, v_uid, 'Invito partita Momentum confermato',
       'ACCEPTED', v_inv.match_id
     ) on conflict (creator_id, receiver_id, linked_match_id)
       where linked_match_id is not null
@@ -276,8 +276,8 @@ grant execute on function public.redeem_invite(text) to authenticated, service_r
 
 -- Refresh any still-queued outbox rows.
 update public.push_outbox
-set title = replace(title, 'RallyMate', 'Padelandia'),
-    body = replace(body, 'RallyMate', 'Padelandia')
+set title = replace(title, 'RallyMate', 'Momentum'),
+    body = replace(body, 'RallyMate', 'Momentum')
 where title ilike '%RallyMate%' or body ilike '%RallyMate%';
 
 commit;

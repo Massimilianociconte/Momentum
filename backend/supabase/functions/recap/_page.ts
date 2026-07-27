@@ -54,7 +54,7 @@ export function buildRecapPage(input: RecapPageInput): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Padelandia - ${escapeHtml(input.headline)}</title>
+<title>Momentum - ${escapeHtml(input.headline)}</title>
 <meta property="og:title" content="${escapeHtml(input.headline)}">
 <meta property="og:description" content="${
     escapeHtml([input.result, input.team].filter(Boolean).join(" - "))
@@ -77,7 +77,7 @@ ${
 </head>
 <body>
 <main class="card">
-  <div class="logo">Padelandia</div>
+  <div class="logo">Momentum</div>
   <div class="res">${escapeHtml(input.result)}</div>
   <div class="team">${escapeHtml(input.team)}</div>
   <div class="head">${escapeHtml(input.headline)}</div>
@@ -90,7 +90,7 @@ ${
     storeUrl
       ? `<a class="btn get" rel="noopener noreferrer" href="${
         escapeHtml(storeUrl)
-      }">Scarica Padelandia</a>`
+      }">Scarica Momentum</a>`
       : ""
   }
 </main>

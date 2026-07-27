@@ -139,11 +139,11 @@ async function oauthCallback(url: URL) {
     const tokens = await exchangeAuthorizationCode(code);
     const subject = await googleHealthIdentity(tokens.access_token);
     await saveGoogleTokens(admin, claimed.user_id, tokens, subject);
-    return callbackPage("Google Health è collegato a Padelandia", true);
+    return callbackPage("Google Health è collegato a Momentum", true);
   } catch (error) {
     console.error("google-health callback", safeError(error));
     return callbackPage(
-      "Collegamento non riuscito. Torna in Padelandia e riprova",
+      "Collegamento non riuscito. Torna in Momentum e riprova",
       false,
     );
   }
@@ -238,7 +238,7 @@ function callbackPage(message: string, success: boolean) {
 <title>${status}</title><style>body{margin:0;background:#07101f;color:#fff;font-family:-apple-system,system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{max-width:420px;padding:32px;text-align:center}.dot{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;margin:0 auto 22px;background:${color};color:#07101f;font-size:32px;font-weight:900}h1{font-size:24px}p{color:#aeb8c8;line-height:1.5}a{display:inline-block;margin-top:18px;padding:14px 20px;border-radius:8px;background:${color};color:#07101f;text-decoration:none;font-weight:800}</style></head>
 <body><main><div class="dot">${
     success ? "✓" : "!"
-  }</div><h1>${status}</h1><p>${escaped}</p><a href="${destination}">Torna a Padelandia</a></main>
+  }</div><h1>${status}</h1><p>${escaped}</p><a href="${destination}">Torna a Momentum</a></main>
 <script>setTimeout(function(){location.href=${
     JSON.stringify(destination)
   }},900)</script></body></html>`;

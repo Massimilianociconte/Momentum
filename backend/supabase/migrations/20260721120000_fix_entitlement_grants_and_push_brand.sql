@@ -1,5 +1,5 @@
 -- Fix: RLS-facing entitlement helpers must be executable by authenticated
--- (policies invoke them as the invoker). Rebrand push templates to Padelandia.
+-- (policies invoke them as the invoker). Rebrand push templates to Momentum.
 
 begin;
 
@@ -21,8 +21,8 @@ begin
     where table_schema = 'public' and table_name = 'push_outbox' and column_name = 'title'
   ) then
     update public.push_outbox
-    set title = replace(title, 'RallyMate', 'Padelandia'),
-        body = replace(body, 'RallyMate', 'Padelandia')
+    set title = replace(title, 'RallyMate', 'Momentum'),
+        body = replace(body, 'RallyMate', 'Momentum')
     where title ilike '%RallyMate%' or body ilike '%RallyMate%';
   end if;
 exception when others then

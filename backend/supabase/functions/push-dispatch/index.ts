@@ -1,6 +1,6 @@
-// Server-only APNs/FCM dispatcher for Padelandia's idempotent push outbox.
+// Server-only APNs/FCM dispatcher for Momentum's idempotent push outbox.
 // Deploy with --no-verify-jwt and protect every invocation with
-// X-Padelandia-Push-Secret. A Supabase scheduled function or Database Webhook
+// X-Momentum-Push-Secret. A Supabase scheduled function or Database Webhook
 // may call this endpoint; mobile clients never receive the dispatcher secret.
 
 import { createClient } from "npm:@supabase/supabase-js@2";

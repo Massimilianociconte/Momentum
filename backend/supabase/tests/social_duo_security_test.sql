@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(55);
+select plan(56);
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
@@ -243,6 +243,18 @@ select throws_ok(
   '42501',
   null,
   'client cannot bypass proposal validation with a direct insert'
+);
+
+select throws_ok(
+  $$select public.duo_create_session(
+      'match_star_point_blocked',
+      '{"formatSchemaVersion":2,"gameScoringMode":"STAR_POINT",
+        "goldenPoint":false}'::jsonb,
+      'TEAM_A'
+    )$$,
+  'P0001',
+  'client_update_required',
+  'Duo rejects Star Point before both phones can negotiate scoring v2'
 );
 
 insert into test_state(key, value)

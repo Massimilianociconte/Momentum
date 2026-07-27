@@ -74,7 +74,7 @@ begin
     insert into public.social_contact_requests(
       requester_id, receiver_id, message, status, accepted_at
     ) values (
-      v_inv.inviter_id, v_uid, 'Invito Padelandia confermato', 'ACCEPTED', now()
+      v_inv.inviter_id, v_uid, 'Invito Momentum confermato', 'ACCEPTED', now()
     )
     on conflict do nothing;
     update public.social_contact_requests
@@ -92,7 +92,7 @@ begin
     insert into public.match_proposals(
       creator_id, receiver_id, message, status, linked_match_id
     ) values (
-      v_inv.inviter_id, v_uid, 'Invito partita Padelandia confermato',
+      v_inv.inviter_id, v_uid, 'Invito partita Momentum confermato',
       'ACCEPTED', v_inv.match_id
     ) on conflict (creator_id, receiver_id, linked_match_id)
       where linked_match_id is not null

@@ -292,6 +292,17 @@ async function enqueueCommand(req: Request, body: Json) {
     ? sanitizeResumeMatch(body.payload)
     : sanitizeStartMatch(body.payload);
   if (!payload) return respond(req, { error: "invalid_command" }, 400);
+  const sanitizedFormat = payload.format;
+  if (
+    sanitizedFormat && typeof sanitizedFormat === "object" &&
+    !Array.isArray(sanitizedFormat) &&
+    (sanitizedFormat as Json).gameScoringMode === "STAR_POINT"
+  ) {
+    // Fitbit OS does not yet advertise or implement scoring protocol v2.
+    // Enforce the same fail-closed rule server-side so a direct request can
+    // never reinterpret Star Point as unlimited advantages.
+    return respond(req, { error: "unsupported_companion" }, 409);
+  }
   const now = new Date().toISOString();
   const { data: token, error: tokenError } = await admin
     .from("wearable_device_tokens")
@@ -541,6 +552,41 @@ function sanitizeStartMatch(value: unknown): Json | null {
   const gamesPerSet = Number(formatRow.gamesPerSet);
   const tieBreakPoints = Number(formatRow.tieBreakPoints);
   const superTieBreakPoints = Number(formatRow.superTieBreakPoints);
+  const requestedScoringMode = asString(
+    formatRow.gameScoringMode,
+    32,
+  ).toUpperCase();
+  const supportedScoringModes = new Set([
+    "ADVANTAGE",
+    "STAR_POINT",
+    "GOLDEN_POINT",
+  ]);
+  if (
+    requestedScoringMode &&
+    !supportedScoringModes.has(requestedScoringMode)
+  ) return null;
+  if (
+    formatRow.goldenPoint !== undefined &&
+    typeof formatRow.goldenPoint !== "boolean"
+  ) return null;
+  const gameScoringMode = requestedScoringMode ||
+    (formatRow.goldenPoint === false ? "ADVANTAGE" : "GOLDEN_POINT");
+  const hasFormatSchemaVersion = formatRow.formatSchemaVersion !== undefined &&
+    formatRow.formatSchemaVersion !== null;
+  const requestedFormatSchemaVersion = Number(formatRow.formatSchemaVersion);
+  if (
+    hasFormatSchemaVersion &&
+    (!Number.isSafeInteger(requestedFormatSchemaVersion) ||
+      requestedFormatSchemaVersion < 1 ||
+      requestedFormatSchemaVersion > 2)
+  ) return null;
+  const formatSchemaVersion = hasFormatSchemaVersion
+    ? requestedFormatSchemaVersion
+    : (requestedScoringMode ? 2 : 1);
+  if (
+    (formatSchemaVersion >= 2 && !requestedScoringMode) ||
+    (formatSchemaVersion < 2 && requestedScoringMode)
+  ) return null;
   if (
     !formatId || !Number.isSafeInteger(setsToWin) || setsToWin < 1 ||
     setsToWin > 3 || !Number.isSafeInteger(gamesPerSet) || gamesPerSet < 1 ||
@@ -557,10 +603,17 @@ function sanitizeStartMatch(value: unknown): Json | null {
     matchId,
     format: {
       id: formatId,
-      name: asString(formatRow.name, 80) || "Padelandia",
+      name: asString(formatRow.name, 80) || "Momentum",
+      // Every accepted legacy payload is upgraded at the trust boundary.
+      // Emitting v1 together with the v2 discriminator would be ambiguous
+      // for older readers, even when the selected mode is equivalent.
+      formatSchemaVersion: 2,
       setsToWin,
       gamesPerSet,
-      goldenPoint: formatRow.goldenPoint === true,
+      gameScoringMode,
+      // Legacy readers still consume this field. Star Point deliberately
+      // degrades to advantages instead of closing the game too early.
+      goldenPoint: gameScoringMode === "GOLDEN_POINT",
       tieBreakAtGamesAll: formatRow.tieBreakAtGamesAll !== false,
       tieBreakPoints,
       superTieBreakDecider: formatRow.superTieBreakDecider === true,

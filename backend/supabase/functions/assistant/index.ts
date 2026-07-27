@@ -35,7 +35,11 @@ const DEFAULT_DAILY_LIMIT = 20;
 const DEFAULT_LIVE_MATCH_LIMIT = 5;
 const SUPER_ADMIN_DAILY_LIMIT = 200;
 const CACHE_DAYS = 30;
-const CACHE_KEY_VERSION = "assistant-v16-training-team-context";
+const CACHE_KEY_VERSION = "assistant-v17-kb-versioned-cited-sources";
+// The cache key also carries a fingerprint of the knowledge base (below), so a
+// migration that corrects a rule invalidates every cached answer built on the
+// old text instead of serving it for up to CACHE_DAYS.
+const KB_FINGERPRINT_TTL_MS = 5 * 60 * 1000;
 const MAX_HISTORY_TURNS = 12;
 const MAX_QUESTION_CHARS = 700;
 const MAX_CONTEXT_CHARS = 2400;
@@ -76,6 +80,80 @@ type KnowledgeDoc = {
   certainty?: string;
   tags: string[];
 };
+
+let kbFingerprintCache: { value: string; expiresAt: number } | null = null;
+
+/**
+ * Version tag of the deployed knowledge base, memoized per isolate.
+ *
+ * Combines the latest `knowledge_versions` row with the rules FAQ edition and
+ * its last update, so any forward migration that re-seeds rules or topics
+ * produces a new cache namespace. Returns null when the fingerprint cannot be
+ * read: the caller then skips the cache rather than risk serving an answer
+ * built on superseded rules.
+ */
+async function knowledgeFingerprint(): Promise<string | null> {
+  const now = Date.now();
+  if (kbFingerprintCache && kbFingerprintCache.expiresAt > now) {
+    return kbFingerprintCache.value;
+  }
+  try {
+    const [versionRes, faqRes] = await Promise.all([
+      supabase
+        .from("knowledge_versions")
+        .select("version_id, effective_date")
+        .order("effective_date", { ascending: false })
+        .order("version_id", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("rules_faq")
+        .select("rules_version, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    if (versionRes.error || faqRes.error) {
+      console.error(
+        "kb_fingerprint_failed",
+        versionRes.error?.message ?? faqRes.error?.message,
+      );
+      return null;
+    }
+    const value = [
+      versionRes.data?.version_id ?? "no-kb-version",
+      faqRes.data?.rules_version ?? "no-rules-version",
+      faqRes.data?.updated_at ?? "no-rules-update",
+    ].join("~");
+    kbFingerprintCache = { value, expiresAt: now + KB_FINGERPRINT_TTL_MS };
+    return value;
+  } catch (error) {
+    console.error("kb_fingerprint_failed", errorMessage(error));
+    return null;
+  }
+}
+
+/** Ids the model actually cited, as instructed by rule 8 of the system prompt. */
+function citedDocs(answer: string, docs: KnowledgeDoc[]): KnowledgeDoc[] {
+  const byId = new Map(docs.map((doc) => [doc.id.toLowerCase(), doc]));
+  const used = new Map<string, KnowledgeDoc>();
+  for (const match of answer.matchAll(/\[([A-Za-z0-9_:.\-]+)\]/g)) {
+    const doc = byId.get(match[1].toLowerCase());
+    if (doc) used.set(doc.id, doc);
+  }
+  return [...used.values()];
+}
+
+function toSourceRefs(docs: KnowledgeDoc[]) {
+  return docs.map((d) => ({
+    id: d.id,
+    source: d.source,
+    url: d.url,
+    certainty: d.certainty,
+    kind: d.kind,
+    title: d.title,
+  }));
+}
 
 /** Defense-in-depth: drop high-risk health tokens from client-supplied context. */
 function scrubHealthLeakage(raw: string): string {
@@ -183,8 +261,9 @@ Deno.serve(async (req) => {
     ? profile.assistant_live_limit ?? 30
     : profile.assistant_live_limit ?? DEFAULT_LIVE_MATCH_LIMIT;
 
+  const kbVersion = await knowledgeFingerprint();
   const qHash = await sha256(
-    `${CACHE_KEY_VERSION}|${
+    `${CACHE_KEY_VERSION}|${kbVersion ?? "kb-unknown"}|${
       normalize(question)
     }|${mode}|${surface}|${access.cacheScope}`,
   );
@@ -220,7 +299,10 @@ Deno.serve(async (req) => {
   const queryId = claim.query_id as string;
   const usedToday = Number(claim.used_today ?? 0);
 
-  if (!matchContext && !clientContext && history.length === 0) {
+  // kbVersion === null: the knowledge base edition could not be read, so a
+  // cache hit cannot be proven current. Answer fresh instead of risking a
+  // superseded rule.
+  if (kbVersion && !matchContext && !clientContext && history.length === 0) {
     const since = new Date(Date.now() - CACHE_DAYS * 864e5).toISOString();
     const { data: hit } = await supabase
       .from("assistant_queries")
@@ -277,14 +359,6 @@ Deno.serve(async (req) => {
     surface,
   });
   const knowledgeBlock = formatKnowledge(retrieved);
-  const sources = retrieved.map((d) => ({
-    id: d.id,
-    source: d.source,
-    url: d.url,
-    certainty: d.certainty,
-    kind: d.kind,
-    title: d.title,
-  }));
 
   const system = buildSystemPrompt(
     mode,
@@ -326,6 +400,11 @@ Deno.serve(async (req) => {
     }
     return json({ error: "llm_unavailable" }, 502);
   }
+
+  // Only the documents the answer actually cites are reported as sources.
+  // Listing everything the retriever returned overstated the grounding: a
+  // document can be retrieved and never used.
+  const sources = toSourceRefs(citedDocs(answer, retrieved));
 
   try {
     await finalizeQuery(queryId, answer, sources, DEEPSEEK_MODEL, false, cost);
@@ -447,17 +526,17 @@ function buildSystemPrompt(
     TRAINING:
       "Modalita training: crea esercizi pratici, obiettivi settimanali e progressioni misurabili basandoti su catalogo training, log sessioni, RPE/ACWR e focus dal contesto locale. Non usare dati salute di sistema.",
     APP_HELP:
-      "Modalita app-help: spiega come usare Padelandia, account, backup, social, watch sync e piani Free/Plus/Pro senza inventare funzioni non presenti.",
+      "Modalita app-help: spiega come usare Momentum, account, backup, social, watch sync e piani Free/Plus/Pro senza inventare funzioni non presenti.",
   }[mode];
 
   const lengthRule = surface === "watch"
     ? "Rispondi per smartwatch: massimo 55 parole, frasi corte, una sola azione pratica."
     : "Rispondi per mobile: massimo 190 parole, leggibile e utile.";
 
-  return `Sei Pallino, assistente premium di Padelandia: competente, sportivo, ` +
+  return `Sei Pallino, assistente premium di Momentum: competente, sportivo, ` +
     `chiaro e sintetico. Rispondi sempre in italiano. ${lengthRule} ` +
     `con tono incoraggiante ma professionale. Quando nomini l'app usa sempre ` +
-    `"Padelandia" (non RallyMate); quando parli di te stesso usa "Pallino" ` +
+    `"Momentum" (non RallyMate); quando parli di te stesso usa "Pallino" ` +
     `(non Rally Pro).\n\n` +
     `Contesto account verificato:\n${verifiedAccountContext}\n\n` +
     `${modeBrief}\n\n` +
@@ -496,17 +575,28 @@ async function loadRulesFaq(): Promise<
 > {
   const { data } = await supabase
     .from("rules_faq")
-    .select("id, question, answer, source, keywords")
+    .select("id, question, answer, source, rule_ref, rules_version, keywords")
     .limit(120);
   const legacy = ((data ?? []) as {
     id: string;
     question: string;
     answer: string;
     source: string;
+    rule_ref?: string | null;
+    rules_version?: string | null;
     keywords?: string[];
   }[]).map((item) => ({
-    ...item,
     id: `legacy:${item.id}`,
+    question: item.question,
+    answer: item.answer,
+    // The rule reference and the rulebook edition travel with the source so
+    // the model can cite them instead of paraphrasing an unnumbered rule.
+    source: [
+      item.source,
+      item.rule_ref,
+      item.rules_version ? `ed. ${item.rules_version}` : null,
+    ].filter(Boolean).join(", "),
+    keywords: item.keywords,
   }));
 
   const { data: v2, error } = await supabase
@@ -643,7 +733,7 @@ async function loadKnowledgeDocs(): Promise<KnowledgeDoc[]> {
       kind: kindFromCluster(row.cluster_id),
       title: row.title,
       body,
-      source: sourceLabels.join("; ") || "Padelandia knowledge base",
+      source: sourceLabels.join("; ") || "Momentum knowledge base",
       url: firstSource?.url,
       certainty: row.certainty,
       tags: [
@@ -718,7 +808,7 @@ function retrieveKnowledge(args: {
       kind: "client",
       title: "Contesto locale sintetico dell'app",
       body: args.clientContext,
-      source: "Padelandia local-first context, inviato dal client autenticato",
+      source: "Momentum local-first context, inviato dal client autenticato",
       tags: [
         "contesto",
         "locale",
@@ -917,7 +1007,7 @@ const trainingKnowledge: KnowledgeDoc[] = [
     title: "Template training gratuiti",
     body:
       "Gli utenti Free hanno routine statiche locali: volée di controllo, uscita di parete, bandeja base, servizio + primo colpo, difesa e lob. Sono utili per iniziare senza AI e senza costi cloud.",
-    source: "Padelandia training seed locale",
+    source: "Momentum training seed locale",
     tags: ["training", "free", "volée", "parete", "bandeja", "servizio", "lob"],
   },
   {
@@ -926,7 +1016,7 @@ const trainingKnowledge: KnowledgeDoc[] = [
     title: "Programmi training premium",
     body:
       "Plus/Pro sbloccano programmi guidati: smash e recupero rete, transizione difesa-attacco, pressione su servizio/risposta, condizionamento padel-specifico, programmi per giocatore destra/sinistra/flex e clutch tie-break.",
-    source: "Padelandia training seed premium",
+    source: "Momentum training seed premium",
     tags: [
       "premium",
       "smash",
@@ -941,8 +1031,8 @@ const trainingKnowledge: KnowledgeDoc[] = [
     kind: "training",
     title: "Carico allenamento e RPE",
     body:
-      "Padelandia calcola il carico con session-RPE: minuti x sforzo percepito. ACWR 0.8-1.3 è zona ottimale; sopra 1.5 suggerisce recupero o sessione tecnica leggera. Non è un consiglio medico.",
-    source: "Padelandia TrainingLoad",
+      "Momentum calcola il carico con session-RPE: minuti x sforzo percepito. ACWR 0.8-1.3 è zona ottimale; sopra 1.5 suggerisce recupero o sessione tecnica leggera. Non è un consiglio medico.",
+    source: "Momentum TrainingLoad",
     tags: ["rpe", "acwr", "carico", "recupero", "minuti"],
   },
   {
@@ -951,7 +1041,7 @@ const trainingKnowledge: KnowledgeDoc[] = [
     title: "Focus dai dati partita",
     body:
       "Il focus settimanale deriva da tie-break, punti decisivi, clutch score, win rate e difficoltà avversaria. Senza dati, l'app consiglia base dati: volée, uscita parete e riscaldamento.",
-    source: "Padelandia recommendFocus",
+    source: "Momentum recommendFocus",
     tags: ["focus", "clutch", "win rate", "tie-break", "punti decisivi"],
   },
 ];
@@ -963,7 +1053,7 @@ const appKnowledge: KnowledgeDoc[] = [
     title: "Differenza Free Plus Pro Coach",
     body:
       "Free: scoring locale, storico, 3 team, analytics base, FAQ regole e training base. Plus: backup cloud, analytics avanzate, Wrapped illimitato, training premium e team illimitati. Pro: Pallino Assistant (AI), Health Connect/Apple Salute, difficoltà avanzata e classifiche. Coach: strumenti coach e marketplace.",
-    source: "Padelandia entitlements",
+    source: "Momentum entitlements",
     tags: ["free", "plus", "pro", "coach", "premium", "abbonamento"],
   },
   {
@@ -971,8 +1061,8 @@ const appKnowledge: KnowledgeDoc[] = [
     kind: "app",
     title: "Privacy e local-first",
     body:
-      "Padelandia funziona offline. Match, eventi, statistiche e dati salute restano sul dispositivo salvo funzioni cloud opzionali. Pallino Assistant (Pro/Coach) riceve domanda, cronologia, eventuale contesto partita e un contesto locale sintetico: profilo sportivo, stats partite, log/catalogo allenamento (RPE/minuti app), chimica team/coppie. Mai HealthKit/Health Connect/Google Health/Oura/WHOOP, email o ID account. L'utente puo disattivare training/team dal toggle privacy.",
-    source: "Padelandia privacy policy",
+      "Momentum funziona offline. Match, eventi, statistiche e dati salute restano sul dispositivo salvo funzioni cloud opzionali. Pallino Assistant (Pro/Coach) riceve domanda, cronologia, eventuale contesto partita e un contesto locale sintetico: profilo sportivo, stats partite, log/catalogo allenamento (RPE/minuti app), chimica team/coppie. Mai HealthKit/Health Connect/Google Health/Oura/WHOOP, email o ID account. L'utente puo disattivare training/team dal toggle privacy.",
+    source: "Momentum privacy policy",
     tags: [
       "privacy",
       "locale",
@@ -989,7 +1079,7 @@ const appKnowledge: KnowledgeDoc[] = [
     title: "Smartwatch e sync",
     body:
       "Lo smartwatch serve per segnare punti rapidamente. Mantiene il log eventi locale, sincronizza col telefono quando disponibile e usa eventi idempotenti per evitare duplicati.",
-    source: "Padelandia watch sync contract",
+    source: "Momentum watch sync contract",
     tags: ["watch", "smartwatch", "sync", "offline", "eventi"],
   },
   {
@@ -997,8 +1087,8 @@ const appKnowledge: KnowledgeDoc[] = [
     kind: "app",
     title: "Eliminazione account",
     body:
-      "L'account e i dati cloud si eliminano da Profilo/Gestisci account con doppia conferma e digitazione ELIMINA. Per chi ha disinstallato l'app, le stesse istruzioni devono essere pubblicate sul sito Padelandia indicato nella privacy policy.",
-    source: "Padelandia delete-account flow",
+      "L'account e i dati cloud si eliminano da Profilo/Gestisci account con doppia conferma e digitazione ELIMINA. Per chi ha disinstallato l'app, le stesse istruzioni devono essere pubblicate sul sito Momentum indicato nella privacy policy.",
+    source: "Momentum delete-account flow",
     tags: ["account", "eliminazione", "privacy", "cloud"],
   },
   {
@@ -1007,7 +1097,7 @@ const appKnowledge: KnowledgeDoc[] = [
     title: "Salute e fitness",
     body:
       "Le integrazioni salute sono Pro e facoltative. Health Connect e HealthKit leggono aggregati locali; Apple Watch può scrivere una sessione workout solo con consenso. La connessione separata Google Health Pro può conservare sul backend aggregati giornalieri autorizzati per massimo 30 giorni. I dati salute di sistema sono revocabili e non vengono MAI usati per pubblicità, social ranking o contesto AI di Pallino. Distingui: i log di allenamento in-app (RPE/minuti) non sono campioni HealthKit/HC.",
-    source: "Padelandia health integration",
+    source: "Momentum health integration",
     tags: ["health", "salute", "fitness", "health connect", "healthkit", "pro"],
   },
   {
@@ -1016,7 +1106,7 @@ const appKnowledge: KnowledgeDoc[] = [
     title: "Contesto team e training per Pallino",
     body:
       "Per piani Pro/Coach, Pallino puo usare riassunti locali di team (nomi, ruoli, winrate, clutch, tag avversari) e di allenamento (catalogo, sessioni, RPE, ACWR) per consigli su migliori coppie, scontri e routine. Non include note libere lunghe, immagini, email o dati salute di sistema. Se l'utente disattiva il toggle, questi blocchi non vengono inviati.",
-    source: "Padelandia assistant context policy",
+    source: "Momentum assistant context policy",
     tags: [
       "team",
       "coppie",
@@ -1036,7 +1126,7 @@ const safetyKnowledge: KnowledgeDoc[] = [
     title: "Nessun consiglio medico",
     body:
       "Allenamenti, RPE, carico e recupero sono indicazioni generali sportive. In presenza di dolore, patologie, infortunio o dubbi sanitari, consiglia di fermarsi e sentire un professionista.",
-    source: "Padelandia safety policy",
+    source: "Momentum safety policy",
     tags: ["sicurezza", "medico", "dolore", "infortunio", "recupero"],
   },
 ];

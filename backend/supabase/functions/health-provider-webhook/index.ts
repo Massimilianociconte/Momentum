@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (connectionError) return json({ error: "temporarily_unavailable" }, 503);
   // A valid but unrecognized/revoked WHOOP account is acknowledged to avoid
-  // leaking whether a provider account is linked to Padelandia.
+  // leaking whether a provider account is linked to Momentum.
   if (!connection || connection.status !== "CONNECTED") {
     return json({ accepted: true }, 202);
   }

@@ -16,8 +16,8 @@ import {
 const job: PushJobPayload = {
   notificationId: "11111111-1111-4111-8111-111111111111",
   kind: "FRIEND_REQUEST",
-  title: "Nuova richiesta Padelandia",
-  body: "Apri Padelandia per rispondere.",
+  title: "Nuova richiesta Momentum",
+  body: "Apri Momentum per rispondere.",
   deepLink: "rallymate://friends",
   payload: { requestId: "22222222-2222-4222-8222-222222222222" },
   dedupeKey: "friend_request:22222222-2222-4222-8222-222222222222:created",
