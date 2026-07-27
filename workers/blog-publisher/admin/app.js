@@ -256,15 +256,15 @@
 
   // ---------- Salvataggio ----------
 
-  $('btn-save').addEventListener('click', function () {
+  // Salva l'articolo corrente (crea se nuovo, aggiorna se esistente) e
+  // restituisce una Promise con la risposta. Riutilizzato dal pulsante
+  // Salva e dall'upload immagini (che ha bisogno di uno slug esistente).
+  function saveDraft() {
     var fields = collectFields();
 
     if (!fields.title || !fields.description) {
-      toast('Titolo e descrizione sono obbligatori.', true);
-      return;
+      return Promise.reject(new Error('Titolo e descrizione sono obbligatori.'));
     }
-
-    $('btn-save').disabled = true;
 
     var request;
     if (!state.slug) {
@@ -283,12 +283,20 @@
       });
     }
 
-    request
-      .then(function (body) {
-        state.slug = body.slug;
-        state.sha = body.sha;
-        updateEditorChrome();
-        showSaveStatus(body.commitUrl);
+    return request.then(function (body) {
+      state.slug = body.slug;
+      state.sha = body.sha;
+      updateEditorChrome();
+      showSaveStatus(body.commitUrl);
+      return body;
+    });
+  }
+
+  $('btn-save').addEventListener('click', function () {
+    $('btn-save').disabled = true;
+
+    saveDraft()
+      .then(function () {
         toast('Salvato \u2713');
       })
       .catch(function (error) {
@@ -363,32 +371,65 @@
 
   // ---------- Immagini ----------
 
+  // Toast UI chiama questo hook quando si conferma il file picker (o si
+  // trascina/incolla un'immagine). DEVE sempre concludersi chiamando
+  // callback (per inserire) oppure segnalando un errore: se uscisse senza
+  // fare nulla, il popup si chiuderebbe senza inserire e il pulsante OK
+  // sembrerebbe «morto».
   function onImageUpload(blob, callback) {
-    if (!state.slug) {
-      toast('Salva prima la bozza, poi potrai caricare immagini.', true);
-      return;
+    ensureSlugForUpload()
+      .then(function () {
+        return uploadImage(blob);
+      })
+      .then(function (path) {
+        callback(path, blob.name || 'immagine');
+        toast('Immagine caricata \u2713');
+        loadGallery();
+      })
+      .catch(function (error) {
+        toast(error.message, true);
+      });
+  }
+
+  // Le immagini vengono committate in <BLOG_IMAGES_DIR>/<slug>/: serve
+  // quindi uno slug. Se l'articolo è nuovo e non ancora salvato, salviamo
+  // prima la bozza (che genera lo slug) e poi carichiamo.
+  function ensureSlugForUpload() {
+    if (state.slug) {
+      return Promise.resolve();
     }
 
-    var reader = new FileReader();
-    reader.onload = function () {
-      api('/api/images', {
-        method: 'POST',
-        body: JSON.stringify({
-          slug: state.slug,
-          filename: blob.name || 'immagine.png',
-          contentBase64: String(reader.result),
-        }),
-      })
-        .then(function (body) {
-          callback(body.path, blob.name || 'immagine');
-          toast('Immagine caricata \u2713');
-          loadGallery();
+    var fields = collectFields();
+    if (!fields.title || !fields.description) {
+      return Promise.reject(new Error(
+        'Aggiungi titolo e descrizione: salvo la bozza prima di allegare l\u2019immagine.',
+      ));
+    }
+
+    toast('Salvo la bozza per allegare l\u2019immagine\u2026');
+    return saveDraft();
+  }
+
+  function uploadImage(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        api('/api/images', {
+          method: 'POST',
+          body: JSON.stringify({
+            slug: state.slug,
+            filename: blob.name || 'immagine.png',
+            contentBase64: String(reader.result),
+          }),
         })
-        .catch(function (error) {
-          toast(error.message, true);
-        });
-    };
-    reader.readAsDataURL(blob);
+          .then(function (body) { resolve(body.path); })
+          .catch(reject);
+      };
+      reader.onerror = function () {
+        reject(new Error('Lettura del file non riuscita.'));
+      };
+      reader.readAsDataURL(blob);
+    });
   }
 
   function loadGallery() {
