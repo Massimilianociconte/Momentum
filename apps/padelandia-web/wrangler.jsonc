@@ -1,0 +1,25 @@
+// Deploy del sito statico su Cloudflare Workers (piano Free, static assets).
+// Build: npm run build  ->  dist/   |   Deploy: npm run deploy
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "playmomentum-web",
+  "compatibility_date": "2026-07-27",
+
+  // Sito interamente statico: nessun Worker script, solo asset.
+  // 404-page: Workers serve dist/404.html generata da Astro.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  },
+
+  // Il dominio è già attivo come zona Cloudflare: i custom domain creano
+  // automaticamente i record DNS e il certificato TLS.
+  "routes": [
+    { "pattern": "playmomentum.it", "custom_domain": true },
+    { "pattern": "www.playmomentum.it", "custom_domain": true }
+  ],
+
+  // Evita contenuti duplicati sull'URL workers.dev: si serve solo dal dominio.
+  "workers_dev": false,
+  "preview_urls": false
+}

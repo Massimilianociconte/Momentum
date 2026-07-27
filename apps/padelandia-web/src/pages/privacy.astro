@@ -1,10 +1,19 @@
 ---
-import LegalDraft from '@/components/LegalDraft.astro';
+import LegalPage from '@/components/LegalPage.astro';
+// Fonte canonica nel monorepo: docs/legal/PRIVACY_POLICY.md (IT, prevalente).
+import * as policy from '../../../../docs/legal/PRIVACY_POLICY.md';
+
+const { Content } = policy;
+// La pagina resta noindex e mostra l'avviso finché il titolare non è
+// valorizzato nel documento canonico.
+const hasPlaceholders = policy.rawContent().includes('[DA COMPLETARE');
 ---
 
-<LegalDraft
+<LegalPage
   title="Informativa privacy"
-  description="Pagina privacy pre-pubblicazione di Padelandia."
+  description="Informativa sulla privacy di Momentum: dati trattati, finalità, basi giuridiche, conservazione e diritti degli interessati."
   path="/privacy/"
-  kind="privacy"
-/>
+  hasPlaceholders={hasPlaceholders}
+>
+  <Content />
+</LegalPage>

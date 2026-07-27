@@ -1,10 +1,17 @@
 ---
-import LegalDraft from '@/components/LegalDraft.astro';
+import LegalPage from '@/components/LegalPage.astro';
+// Fonte canonica nel monorepo: docs/legal/TERMS_OF_SERVICE.md.
+import * as terms from '../../../../docs/legal/TERMS_OF_SERVICE.md';
+
+const { Content } = terms;
+const hasPlaceholders = terms.rawContent().includes('[DA COMPLETARE');
 ---
 
-<LegalDraft
+<LegalPage
   title="Termini di servizio"
-  description="Pagina termini pre-pubblicazione di Padelandia."
+  description="Termini di servizio di Momentum: ambito del servizio, abbonamenti, responsabilità e regole d'uso."
   path="/termini/"
-  kind="terms"
-/>
+  hasPlaceholders={hasPlaceholders}
+>
+  <Content />
+</LegalPage>

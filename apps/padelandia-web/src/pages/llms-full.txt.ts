@@ -18,12 +18,12 @@ export const prerender = true;
 export const GET: APIRoute = ({ site }) => {
   const origin = siteOrigin(site);
 
-  const body = `# Padelandia — contenuto completo
+  const body = `# Momentum — contenuto completo
 
 Fonte: ${origin}/
 Lingua: italiano (it-IT)
 
-Padelandia è un'app per il padel su iOS e Android con companion nativi per Apple Watch e Wear OS. Unisce un segnapunti che funziona offline, uno storico delle partite e analisi descrittive del match.
+Momentum è un'app per il padel su iOS e Android con companion nativi per Apple Watch e Wear OS. Unisce un segnapunti che funziona offline, uno storico delle partite e analisi descrittive del match.
 
 ## Scheda sintetica
 
@@ -37,7 +37,7 @@ ${coreFeatures.map((feature) => `### ${feature.title}\n${feature.text}`).join('\
 
 ${productMoments.map((moment) => `### ${moment.number} — ${moment.title}\n${moment.text}`).join('\n\n')}
 
-## Come segnare una partita di padel con Padelandia
+## Come segnare una partita di padel con Momentum
 
 ${howToSteps.map((step, index) => `${index + 1}. **${step.title}** — ${step.text}`).join('\n')}
 
@@ -67,7 +67,7 @@ ${faqs.map((faq) => `### ${faq.question}\n_${faq.category}_\n\n${faq.answer}`).j
 - Il riconoscimento automatico dei colpi non è incluso.
 - L'assistente generativo sulle regole è una funzione connessa e separata dalle FAQ locali; non è un arbitro ufficiale.
 - Le funzioni cloud, social, Duo Mode e AI dipendono da build, configurazione, piano e rollout.
-- Lo Star Point FIP 2026 non è ancora dichiarato supportato dalla build attuale.
+- Lo Star Point FIP 2026 è supportato dal motore offline e dai companion aggiornati per Apple Watch e Wear OS; il telefono blocca l’invio a companion che non dichiarano il protocollo compatibile.
 - La compatibilità smartwatch dipende da sistema operativo, modello e configurazione.
 - Integrazioni con Garmin, Fitbit, Oura e WHOOP non sono promesse come disponibili al lancio.
 `;

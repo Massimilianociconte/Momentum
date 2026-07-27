@@ -10,7 +10,7 @@ interface Props {
 const { compact = false, priority = false } = Astro.props;
 ---
 
-<a class:list={['brand', { 'brand--compact': compact }]} href="/" aria-label="Padelandia, home">
+<a class:list={['brand', { 'brand--compact': compact }]} href="/" aria-label="Momentum, home">
   <Image
     class="brand__mark"
     src={appIcon}
@@ -21,5 +21,5 @@ const { compact = false, priority = false } = Astro.props;
     quality={82}
     loading={priority ? 'eager' : 'lazy'}
   />
-  <span class="brand__name">Padelandia</span>
+  <span class="brand__name">Momentum</span>
 </a>

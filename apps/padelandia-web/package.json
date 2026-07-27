@@ -10,7 +10,10 @@
     "validate:build": "node scripts/validate-build.mjs",
     "test": "npm run build && npm run validate:build",
     "preview": "astro preview",
-    "assets:optimize": "node scripts/optimize-public-assets.mjs"
+    "assets:optimize": "node scripts/optimize-public-assets.mjs",
+    "deploy": "npm run test && wrangler deploy && npm run indexnow",
+    "deploy:dry": "wrangler deploy --dry-run",
+    "indexnow": "node scripts/indexnow-ping.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "3.7.3",
@@ -20,7 +23,8 @@
   "devDependencies": {
     "@astrojs/check": "0.9.9",
     "sharp": "0.35.3",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "wrangler": "^4.27.0"
   },
   "engines": {
     "node": ">=22.12.0"

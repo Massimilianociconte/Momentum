@@ -455,6 +455,19 @@ a.store-button:hover {
   opacity: 0.66;
 }
 
+.hero__preview-note {
+  margin-top: 0.85rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.hero__preview-note a {
+  color: var(--lime);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .hero__text-link {
   width: fit-content;
   display: inline-flex;

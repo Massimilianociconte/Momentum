@@ -7,7 +7,9 @@ const storeReady = Boolean(
   officialStoreUrl(import.meta.env.PUBLIC_APP_STORE_URL, 'apple') ||
     officialStoreUrl(import.meta.env.PUBLIC_PLAY_STORE_URL, 'google'),
 );
-const storeLabel = storeReady ? 'Scarica l’app' : 'Store in arrivo';
+const storeLabel = storeReady ? 'Scarica l’app' : 'Scarica la preview';
+// Senza store attivi la CTA porta agli APK preview, non alla sezione store.
+const storeHref = storeReady ? '/#download' : '/download/';
 const here = Astro.url.pathname.replace(/\/+$/, '') || '/';
 
 /** `aria-current` solo per le voci che puntano a un’altra pagina. */
@@ -35,7 +37,7 @@ const isCurrentPage = (href: string) => {
       }
     </nav>
 
-    <a class="button button--primary header-cta" href="/#download">
+    <a class="button button--primary header-cta" href={storeHref}>
       {storeLabel}
       <svg viewBox="0 0 20 20" aria-hidden="true">
         <path d="M4 10h12M11 5l5 5-5 5"></path>
@@ -55,7 +57,7 @@ const isCurrentPage = (href: string) => {
             </a>
           ))
         }
-        <a class="button button--primary" href="/#download">{storeLabel}</a>
+        <a class="button button--primary" href={storeHref}>{storeLabel}</a>
       </nav>
     </details>
   </div>

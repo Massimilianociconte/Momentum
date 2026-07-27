@@ -1,0 +1,169 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE_LOCALE, siteOrigin, type Crumb } from '@/lib/seo';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog', ({ data }) => data.draft !== true))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const trail: Crumb[] = [{ name: 'Blog', path: '/blog/' }];
+const origin = siteOrigin(Astro.site);
+const dateFormatter = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' });
+
+const schema = {
+  '@type': 'Blog',
+  '@id': `${origin}/blog/#blog`,
+  name: 'Blog Momentum',
+  description:
+    'Guide e approfondimenti su padel, punteggio, smartwatch e allenamento.',
+  inLanguage: SITE_LOCALE,
+  publisher: { '@id': `${origin}/#organization` },
+  blogPost: posts.map((post) => ({
+    '@id': `${origin}/blog/${post.id}/#article`,
+  })),
+};
+---
+
+<BaseLayout
+  title="Blog"
+  seoTitle="Blog Momentum — guide su padel, punteggio e smartwatch"
+  description="Il blog di Momentum: guide su regole e punteggio del padel, smartwatch in campo, statistiche e allenamento."
+  path="/blog/"
+  schema={schema}
+  breadcrumbs={trail}
+>
+  <SiteHeader />
+
+  <main id="contenuto" class="blog-index">
+    <section class="blog-index__hero">
+      <div class="container">
+        <Breadcrumbs trail={trail} />
+        <h1>Il gioco, spiegato bene.</h1>
+        <p>
+          Guide su regole e punteggio del padel, smartwatch in campo,
+          statistiche e allenamento. Senza fuffa, con le fonti.
+        </p>
+      </div>
+    </section>
+
+    <section class="blog-index__list section" aria-label="Articoli del blog">
+      <div class="container">
+        {
+          posts.length === 0 ? (
+            <p class="blog-index__empty">
+              I primi articoli sono in preparazione. Nel frattempo trovi le
+              risposte più richieste nel{' '}
+              <a href="/supporto/">centro supporto</a>.
+            </p>
+          ) : (
+            <ul class="blog-index__grid">
+              {posts.map((post) => (
+                <li>
+                  <a class="blog-card" href={`/blog/${post.id}/`}>
+                    {post.data.category && (
+                      <p class="section-label">{post.data.category}</p>
+                    )}
+                    <h2>{post.data.title}</h2>
+                    <p>{post.data.description}</p>
+                    <time datetime={post.data.pubDate.toISOString().slice(0, 10)}>
+                      {dateFormatter.format(post.data.pubDate)}
+                    </time>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </div>
+    </section>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .blog-index__hero {
+    padding-block: clamp(6.5rem, 12vw, 9rem) 0;
+  }
+
+  .blog-index__hero h1 {
+    margin-block: 0.75rem 1rem;
+    font-size: clamp(2.25rem, 6vw, 3.5rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .blog-index__hero p {
+    max-width: 38rem;
+    color: var(--muted);
+    font-size: 1.125rem;
+    line-height: 1.6;
+  }
+
+  .blog-index__list {
+    padding-block: clamp(3rem, 6vw, 4.5rem) var(--section-y);
+  }
+
+  .blog-index__empty {
+    max-width: 38rem;
+    padding: 2rem;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .blog-index__empty a {
+    color: var(--lime);
+  }
+
+  .blog-index__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+    gap: 1.25rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blog-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    height: 100%;
+    padding: 1.75rem;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: inherit;
+    text-decoration: none;
+    transition:
+      border-color var(--fast) var(--ease-out),
+      transform var(--normal) var(--ease-out);
+  }
+
+  .blog-card:hover {
+    border-color: var(--border-active);
+    transform: translateY(-2px);
+  }
+
+  .blog-card h2 {
+    font-size: 1.3rem;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .blog-card p:not(.section-label) {
+    flex-grow: 1;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .blog-card time {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>

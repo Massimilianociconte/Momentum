@@ -1,0 +1,5 @@
+# Redirect gestiti da Cloudflare Workers static assets.
+# NOTA: qui sono ammessi solo URL relativi (a differenza di Pages), quindi
+# il 301 www -> apex NON può vivere in questo file: è gestito da una
+# Redirect Rule di zona (vedi docs/deployment/CLOUDFLARE_PLAYMOMENTUM_IT.md §4b).
+# I canonical di ogni pagina puntano già all'apex come ulteriore tutela SEO.

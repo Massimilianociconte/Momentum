@@ -38,7 +38,7 @@ const schema = [
     '@id': `${origin}/supporto/#glossario`,
     name: 'Glossario del padel',
     description:
-      'Definizioni dei termini di punteggio e di gioco usati nel padel e nelle impostazioni di Padelandia.',
+      'Definizioni dei termini di punteggio e di gioco usati nel padel e nelle impostazioni di Momentum.',
     inLanguage: SITE_LOCALE,
     hasDefinedTerm: glossary.map((entry) => ({
       '@type': 'DefinedTerm',
@@ -52,8 +52,8 @@ const schema = [
 
 <BaseLayout
   title="Supporto"
-  seoTitle="Supporto Padelandia — FAQ padel, punteggio, offline e smartwatch"
-  description="Centro supporto Padelandia: risposte su punteggio, offline, account, Apple Watch, Wear OS, privacy e compatibilità."
+  seoTitle="Supporto Momentum — FAQ padel, punteggio, offline e smartwatch"
+  description="Centro supporto Momentum: risposte su punteggio, offline, account, Apple Watch, Wear OS, privacy e compatibilità."
   path="/supporto/"
   schema={schema}
   breadcrumbs={trail}
@@ -69,7 +69,7 @@ const schema = [
           <p>
             {
               supportReady
-                ? 'Cerca una risposta verificata oppure prepara una richiesta privata. Padelandia non pubblica ticket, dati personali o dettagli del tuo dispositivo.'
+                ? 'Cerca una risposta verificata oppure prepara una richiesta privata. Momentum non pubblica ticket, dati personali o dettagli del tuo dispositivo.'
                 : 'Cerca una risposta verificata. Il canale privato per problemi e proposte verrà attivato con il recapito ufficiale prima della pubblicazione.'
             }
           </p>
@@ -112,7 +112,7 @@ const schema = [
         </div>
         <div>
           <p>
-            Le FAQ regole di Padelandia sono locali, indicano le fonti e usano
+            Le FAQ regole di Momentum sono locali, indicano le fonti e usano
             una soglia di confidenza. L’assistente generativo è una funzione
             separata e connessa: non viene presentato come arbitro ufficiale.
           </p>

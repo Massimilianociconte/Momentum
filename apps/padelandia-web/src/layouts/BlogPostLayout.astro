@@ -1,0 +1,280 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { blogPostingSchema, type Crumb } from '@/lib/seo';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+}
+
+const { post } = Astro.props;
+const {
+  title,
+  description,
+  seoTitle,
+  pubDate,
+  updatedDate,
+  author,
+  category,
+  tags,
+  featuredImage,
+  featuredImageAlt,
+} = post.data;
+
+const path = `/blog/${post.id}/`;
+const trail: Crumb[] = [
+  { name: 'Blog', path: '/blog/' },
+  { name: title, path },
+];
+
+const dateFormatter = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' });
+const showUpdated =
+  updatedDate && updatedDate.toDateString() !== pubDate.toDateString();
+
+const schema = blogPostingSchema(Astro.site, {
+  path,
+  headline: title,
+  description,
+  datePublished: pubDate.toISOString(),
+  dateModified: updatedDate?.toISOString(),
+  author,
+  image: featuredImage,
+});
+---
+
+<BaseLayout
+  title={title}
+  seoTitle={seoTitle}
+  description={description}
+  path={path}
+  ogType="article"
+  schema={schema}
+  breadcrumbs={trail}
+>
+  <SiteHeader />
+
+  <main id="contenuto" class="blog-post">
+    <article class="blog-post__inner container">
+      <header class="blog-post__header">
+        <Breadcrumbs trail={trail} />
+        {category && <p class="section-label">{category}</p>}
+        <h1>{title}</h1>
+        <p class="blog-post__description">{description}</p>
+        <p class="blog-post__meta">
+          <span>{author}</span>
+          <span aria-hidden="true">·</span>
+          <time datetime={pubDate.toISOString().slice(0, 10)}>
+            {dateFormatter.format(pubDate)}
+          </time>
+          {
+            showUpdated && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>
+                  Aggiornato il{' '}
+                  <time datetime={updatedDate.toISOString().slice(0, 10)}>
+                    {dateFormatter.format(updatedDate)}
+                  </time>
+                </span>
+              </>
+            )
+          }
+        </p>
+      </header>
+
+      {
+        featuredImage && (
+          <img
+            class="blog-post__cover"
+            src={featuredImage}
+            alt={featuredImageAlt ?? ''}
+            loading="eager"
+            decoding="async"
+          />
+        )
+      }
+
+      <div class="blog-post__body">
+        <slot />
+      </div>
+
+      {
+        tags.length > 0 && (
+          <ul class="blog-post__tags" aria-label="Argomenti dell'articolo">
+            {tags.map((tag) => (
+              <li>{tag}</li>
+            ))}
+          </ul>
+        )
+      }
+
+      <p class="blog-post__back">
+        <a href="/blog/">← Tutti gli articoli</a>
+      </p>
+    </article>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .blog-post {
+    padding-block: clamp(6.5rem, 12vw, 9rem) var(--section-y);
+  }
+
+  .blog-post__inner {
+    max-width: 46rem;
+  }
+
+  .blog-post__header h1 {
+    margin-block: 0.75rem 1rem;
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+  }
+
+  .blog-post__description {
+    color: var(--muted);
+    font-size: 1.125rem;
+    line-height: 1.6;
+  }
+
+  .blog-post__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .blog-post__cover {
+    width: 100%;
+    height: auto;
+    margin-top: 2rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--hairline);
+  }
+
+  .blog-post__body {
+    margin-top: 2.5rem;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+
+  .blog-post__body :global(h2) {
+    margin-block: 2.5rem 1rem;
+    font-size: clamp(1.4rem, 3vw, 1.75rem);
+    letter-spacing: -0.01em;
+  }
+
+  .blog-post__body :global(h3) {
+    margin-block: 2rem 0.75rem;
+    font-size: 1.2rem;
+  }
+
+  .blog-post__body :global(p) {
+    margin-block: 1rem;
+    color: var(--text);
+  }
+
+  .blog-post__body :global(ul),
+  .blog-post__body :global(ol) {
+    margin-block: 1rem;
+    padding-inline-start: 1.5rem;
+  }
+
+  .blog-post__body :global(li) {
+    margin-block: 0.4rem;
+  }
+
+  .blog-post__body :global(a) {
+    color: var(--lime);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .blog-post__body :global(blockquote) {
+    margin-block: 1.5rem;
+    padding: 1rem 1.25rem;
+    border-inline-start: 3px solid var(--lime);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--muted);
+  }
+
+  .blog-post__body :global(code) {
+    padding: 0.15em 0.4em;
+    border-radius: 0.4em;
+    background: var(--surface-high);
+    font-size: 0.9em;
+  }
+
+  .blog-post__body :global(pre) {
+    margin-block: 1.5rem;
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--hairline);
+    overflow-x: auto;
+  }
+
+  .blog-post__body :global(pre code) {
+    padding: 0;
+    background: none;
+  }
+
+  .blog-post__body :global(img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+  }
+
+  .blog-post__body :global(table) {
+    width: 100%;
+    margin-block: 1.5rem;
+    border-collapse: collapse;
+  }
+
+  .blog-post__body :global(th),
+  .blog-post__body :global(td) {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--hairline);
+    text-align: start;
+  }
+
+  .blog-post__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blog-post__tags li {
+    padding: 0.3rem 0.85rem;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .blog-post__back {
+    margin-top: 2.5rem;
+  }
+
+  .blog-post__back a {
+    color: var(--lime);
+    text-decoration: none;
+  }
+
+  .blog-post__back a:hover {
+    text-decoration: underline;
+  }
+</style>

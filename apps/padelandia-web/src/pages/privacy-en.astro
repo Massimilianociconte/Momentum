@@ -1,0 +1,19 @@
+---
+import LegalPage from '@/components/LegalPage.astro';
+// Canonical source in the monorepo: docs/legal/PRIVACY_POLICY_EN.md.
+// The Italian version prevails for users in Italy (stated in the text).
+import * as policy from '../../../../docs/legal/PRIVACY_POLICY_EN.md';
+
+const { Content } = policy;
+const hasPlaceholders = policy.rawContent().includes('[COMPLETE BEFORE');
+---
+
+<LegalPage
+  title="Privacy Policy"
+  description="Momentum privacy policy: data processed, purposes, legal bases, retention and data subject rights."
+  path="/privacy-en/"
+  hasPlaceholders={hasPlaceholders}
+  lang="en"
+>
+  <Content />
+</LegalPage>

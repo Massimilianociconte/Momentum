@@ -34,7 +34,11 @@ export const GET: APIRoute = ({ site }) => {
   const origin = siteOrigin(site);
 
   const body = [
-    `# Padelandia — ${origin}/`,
+    `# Momentum — ${origin}/`,
+    '',
+    '# Content-Signal (content-signal.org): il sito è una landing pubblica,',
+    '# vuole essere trovato sia in SERP sia nelle risposte degli assistenti AI.',
+    'Content-Signal: search=yes, ai-input=yes, ai-train=yes',
     '',
     'User-agent: *',
     'Allow: /',
@@ -42,6 +46,9 @@ export const GET: APIRoute = ({ site }) => {
     '# Ricerca generativa e assistenti AI: accesso consentito.',
     ...GENERATIVE_AGENTS.flatMap((agent) => [`User-agent: ${agent}`, 'Allow: /', '']),
     `Sitemap: ${origin}/sitemap-index.xml`,
+    '',
+    '# Indice sintetico per assistenti generativi (llmstxt.org).',
+    `# LLMs: ${origin}/llms.txt`,
     '',
   ].join('\n');
 

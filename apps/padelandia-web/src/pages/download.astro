@@ -1,0 +1,587 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import SupportIcon from '@/components/SupportIcon.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { SITE_LOCALE, siteOrigin } from '@/lib/seo';
+
+const origin = siteOrigin(Astro.site);
+const trail = [{ name: 'Download', path: '/download/' }];
+
+/**
+ * Build preview firmate, pubblicate su GitHub Releases (i file superano il
+ * limite di 25 MiB per asset di Workers, quindi non vivono nel sito).
+ * `releases/latest` punta sempre all'ultima versione caricata.
+ */
+const RELEASES = 'https://github.com/Massimilianociconte/Momentum-releases/releases';
+const downloads = {
+  version: '0.1.0 · preview 1',
+  checksums: `${RELEASES}/latest/download/SHA256SUMS.txt`,
+  phone: {
+    url: `${RELEASES}/latest/download/momentum-phone-preview.apk`,
+    file: 'momentum-phone-preview.apk',
+    size: '115 MB',
+    requires: 'Android 8.0 o successivo',
+    sha256: '3b4ec11352ba2c38518b4b24ae35bbfc38e3281272175d84fcaf0b8992e6e24c',
+  },
+  wear: {
+    url: `${RELEASES}/latest/download/momentum-wear-preview.apk`,
+    file: 'momentum-wear-preview.apk',
+    size: '3,3 MB',
+    requires: 'Wear OS 3 o successivo',
+    sha256: '956849edf49248cc86ba53b817739fee81258f3fe8d6b3042dce89a440aa8068',
+  },
+} as const;
+
+const phoneSteps = [
+  'Scarica momentum-phone-preview.apk dal browser del telefono.',
+  'Apri il file dalla notifica di download o dall’app File.',
+  'Autorizza il browser da Impostazioni → Installa app sconosciute.',
+  'Tocca Installa; se Play Protect avvisa, scegli “Installa comunque”.',
+  'Apri Momentum dalla schermata home.',
+];
+
+const schema = [
+  // Stesso @id del nodo app in home: i grafi si fondono e il downloadUrl
+  // arricchisce l'entità senza duplicarla per i motori e gli assistenti AI.
+  {
+    '@type': 'MobileApplication',
+    '@id': `${origin}/#app`,
+    name: 'Momentum',
+    operatingSystem: 'Android 8.0+, Wear OS 3+',
+    applicationCategory: 'SportsApplication',
+    softwareVersion: '0.1.0-preview.1',
+    downloadUrl: downloads.phone.url,
+    fileSize: downloads.phone.size.replace(',', '.'),
+    releaseNotes: `${origin}/download/`,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'EUR',
+      category: 'free',
+    },
+    publisher: { '@id': `${origin}/#organization` },
+  },
+  {
+    '@type': 'HowTo',
+    '@id': `${origin}/download/#howto`,
+    name: 'Come installare la preview Android di Momentum',
+    description:
+      'Installazione manuale dell’APK preview di Momentum su telefono Android, in attesa della pubblicazione sugli store ufficiali.',
+    inLanguage: SITE_LOCALE,
+    step: phoneSteps.map((text, index) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      text,
+      url: `${origin}/download/`,
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Download"
+  seoTitle="Scarica Momentum per Android — APK preview"
+  description="APK preview firmati di Momentum per telefono Android e smartwatch Wear OS, con guida all’installazione passo-passo, in attesa degli store ufficiali."
+  path="/download/"
+  schema={schema}
+  breadcrumbs={trail}
+>
+  <SiteHeader />
+  <main id="contenuto" class="download-page">
+    <article class="download-page__inner container">
+      <Breadcrumbs trail={trail} />
+      <p class="section-label">Anteprima pubblica</p>
+      <h1>Scarica Momentum per Android.</h1>
+      <p class="download-page__lead">
+        Queste sono build <strong>preview firmate</strong>, distribuite in
+        attesa della pubblicazione sugli store ufficiali. Puoi installarle
+        subito su telefono Android e smartwatch Wear OS; la versione iOS e
+        Apple Watch arriverà con l’App Store.
+      </p>
+
+      <aside class="download-note" role="note">
+        <h2>Cosa significa “preview”</h2>
+        <ul>
+          <li>L’installazione è manuale (APK) e gli aggiornamenti non sono automatici: torna qui per le nuove versioni.</li>
+          <li>Quando l’app sarà sugli store, ti consigliamo di reinstallarla da lì per ricevere gli aggiornamenti.</li>
+          <li>È una versione in sviluppo: qualche funzione può cambiare o non essere ancora attiva.</li>
+        </ul>
+      </aside>
+
+      <div class="download-cards">
+        <section class="download-card" aria-labelledby="dl-phone">
+          <SupportIcon name="check" size={22} />
+          <h2 id="dl-phone">Telefono Android</h2>
+          <p>App completa: segnapunti, storico, analisi e sincronizzazione con lo smartwatch.</p>
+          <dl>
+            <div><dt>Versione</dt><dd>{downloads.version}</dd></div>
+            <div><dt>Requisiti</dt><dd>{downloads.phone.requires}</dd></div>
+            <div><dt>Dimensione</dt><dd>{downloads.phone.size}</dd></div>
+          </dl>
+          <div class="download-card__actions">
+            <a class="button button--primary" href={downloads.phone.url} rel="noopener">
+              Scarica APK telefono
+            </a>
+            <button class="button button--outline" type="button" data-install-guide="phone">
+              Come si installa
+            </button>
+          </div>
+        </section>
+
+        <section class="download-card" aria-labelledby="dl-wear">
+          <SupportIcon name="check" size={22} />
+          <h2 id="dl-wear">Companion Wear OS</h2>
+          <p>Segna i punti dal polso: si sincronizza con l’app del telefono anche offline.</p>
+          <dl>
+            <div><dt>Versione</dt><dd>{downloads.version}</dd></div>
+            <div><dt>Requisiti</dt><dd>{downloads.wear.requires}</dd></div>
+            <div><dt>Dimensione</dt><dd>{downloads.wear.size}</dd></div>
+          </dl>
+          <div class="download-card__actions">
+            <a class="button button--primary" href={downloads.wear.url} rel="noopener">
+              Scarica APK watch
+            </a>
+            <button class="button button--outline" type="button" data-install-guide="wear">
+              Come si installa
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <section class="download-verify" aria-labelledby="dl-verify">
+        <h2 id="dl-verify">Verifica l’integrità (facoltativa)</h2>
+        <p>
+          Confronta l’impronta SHA-256 del file scaricato con quella pubblicata
+          in <a href={downloads.checksums} rel="noopener">SHA256SUMS.txt</a>:
+        </p>
+        <ul>
+          <li><code>{downloads.phone.sha256}</code> — {downloads.phone.file}</li>
+          <li><code>{downloads.wear.sha256}</code> — {downloads.wear.file}</li>
+        </ul>
+      </section>
+    </article>
+  </main>
+  <SiteFooter />
+
+  <dialog class="install-dialog" id="install-dialog" aria-labelledby="install-dialog-title">
+    <div class="install-dialog__frame">
+      <header>
+        <h2 id="install-dialog-title">Guida all’installazione</h2>
+        <button class="install-dialog__close" type="button" data-install-close aria-label="Chiudi la guida">
+          ✕
+        </button>
+      </header>
+
+      <div class="install-dialog__tabs" role="tablist" aria-label="Dispositivo da configurare">
+        <button type="button" role="tab" id="tab-phone" aria-controls="panel-phone" aria-selected="true" data-install-tab="phone">
+          📱 Telefono
+        </button>
+        <button type="button" role="tab" id="tab-wear" aria-controls="panel-wear" aria-selected="false" data-install-tab="wear">
+          ⌚ Smartwatch
+        </button>
+      </div>
+
+      <section id="panel-phone" role="tabpanel" aria-labelledby="tab-phone" data-install-panel="phone">
+        <p class="install-dialog__intro">
+          Android blocca per sicurezza le app che non arrivano dallo store: va
+          autorizzata una sola volta l’origine del download. Servono circa due
+          minuti.
+        </p>
+        <ol class="install-steps">
+          <li>
+            <span>1</span>
+            <p><strong>Scarica l’APK dal telefono.</strong> Tocca “Scarica APK telefono” con il browser del telefono (Chrome, Samsung Internet, Firefox…).</p>
+          </li>
+          <li>
+            <span>2</span>
+            <p><strong>Apri il file scaricato.</strong> Dalla notifica di download oppure da <em>File → Download</em>.</p>
+          </li>
+          <li>
+            <span>3</span>
+            <p><strong>Autorizza l’origine.</strong> Alla prima apertura Android propone <em>Impostazioni → Installa app sconosciute</em>: attiva “Consenti da questa fonte” per il browser usato. Sui Samsung la voce può chiamarsi <em>Installa app sconosciute → Consenti da questa fonte</em>.</p>
+          </li>
+          <li>
+            <span>4</span>
+            <p><strong>Installa.</strong> Torna alla schermata dell’APK e tocca <em>Installa</em>. Se Google Play Protect mostra “app non verificata”, scegli <em>Maggiori dettagli → Installa comunque</em>: succede perché la build non è ancora pubblicata sul Play Store, la firma è la nostra.</p>
+          </li>
+          <li>
+            <span>5</span>
+            <p><strong>Apri Momentum.</strong> La trovi nella schermata home: puoi iniziare a segnare punti anche senza account.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section id="panel-wear" role="tabpanel" aria-labelledby="tab-wear" data-install-panel="wear" hidden>
+        <p class="install-dialog__intro">
+          Gli smartwatch Wear OS non hanno un browser per scaricare APK: la
+          preview si installa dal computer con <strong>adb</strong> in Wi-Fi
+          (procedura standard degli sviluppatori, reversibile). Prima installa
+          l’app sul telefono.
+        </p>
+        <ol class="install-steps">
+          <li>
+            <span>1</span>
+            <p><strong>Attiva le opzioni sviluppatore sull’orologio.</strong> Tocca 7 volte il numero build:</p>
+            <ul class="install-devices">
+              <li><strong>Samsung Galaxy Watch 4/5/6/7/Ultra</strong> — Impostazioni → Info orologio → Informazioni software → Versione software.</li>
+              <li><strong>Google Pixel Watch 1/2/3</strong> — Impostazioni → Sistema → Informazioni → Versioni → Numero build.</li>
+              <li><strong>TicWatch, OnePlus Watch e altri Wear OS 3+</strong> — Impostazioni → Sistema → Informazioni → Numero build.</li>
+            </ul>
+          </li>
+          <li>
+            <span>2</span>
+            <p><strong>Attiva il debug wireless.</strong> <em>Impostazioni → Opzioni sviluppatore → Debug ADB</em> e <em>Debug wireless</em>. Orologio e computer devono essere sulla stessa rete Wi-Fi.</p>
+          </li>
+          <li>
+            <span>3</span>
+            <p><strong>Prepara il computer.</strong> Scarica gli <a href="https://developer.android.com/tools/releases/platform-tools" rel="noopener">Android platform-tools</a> (gratuiti, contengono <code>adb</code>) e scompattali. Scarica anche l’APK watch da questa pagina.</p>
+          </li>
+          <li>
+            <span>4</span>
+            <p><strong>Accoppia orologio e computer.</strong> Sull’orologio: <em>Debug wireless → Accoppia nuovo dispositivo</em> (mostra IP, porta e codice). Sul computer:</p>
+            <pre><code>adb pair IP:PORTA CODICE</code></pre>
+          </li>
+          <li>
+            <span>5</span>
+            <p><strong>Collega e installa.</strong> Usa IP e porta della schermata principale “Debug wireless” (diversa da quella di accoppiamento):</p>
+            <pre><code>adb connect IP:PORTA
+adb install momentum-wear-preview.apk</code></pre>
+          </li>
+          <li>
+            <span>6</span>
+            <p><strong>Fine.</strong> Momentum appare nella lista app dell’orologio e si collega all’app del telefono. Puoi disattivare il debug wireless.</p>
+          </li>
+        </ol>
+      </section>
+    </div>
+  </dialog>
+</BaseLayout>
+
+<script>
+  const dialog = document.getElementById('install-dialog') as HTMLDialogElement | null;
+
+  if (dialog) {
+    const tabs = [...dialog.querySelectorAll<HTMLButtonElement>('[data-install-tab]')];
+    const panels = [...dialog.querySelectorAll<HTMLElement>('[data-install-panel]')];
+
+    const select = (name: string) => {
+      for (const tab of tabs) {
+        tab.setAttribute('aria-selected', String(tab.dataset.installTab === name));
+      }
+      for (const panel of panels) {
+        panel.hidden = panel.dataset.installPanel !== name;
+      }
+    };
+
+    for (const opener of document.querySelectorAll<HTMLButtonElement>('[data-install-guide]')) {
+      opener.addEventListener('click', () => {
+        select(opener.dataset.installGuide ?? 'phone');
+        dialog.showModal();
+      });
+    }
+
+    for (const tab of tabs) {
+      tab.addEventListener('click', () => select(tab.dataset.installTab ?? 'phone'));
+    }
+
+    dialog.querySelector('[data-install-close]')?.addEventListener('click', () => dialog.close());
+
+    // Un click sul backdrop (fuori dal riquadro) chiude la guida.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  }
+</script>
+
+<style>
+  .download-page {
+    padding: clamp(7rem, 12vw, 9rem) 0 var(--section-y);
+  }
+
+  .download-page__inner {
+    max-width: 56rem;
+  }
+
+  .download-page h1 {
+    margin: 0.75rem 0 1rem;
+  }
+
+  .download-page__lead {
+    color: var(--muted);
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    max-width: 46rem;
+  }
+
+  .download-note {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--lime);
+    border-radius: 1rem;
+    margin-top: 2rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .download-note h2 {
+    font-size: 1rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .download-note ul {
+    color: var(--muted);
+    line-height: 1.65;
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+
+  .download-cards {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    margin-top: 2.5rem;
+  }
+
+  .download-card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.75rem;
+  }
+
+  .download-card h2 {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .download-card > p {
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .download-card dl {
+    border-top: 1px solid var(--hairline);
+    display: grid;
+    gap: 0.4rem;
+    margin: 0.5rem 0 0;
+    padding-top: 0.9rem;
+  }
+
+  .download-card dl div {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+  }
+
+  .download-card dt {
+    color: var(--muted);
+  }
+
+  .download-card dd {
+    font-weight: 600;
+    margin: 0;
+    text-align: right;
+  }
+
+  .download-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1rem;
+  }
+
+  .download-verify {
+    border-top: 1px solid var(--hairline);
+    margin-top: 3rem;
+    padding-top: 2rem;
+  }
+
+  .download-verify h2 {
+    font-size: 1.1rem;
+    margin: 0 0 0.6rem;
+  }
+
+  .download-verify p {
+    color: var(--muted);
+  }
+
+  .download-verify ul {
+    color: var(--muted);
+    display: grid;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+  }
+
+  .download-verify code {
+    background: var(--surface);
+    border-radius: 0.4rem;
+    display: inline-block;
+    font-size: 0.78rem;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    padding: 0.2rem 0.45rem;
+  }
+
+  /* --- Popup guida installazione ------------------------------------- */
+
+  .install-dialog {
+    background: transparent;
+    border: 0;
+    max-height: 100dvh;
+    max-width: 100vw;
+    padding: clamp(0.5rem, 3vw, 2rem);
+  }
+
+  .install-dialog::backdrop {
+    backdrop-filter: blur(6px);
+    background: rgb(5 9 20 / 72%);
+  }
+
+  .install-dialog__frame {
+    background: var(--bg);
+    border: 1px solid var(--border-active);
+    border-radius: 1.25rem;
+    color: var(--text);
+    margin: 0 auto;
+    max-height: min(85dvh, 46rem);
+    max-width: 38rem;
+    overflow-y: auto;
+    padding: 1.5rem clamp(1.25rem, 4vw, 2rem) 2rem;
+  }
+
+  .install-dialog__frame > header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .install-dialog__frame h2 {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .install-dialog__close {
+    background: var(--surface-high);
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.9rem;
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .install-dialog__tabs {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    display: flex;
+    gap: 0.25rem;
+    margin: 1.25rem 0 1.5rem;
+    padding: 0.3rem;
+  }
+
+  .install-dialog__tabs [role='tab'] {
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    color: var(--muted);
+    cursor: pointer;
+    flex: 1;
+    font: inherit;
+    font-weight: 600;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .install-dialog__tabs [role='tab'][aria-selected='true'] {
+    background: var(--lime);
+    color: var(--on-lime);
+  }
+
+  .install-dialog__intro {
+    color: var(--muted);
+    line-height: 1.65;
+    margin: 0 0 1.25rem;
+  }
+
+  .install-steps {
+    display: grid;
+    gap: 1.1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .install-steps li {
+    display: grid;
+    gap: 0.35rem 0.9rem;
+    grid-template-columns: 2rem 1fr;
+  }
+
+  .install-steps li > span {
+    align-items: center;
+    background: var(--surface-high);
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    display: flex;
+    font-size: 0.85rem;
+    font-weight: 700;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
+  }
+
+  .install-steps li > p,
+  .install-steps li > ul,
+  .install-steps li > pre {
+    grid-column: 2;
+    margin: 0;
+  }
+
+  .install-steps li > p:first-of-type {
+    grid-row: 1;
+  }
+
+  .install-steps p {
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .install-steps p strong {
+    color: var(--text);
+  }
+
+  .install-devices {
+    color: var(--muted);
+    display: grid;
+    gap: 0.35rem;
+    line-height: 1.55;
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
+  }
+
+  .install-steps pre {
+    background: var(--bg-deep);
+    border: 1px solid var(--hairline);
+    border-radius: 0.6rem;
+    margin-top: 0.4rem;
+    overflow-x: auto;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .install-steps code {
+    font-size: 0.85rem;
+  }
+
+  .install-dialog a {
+    color: var(--lime);
+  }
+</style>

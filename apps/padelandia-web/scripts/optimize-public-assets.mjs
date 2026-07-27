@@ -27,7 +27,7 @@ const outputs = [
     task: sharp(iconSource).resize(512, 512).png({ compressionLevel: 9 }),
   },
   {
-    path: 'public/og-padelandia.jpg',
+    path: 'public/og-momentum.jpg',
     task: sharp(heroSource)
       .resize(1200, 630, { fit: 'cover', position: 'right' })
       .jpeg({ quality: 82, progressive: true, mozjpeg: true }),

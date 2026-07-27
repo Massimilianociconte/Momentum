@@ -1,0 +1,53 @@
+---
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+/**
+ * Pagina legale definitiva: renderizza il markdown canonico di
+ * `docs/legal/` (fonte unica nel monorepo). Le pagine restano `noindex`
+ * finché l'identità del titolare non è confermata (stessa condizione di
+ * `astro.config.mjs`): Google Play richiede solo che l'URL sia pubblico e
+ * raggiungibile, non indicizzato.
+ */
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  /** Il testo contiene ancora placeholder [DA COMPLETARE]? */
+  hasPlaceholders?: boolean;
+  lang?: 'it' | 'en';
+}
+
+const { title, description, path, hasPlaceholders = false, lang = 'it' } = Astro.props;
+const supportEmail = import.meta.env.PUBLIC_SUPPORT_EMAIL?.trim();
+const robots = supportEmail && !hasPlaceholders
+  ? 'index, follow, max-snippet:-1'
+  : 'noindex, follow';
+---
+
+<BaseLayout title={title} description={description} path={path} robots={robots}>
+  <SiteHeader />
+  <main id="contenuto" class="legal-page">
+    <article class="legal-page__inner container">
+      {
+        hasPlaceholders && (
+          <div class="legal-page__notice" role="note">
+            <strong>
+              {lang === 'en'
+                ? 'Draft pending controller identification.'
+                : 'Bozza in attesa dei dati del titolare.'}
+            </strong>
+            <p>
+              {lang === 'en'
+                ? 'The sections marked [COMPLETE BEFORE PUBLISHING] will be filled in before the app is released on the stores.'
+                : 'Le sezioni contrassegnate [DA COMPLETARE] saranno valorizzate prima della pubblicazione negli store.'}
+            </p>
+          </div>
+        )
+      }
+      <slot />
+    </article>
+  </main>
+  <SiteFooter />
+</BaseLayout>

@@ -1,0 +1,21 @@
+---
+import BlogPostLayout from '@/layouts/BlogPostLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  // Le bozze (draft: true) restano nel repository senza pagina pubblica.
+  const posts = await getCollection('blog', ({ data }) => data.draft !== true);
+
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<BlogPostLayout post={post}>
+  <Content />
+</BlogPostLayout>

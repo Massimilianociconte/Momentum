@@ -37,14 +37,14 @@ const storeUrls = [
 ].filter((url): url is string => Boolean(url));
 
 const description =
-  'Padelandia è l’app per il padel che segna i punti dal polso: funziona offline, sincronizza Apple Watch e Wear OS e trasforma ogni partita in uno storico leggibile.';
+  'Momentum è l’app per il padel che segna i punti dal polso: funziona offline, sincronizza Apple Watch e Wear OS e trasforma ogni partita in uno storico leggibile.';
 
 const schema = [
   {
     '@type': 'MobileApplication',
     '@id': `${origin}/#app`,
-    name: 'Padelandia',
-    alternateName: 'Padelandia — app padel',
+    name: 'Momentum',
+    alternateName: 'Momentum — app padel',
     description:
       'App mobile e smartwatch per segnare i punti del padel, conservare lo storico e leggere la partita attraverso dati descrittivi.',
     applicationCategory: 'SportsApplication',
@@ -55,13 +55,21 @@ const schema = [
     url: `${origin}/`,
     image: absoluteUrl('/icon-512.png', site),
     screenshot: absoluteUrl(homeScreen.src, site),
+    // Rich results "Software App" richiedono offers o aggregateRating:
+    // l'app base è gratuita, quindi il prezzo 0 è un fatto, non un claim.
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'EUR',
+      category: 'free',
+    },
     ...(storeUrls.length ? { installUrl: storeUrls, sameAs: storeUrls } : {}),
     publisher: { '@id': `${origin}/#organization` },
   },
   {
     '@type': 'HowTo',
     '@id': `${origin}/#come-segnare`,
-    name: 'Come segnare una partita di padel con Padelandia',
+    name: 'Come segnare una partita di padel con Momentum',
     description:
       'Procedura in cinque passaggi per registrare il punteggio di una partita di padel dallo smartwatch o dallo smartphone, anche senza connessione.',
     inLanguage: SITE_LOCALE,
@@ -89,8 +97,8 @@ const schema = [
 ---
 
 <BaseLayout
-  title="Padelandia"
-  seoTitle="Padelandia — App padel: segnapunti offline per Apple Watch e Wear OS"
+  title="Momentum"
+  seoTitle="Momentum — App padel: segnapunti offline per Apple Watch e Wear OS"
   description={description}
   path="/"
   schema={schema}
@@ -106,13 +114,16 @@ const schema = [
             <span aria-hidden="true"></span>
             App padel · iOS, Android, Apple Watch e Wear OS
           </p>
-          <h1 id="hero-title">Ogni punto conta. <span>Padelandia lo ricorda.</span></h1>
+          <h1 id="hero-title">Ogni punto conta. <span>Momentum lo ricorda.</span></h1>
           <p class="hero__lead">
             L’app per il padel che segna i punti dal polso, funziona anche senza
             rete e trasforma ogni partita in uno storico che puoi rileggere.
           </p>
           <div id="download">
             <StoreButtons />
+            <p class="hero__preview-note">
+              In attesa degli store: <a href="/download/">scarica la preview Android (APK)</a>
+            </p>
           </div>
           <ul class="hero__proof" aria-label="Caratteristiche principali">
             <li><SupportIcon name="check" size={18} />Nessun account per iniziare</li>
@@ -125,7 +136,7 @@ const schema = [
           </a>
         </div>
 
-        <div class="hero__visual" aria-label="Padelandia su smartphone e smartwatch">
+        <div class="hero__visual" aria-label="Momentum su smartphone e smartwatch">
           <ArtDirectedPicture
             class="hero__image"
             desktop={heroDesktop}
@@ -142,7 +153,7 @@ const schema = [
           <DeviceFrame
             class="hero__phone"
             src={homeScreen}
-            alt="Schermata home di Padelandia con accesso a nuova partita, giocatori e team"
+            alt="Schermata home di Momentum con accesso a nuova partita, giocatori e team"
             width={360}
             loading="eager"
           />
@@ -150,7 +161,7 @@ const schema = [
             class="hero__watch"
             kind="watch"
             src={watchScreen}
-            alt="Schermata Padelandia su smartwatch con punteggio della partita"
+            alt="Schermata Momentum su smartwatch con punteggio della partita"
             width={220}
             loading="eager"
           />
@@ -159,7 +170,7 @@ const schema = [
       <div class="hero__baseline" aria-hidden="true"></div>
     </section>
 
-    <section class="promise-strip" aria-label="Le basi di Padelandia">
+    <section class="promise-strip" aria-label="Le basi di Momentum">
       <div class="promise-strip__inner container">
         <p>Offline-first</p>
         <span aria-hidden="true"></span>
@@ -175,7 +186,7 @@ const schema = [
       <div class="product-story__heading container" data-reveal>
         <h2 id="story-title">Dal polso al prossimo punto.</h2>
         <p>
-          Il punteggio resta con te, anche offline. Poi Padelandia trasforma
+          Il punteggio resta con te, anche offline. Poi Momentum trasforma
           ogni partita in qualcosa che puoi capire, condividere e migliorare.
         </p>
       </div>
@@ -186,7 +197,7 @@ const schema = [
             class="product-tableau"
             desktop={tableauDesktop}
             mobile={tableauMobile}
-            alt="Padelandia su smartwatch e smartphone, dal punteggio allo storico della partita"
+            alt="Momentum su smartwatch e smartphone, dal punteggio allo storico della partita"
             desktopWidths={[768, 1024, 1280, 1536]}
             mobileWidths={[480, 720]}
             desktopSizes="calc(100vw - (2 * var(--gutter)))"
@@ -221,7 +232,7 @@ const schema = [
         <div class="local-first__copy" data-reveal>
           <h2 id="offline-title">Quando la rete sparisce, la partita no.</h2>
           <p>
-            Padelandia registra il punteggio come una sequenza di eventi. È
+            Momentum registra il punteggio come una sequenza di eventi. È
             questo che rende possibili undo affidabile, pausa e ripresa, code
             dal watch e ricostruzione del match senza dipendere da una
             connessione continua.
@@ -254,7 +265,7 @@ const schema = [
         <div class="support-showcase__visual">
           <Picture
             src={pallinoImage}
-            alt="Pallino, la mascotte di Padelandia, spiega una regola con la racchetta in mano"
+            alt="Pallino, la mascotte di Momentum, spiega una regola con la racchetta in mano"
             widths={[480, 720, 960, 1024]}
             sizes="(min-width: 1024px) 46vw, 100vw"
             formats={['avif', 'webp']}
@@ -294,7 +305,7 @@ const schema = [
           <p class="community-cta__status">Community in arrivo</p>
           <h2 id="community-title">Entra nel prossimo set.</h2>
           <p>
-            Il forum di Padelandia è in costruzione. Nel frattempo, raccontaci
+            Il forum di Momentum è in costruzione. Nel frattempo, raccontaci
             cosa vuoi vedere nell’app.
           </p>
         </div>

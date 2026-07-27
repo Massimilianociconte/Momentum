@@ -3,6 +3,8 @@ export const navItems = [
   { label: 'Funzioni', href: '/#funzioni' },
   { label: 'Offline', href: '/#offline' },
   { label: 'FAQ', href: '/#faq' },
+  { label: 'Blog', href: '/blog/' },
+  { label: 'Download', href: '/download/' },
   { label: 'Supporto', href: '/supporto/' },
 ] as const;
 
@@ -30,7 +32,7 @@ export const productMoments = [
  */
 export const factSheet = [
   {
-    term: 'Che cos’è Padelandia',
+    term: 'Che cos’è Momentum',
     definition:
       'Un’app per il padel che unisce segnapunti offline, companion per Apple Watch e Wear OS e analisi descrittive delle partite.',
   },
@@ -57,7 +59,7 @@ export const factSheet = [
   {
     term: 'Formati di gioco',
     definition:
-      'La build attuale include golden point, vantaggi, tie-break, super tie-break, set singolo e allenamento libero. Lo Star Point FIP 2026 non è ancora dichiarato supportato.',
+      'La build attuale include Star Point FIP 2026, golden point, vantaggi, tie-break, super tie-break, set singolo e allenamento libero.',
   },
 ] as const;
 
@@ -86,7 +88,7 @@ export const coreFeatures = [
   {
     icon: 'book',
     title: 'Regole senza discussioni',
-    text: 'FAQ locali su golden point, tie-break, servizio e cambio campo, con fonti indicate.',
+    text: 'FAQ locali su Star Point, golden point, tie-break, servizio e cambio campo, con fonti indicate.',
   },
   {
     icon: 'spark',
@@ -99,7 +101,7 @@ export const coreFeatures = [
 export const howToSteps = [
   {
     title: 'Imposta il formato',
-    text: 'Scegli golden point o vantaggi, numero di set e tipo di tie-break. La configurazione resta salvata per la prossima partita.',
+    text: 'Scegli Star Point, golden point o vantaggi, numero di set e tipo di tie-break. La configurazione resta salvata per la prossima partita.',
   },
   {
     title: 'Avvia dal polso o dal telefono',
@@ -107,7 +109,7 @@ export const howToSteps = [
   },
   {
     title: 'Segna un punto per volta',
-    text: 'Un tap assegna il punto alla coppia. Padelandia calcola game, set e cambi campo e mostra sempre lo stato corrente.',
+    text: 'Un tap assegna il punto alla coppia. Momentum calcola game, set e cambi campo e mostra sempre lo stato corrente.',
   },
   {
     title: 'Correggi con l’undo',
@@ -157,7 +159,7 @@ export const glossary = [
   {
     term: 'Star Point',
     definition:
-      'Metodo FIP in vigore dal 2026: dopo due cicli di vantaggio e ritorno alla parità si gioca un punto decisivo. È una regola ufficiale, ma non è ancora un formato dichiarato supportato dalla build attuale di Padelandia.',
+      'Metodo FIP in vigore dal 2026: dopo due cicli di vantaggio e ritorno alla parità si gioca un punto decisivo. La coppia in risposta sceglie il lato senza cambiare le posizioni; nei misti riceve chi ha lo stesso sesso del battitore. Momentum lo supporta offline e sui companion aggiornati per Apple Watch e Wear OS.',
   },
   {
     term: 'Vantaggi',
@@ -186,16 +188,24 @@ export const glossary = [
   },
 ] as const;
 
-export const rulesReviewedOn = '26 luglio 2026';
+export const rulesReviewedOn = '27 luglio 2026';
 
 export const ruleSources = [
   {
     label: 'FIP · Rules of Padel, revisione applicabile dal 1 gennaio 2026',
-    href: 'https://www.padelfip.com/wp-content/uploads/2025/12/FIP_Rules-of-Padel.pdf',
+    href: 'https://www.padelfip.com/wp-content/uploads/2025/12/FIP_Rules-of-Padel-1.pdf',
   },
   {
     label: 'FIP · Introduzione dello Star Point',
     href: 'https://www.padelfip.com/2025/12/between-innovation-and-tradition-introducing-the-star-point-the-scoring-system-that-appeals-to-everyone/',
+  },
+  {
+    label: 'CUPRA FIP Tour · Official Rulebook 2026',
+    href: 'https://www.padelfip.com/wp-content/uploads/2025/03/Cupra-FIP-Tour-Rulebook_EN-2.pdf',
+  },
+  {
+    label: 'Premier Padel · Official Rulebook 2026',
+    href: 'https://www.padelfip.com/wp-content/uploads/2025/03/Premier-Padel-Rulebook-Men%C2%B4s_EN.pdf',
   },
 ] as const;
 
@@ -203,7 +213,7 @@ export const supportRows = [
   {
     icon: 'book',
     title: 'Regole senza dubbi',
-    text: 'FAQ rapide su punteggio, servizio, tie-break e golden point.',
+    text: 'FAQ rapide su punteggio, Star Point, servizio, tie-break e golden point.',
     href: '/supporto/#regole',
   },
   {
@@ -223,27 +233,33 @@ export const supportRows = [
 export const faqs = [
   {
     category: 'Primi passi',
-    question: 'Padelandia funziona senza internet?',
+    question: 'Momentum funziona senza internet?',
     answer:
       'Sì, le funzioni essenziali — segnapunti, undo, pausa e ripresa, storico locale e FAQ regole — sono progettate per funzionare offline. Le funzioni cloud, social, Duo Mode e AI, se abilitate per build, piano e rollout, richiedono invece account e connessione.',
   },
   {
     category: 'Primi passi',
-    question: 'Serve un account per usare Padelandia?',
+    question: 'Serve un account per usare Momentum?',
     answer:
       'No per il segnapunti e le principali funzioni locali. Un account è necessario soltanto per i servizi connessi quando disponibili; backup, social e altre esperienze multi-dispositivo dipendono anche dalla configurazione cloud, dal piano e dal rollout.',
   },
   {
     category: 'Primi passi',
-    question: 'Su quali dispositivi si usa Padelandia?',
+    question: 'Su quali dispositivi si usa Momentum?',
     answer:
-      'Padelandia è un’app per smartphone iOS e Android con companion nativi per Apple Watch e per smartwatch Wear OS. Telefono e orologio condividono la stessa partita e si riallineano quando tornano in collegamento.',
+      'Momentum è un’app per smartphone iOS e Android con companion nativi per Apple Watch e per smartwatch Wear OS. Telefono e orologio condividono la stessa partita e si riallineano quando tornano in collegamento.',
   },
   {
     category: 'Punteggio',
     question: 'Quali formati di partita supporta?',
     answer:
-      'La build attuale include golden point, vantaggi, tie-break, super tie-break, set singolo e allenamento libero. Lo Star Point è previsto dalle regole FIP applicabili dal 1 gennaio 2026, ma non è ancora un formato dichiarato supportato da Padelandia.',
+      'La build attuale include Star Point FIP 2026, golden point, vantaggi, tie-break, super tie-break, set singolo e allenamento libero. Lo stesso formato viene conservato nel flusso offline tra telefono e companion aggiornati per Apple Watch e Wear OS.',
+  },
+  {
+    category: 'Punteggio',
+    question: 'Come funziona lo Star Point nel padel?',
+    answer:
+      'Sul primo 40-40 si gioca il vantaggio 1; se viene annullato si torna alla parità 2 e si gioca il vantaggio 2. Se anche questo viene annullato, la parità 3 introduce lo Star Point: il punto successivo assegna il game. La coppia in risposta sceglie il lato senza cambiare le posizioni; nei misti riceve chi ha lo stesso sesso del battitore.',
   },
   {
     category: 'Punteggio',
@@ -261,13 +277,19 @@ export const faqs = [
     category: 'Smartwatch',
     question: 'Cosa succede se watch e telefono perdono la connessione?',
     answer:
-      'Gli eventi del punteggio restano in coda sul dispositivo. Quando il collegamento torna disponibile, Padelandia riallinea telefono e watch evitando di duplicare gli eventi già ricevuti.',
+      'Gli eventi del punteggio restano in coda sul dispositivo. Quando il collegamento torna disponibile, Momentum riallinea telefono e watch evitando di duplicare gli eventi già ricevuti.',
   },
   {
     category: 'Smartwatch',
     question: 'Quali smartwatch sono supportati?',
     answer:
       'Il prodotto include companion native per Apple Watch e dispositivi Wear OS. La compatibilità dipende da sistema operativo, modello e configurazione: prima della pubblicazione verrà mantenuta una matrice aggiornata per i dispositivi verificati.',
+  },
+  {
+    category: 'Smartwatch',
+    question: 'Posso usare Momentum al polso durante un torneo?',
+    answer:
+      'Non darlo per scontato: avere la companion installata non equivale al permesso di usarla in gara. I rulebook 2026 del CUPRA FIP Tour e di Premier Padel vietano a giocatori e allenatori l’uso di dispositivi elettronici dall’inizio dello scambio — nel testo Premier Padel dal palleggio di riscaldamento — fino alla fine del match, salvo approvazione del Supervisor o del Referee del torneo. Chiedi al giudice di gara prima di scendere in campo.',
   },
   {
     category: 'Statistiche',
@@ -283,7 +305,7 @@ export const faqs = [
   },
   {
     category: 'Privacy',
-    question: 'Padelandia pubblica la mia posizione precisa?',
+    question: 'Momentum pubblica la mia posizione precisa?',
     answer:
       'No. Le funzioni social sono facoltative e usano informazioni di area solo quando il profilo è reso visibile. La posizione precisa non viene mostrata pubblicamente agli altri giocatori.',
   },
@@ -305,6 +327,7 @@ export const homeFaqs = faqs.slice(0, 6);
 
 export const softwareFeatureList = [
   'Segnapunti padel offline-first',
+  'Star Point FIP 2026, golden point e vantaggi',
   'Undo, pausa e ripresa della partita',
   'Companion Apple Watch e Wear OS',
   'Storico e analisi descrittive',
@@ -319,6 +342,8 @@ export const footerGroups = [
       { label: 'Come funziona', href: '/#come-funziona' },
       { label: 'Funzioni', href: '/#funzioni' },
       { label: 'Offline-first', href: '/#offline' },
+      { label: 'Scarica la preview Android', href: '/download/' },
+      { label: 'Blog', href: '/blog/' },
       { label: 'Domande frequenti', href: '/#faq' },
     ],
   },
@@ -336,6 +361,7 @@ export const footerGroups = [
     links: [
       { label: 'Privacy', href: '/privacy/' },
       { label: 'Termini', href: '/termini/' },
+      { label: 'Cookie policy', href: '/cookie/' },
       { label: 'Elimina account', href: '/elimina-account/' },
     ],
   },

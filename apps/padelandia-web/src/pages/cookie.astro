@@ -1,0 +1,17 @@
+---
+import LegalPage from '@/components/LegalPage.astro';
+// Fonte canonica nel monorepo: docs/legal/COOKIE_POLICY.md.
+import * as cookie from '../../../../docs/legal/COOKIE_POLICY.md';
+
+const { Content } = cookie;
+const hasPlaceholders = cookie.rawContent().includes('[DA COMPLETARE');
+---
+
+<LegalPage
+  title="Privacy e cookie policy del sito"
+  description="Privacy e cookie policy di playmomentum.it: il sito non usa cookie né tracker; dati tecnici di hosting e diritti dei visitatori."
+  path="/cookie/"
+  hasPlaceholders={hasPlaceholders}
+>
+  <Content />
+</LegalPage>

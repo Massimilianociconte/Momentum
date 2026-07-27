@@ -7,7 +7,7 @@ const root = process.cwd();
 const dist = path.join(root, 'dist');
 const env = loadEnv(process.env.NODE_ENV ?? 'production', root, '');
 const origin = (
-  env.PUBLIC_SITE_URL?.trim() || 'https://padelandia.app'
+  env.PUBLIC_SITE_URL?.trim() || 'https://playmomentum.it'
 ).replace(/\/+$/, '');
 const failures = [];
 
@@ -93,6 +93,8 @@ for (const file of htmlFiles) {
 const required = [
   'index.html',
   'supporto/index.html',
+  'blog/index.html',
+  'blog/rss.xml',
   'robots.txt',
   'sitemap-index.xml',
   'llms.txt',

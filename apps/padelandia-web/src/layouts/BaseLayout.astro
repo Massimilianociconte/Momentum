@@ -42,7 +42,7 @@ const {
 
 const site = Astro.site;
 const canonical = absoluteUrl(path, site);
-const socialImage = absoluteUrl('/og-padelandia.jpg', site);
+const socialImage = absoluteUrl('/og-momentum.jpg', site);
 const fullTitle = seoTitle ?? (title === SITE_NAME ? title : `${title} | ${SITE_NAME}`);
 const indexable = !robots.includes('noindex');
 
@@ -85,6 +85,12 @@ const graph = {
           <link rel="alternate" hreflang="it-IT" href={canonical} />
           <link rel="alternate" hreflang="x-default" href={canonical} />
           <link rel="sitemap" type="application/xml" href="/sitemap-index.xml" />
+          <link
+            rel="alternate"
+            type="application/rss+xml"
+            title={`Blog ${SITE_NAME}`}
+            href="/blog/rss.xml"
+          />
         </>
       )
     }
@@ -112,14 +118,14 @@ const graph = {
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Giocatore di padel su un campo notturno Padelandia"
+      content="Giocatore di padel su un campo notturno Momentum"
     />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
-    <meta name="twitter:image:alt" content="Padelandia su smartphone e smartwatch" />
+    <meta name="twitter:image:alt" content="Momentum su smartphone e smartwatch" />
 
     <script
       is:inline

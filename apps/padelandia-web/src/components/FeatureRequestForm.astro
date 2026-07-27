@@ -122,8 +122,8 @@ const supportReady = Boolean(supportEmail);
 
       if (!email || !subject || !message) return;
 
-      const mailSubject = `[Padelandia · ${type}] ${subject}`;
-      const body = `${message}\n\n---\nInviato dal centro supporto Padelandia`;
+      const mailSubject = `[Momentum · ${type}] ${subject}`;
+      const body = `${message}\n\n---\nInviato dal centro supporto Momentum`;
       const href = `mailto:${email}?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(body)}`;
 
       if (feedback instanceof HTMLElement) {

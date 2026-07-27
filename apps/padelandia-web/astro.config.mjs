@@ -3,15 +3,18 @@ import { defineConfig } from 'astro/config';
 import { loadEnv } from 'vite';
 
 /**
- * Dominio canonico confermato per Padelandia. `PUBLIC_SITE_URL` può
+ * Dominio canonico confermato per Momentum. `PUBLIC_SITE_URL` può
  * sovrascriverlo in una build di staging, ma il default mantiene canonical,
  * Open Graph, sitemap, robots e llms.txt coerenti anche senza `.env`.
  */
-const DEFAULT_SITE_URL = 'https://padelandia.app';
+const DEFAULT_SITE_URL = 'https://playmomentum.it';
 
 const PRIORITIES = [
   { match: /^\/$/, priority: 1, changefreq: 'weekly' },
   { match: /^\/supporto\/$/, priority: 0.8, changefreq: 'weekly' },
+  { match: /^\/blog\/$/, priority: 0.7, changefreq: 'weekly' },
+  { match: /^\/blog\/.+/, priority: 0.6, changefreq: 'monthly' },
+  { match: /^\/download\/$/, priority: 0.8, changefreq: 'weekly' },
   { match: /^\/elimina-account\/$/, priority: 0.4, changefreq: 'yearly' },
 ];
 
@@ -27,8 +30,8 @@ const site = (env.PUBLIC_SITE_URL?.trim() || DEFAULT_SITE_URL).replace(/\/+$/, '
  */
 const supportReady = Boolean(env.PUBLIC_SUPPORT_EMAIL?.trim());
 const excluded = supportReady
-  ? /\/(privacy|termini)\/?$/
-  : /\/(privacy|termini|elimina-account)\/?$/;
+  ? /\/(privacy|privacy-en|termini|cookie)\/?$/
+  : /\/(privacy|privacy-en|termini|cookie|elimina-account)\/?$/;
 
 export default defineConfig({
   site,

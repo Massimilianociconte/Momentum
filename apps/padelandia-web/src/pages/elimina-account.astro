@@ -10,7 +10,7 @@ const origin = siteOrigin(Astro.site);
 const trail = [{ name: 'Elimina account', path: '/elimina-account/' }];
 
 const steps = [
-  'Apri Padelandia.',
+  'Apri Momentum.',
   'Vai in Profilo.',
   'Apri Gestisci account.',
   'Scegli Elimina account e dati cloud e conferma.',
@@ -20,9 +20,9 @@ const schema = [
   {
     '@type': 'HowTo',
     '@id': `${origin}/elimina-account/#howto`,
-    name: 'Come eliminare account e dati cloud di Padelandia',
+    name: 'Come eliminare account e dati cloud di Momentum',
     description:
-      'Procedura per eliminare in modo permanente account e dati cloud di Padelandia dall’app.',
+      'Procedura per eliminare in modo permanente account e dati cloud di Momentum dall’app.',
     inLanguage: SITE_LOCALE,
     step: steps.map((text, index) => ({
       '@type': 'HowToStep',
@@ -36,8 +36,8 @@ const schema = [
 
 <BaseLayout
   title="Elimina account"
-  seoTitle="Elimina account e dati cloud Padelandia — procedura"
-  description="Come eliminare account e dati cloud di Padelandia direttamente dall’app, in quattro passaggi."
+  seoTitle="Elimina account e dati cloud Momentum — procedura"
+  description="Come eliminare account e dati cloud di Momentum direttamente dall’app, in quattro passaggi."
   path="/elimina-account/"
   robots={supportEmail ? 'index, follow' : 'noindex, follow'}
   schema={schema}
@@ -50,12 +50,12 @@ const schema = [
       <p class="section-label">Gestione dati</p>
       <h1>Elimina account e dati cloud.</h1>
       <p class="account-page__lead">
-        Puoi avviare l’eliminazione direttamente da Padelandia. L’operazione è
+        Puoi avviare l’eliminazione direttamente da Momentum. L’operazione è
         immediata e permanente per account e dati cloud.
       </p>
 
       <ol class="account-steps">
-        <li><span>1</span><p>Apri <strong>Padelandia</strong>.</p></li>
+        <li><span>1</span><p>Apri <strong>Momentum</strong>.</p></li>
         <li><span>2</span><p>Vai in <strong>Profilo</strong>.</p></li>
         <li><span>3</span><p>Apri <strong>Gestisci account</strong>.</p></li>
         <li>

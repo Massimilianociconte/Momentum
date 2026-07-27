@@ -1,6 +1,6 @@
-# Padelandia web
+# Momentum web
 
-Landing mobile-first, hub supporto e base editoriale SEO/GEO di Padelandia.
+Landing mobile-first, hub supporto e base editoriale SEO/GEO di Momentum.
 È un progetto Astro statico separato dal runtime Flutter.
 
 ## Avvio locale
@@ -17,7 +17,7 @@ npm run dev
 npm run build
 ```
 
-Il dominio canonico di default è `https://padelandia.app`. Per una build di
+Il dominio canonico di default è `https://playmomentum.it`. Per una build di
 staging si può copiare `.env.example` in `.env` e sovrascrivere
 `PUBLIC_SITE_URL`. Le URL store vengono accettate solo se HTTPS e appartenenti
 a `apps.apple.com` o `play.google.com`; in loro assenza la UI mostra
