@@ -4,7 +4,7 @@ name: Deploy Momentum web
 # (inclusi i commit creati da momentum-blog-publisher) ricostruisce
 # e pubblica solo ciò che è cambiato.
 #
-# Secrets richiesti nel repository GitHub:
+# Secrets richiesti (environment "momentum" del repository GitHub):
 #   CLOUDFLARE_API_TOKEN  (token limitato a Workers Scripts:Edit)
 #   CLOUDFLARE_ACCOUNT_ID
 
@@ -53,6 +53,8 @@ jobs:
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # I secret Cloudflare vivono nell'environment "momentum".
+    environment: momentum
     steps:
       - uses: actions/checkout@v4
 
@@ -81,6 +83,7 @@ jobs:
     if: needs.changes.outputs.publisher == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: momentum
     steps:
       - uses: actions/checkout@v4
 
