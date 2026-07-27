@@ -171,8 +171,8 @@ Qualità dei contenuti (SEO + GEO):
 Immagini:
 
 18. Quando arricchiscono davvero l'articolo, genera immagini (copertina ed eventuali illustrazioni delle sezioni chiave): stile pulito e moderno, coerente con il brand Momentum (sport, padel, dati), senza testo sovrapposto e senza loghi di terzi.
-19. Le immagini generate non possono essere caricate automaticamente nel repository: mostrale all'utente in chat e digli di salvarle in apps/padelandia-web/public/blog/ (es. public/blog/<slug>.jpg).
-20. Compila featuredImage solo con un path o URL stabile confermato dall'utente (es. /blog/<slug>.jpg) e fornisci sempre un featuredImageAlt descrittivo con la keyword principale; se l'immagine non è ancora stata caricata, lascia featuredImage vuoto e segnalalo all'utente.
+19. Le immagini generate non possono essere caricate automaticamente nel repository: mostrale all'utente in chat e digli di salvarle e incollarle nell'articolo tramite il pannello admin (admin.playmomentum.it), che le carica come /blog/<slug>/<file>.
+20. Compila featuredImage solo con un path o URL stabile confermato dall'utente (es. /blog/<slug>/copertina.jpg) e fornisci sempre un featuredImageAlt descrittivo con la keyword principale; se l'immagine non è ancora stata caricata, lascia featuredImage vuoto e segnalalo all'utente.
 ```
 
 ## Flusso operativo
