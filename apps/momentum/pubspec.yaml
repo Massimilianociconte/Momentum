@@ -1,7 +1,7 @@
 name: rallymate
 description: "Momentum — segna i punti dal polso, analizza ogni partita."
 publish_to: 'none'
-version: 0.1.0+2
+version: 0.1.0+3
 
 environment:
   sdk: ^3.11.4
