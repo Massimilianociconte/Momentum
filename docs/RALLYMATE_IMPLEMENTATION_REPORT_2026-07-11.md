@@ -212,13 +212,13 @@ scoring, embedded companion installation and the native custom-link registration
 
 ## Principal changed areas
 
-- `apps/rallymate/lib/data/` and `lib/services/`
-- `apps/rallymate/lib/features/{teams,devices,social,duo,live,history,analytics,privacy,home}`
-- `apps/rallymate/android/app/src/main/`
-- `apps/rallymate/ios/Runner/` and Xcode watch target wiring
+- `apps/momentum/lib/data/` and `lib/services/`
+- `apps/momentum/lib/features/{teams,devices,social,duo,live,history,analytics,privacy,home}`
+- `apps/momentum/android/app/src/main/`
+- `apps/momentum/ios/Runner/` and Xcode watch target wiring
 - `wear/watchos/` and `wear/wearos/`
 - `backend/supabase/migrations/`, `functions/` and `tests/`
-- `apps/rallymate/assets/brand/`, native icon catalogs and launch assets
+- `apps/momentum/assets/brand/`, native icon catalogs and launch assets
 - `docs/deployment/`, `docs/legal/`, `.github/workflows/` and `scripts/ci_local.sh`
 
 ## Residual risk

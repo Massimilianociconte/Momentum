@@ -58,7 +58,7 @@ promettere funzioni assenti.
 | Altri smart ring | NOT_SUPPORTED finché non verificati | N/D | Possibile solo tramite hub con sorgente riconoscibile | Nessun provider generico o dato inventato |
 
 La matrice runtime vive in
-`apps/rallymate/assets/config/health_provider_compatibility.json`; non esistono
+`apps/momentum/assets/config/health_provider_compatibility.json`; non esistono
 liste duplicate sparse nelle schermate.
 
 ## Dati locali e offline-first
@@ -202,26 +202,26 @@ retention, HMAC/replay WHOOP e asset trasparenti.
 
 Client e dominio:
 
-- `apps/rallymate/lib/domain/health_provider.dart`
-- `apps/rallymate/lib/services/health_provider_catalog.dart`
-- `apps/rallymate/lib/services/system_health_provider.dart`
-- `apps/rallymate/lib/services/cloud_health_provider.dart`
-- `apps/rallymate/lib/services/ble_heart_rate_provider.dart`
-- `apps/rallymate/lib/services/health_deduplication.dart`
-- `apps/rallymate/lib/services/match_health_association.dart`
-- `apps/rallymate/lib/data/repositories/health_repository.dart`
-- `apps/rallymate/lib/data/db/database.dart` e codice Drift generato
-- `apps/rallymate/lib/features/devices/health_provider_setup_screen.dart`
-- `apps/rallymate/lib/features/devices/devices_screen.dart`
-- `apps/rallymate/lib/app.dart`
-- `apps/rallymate/assets/config/health_provider_compatibility.json`
+- `apps/momentum/lib/domain/health_provider.dart`
+- `apps/momentum/lib/services/health_provider_catalog.dart`
+- `apps/momentum/lib/services/system_health_provider.dart`
+- `apps/momentum/lib/services/cloud_health_provider.dart`
+- `apps/momentum/lib/services/ble_heart_rate_provider.dart`
+- `apps/momentum/lib/services/health_deduplication.dart`
+- `apps/momentum/lib/services/match_health_association.dart`
+- `apps/momentum/lib/data/repositories/health_repository.dart`
+- `apps/momentum/lib/data/db/database.dart` e codice Drift generato
+- `apps/momentum/lib/features/devices/health_provider_setup_screen.dart`
+- `apps/momentum/lib/features/devices/devices_screen.dart`
+- `apps/momentum/lib/app.dart`
+- `apps/momentum/assets/config/health_provider_compatibility.json`
 
 Bridge nativi:
 
-- `apps/rallymate/android/app/src/main/kotlin/com/rallymate/rallymate/HealthConnectBridge.kt`
-- `apps/rallymate/android/app/src/main/kotlin/com/rallymate/rallymate/BleHeartRateBridge.kt`
-- `apps/rallymate/ios/Runner/HealthKitBridge.swift`
-- `apps/rallymate/ios/Runner/BleHeartRateBridge.swift`
+- `apps/momentum/android/app/src/main/kotlin/com/rallymate/rallymate/HealthConnectBridge.kt`
+- `apps/momentum/android/app/src/main/kotlin/com/rallymate/rallymate/BleHeartRateBridge.kt`
+- `apps/momentum/ios/Runner/HealthKitBridge.swift`
+- `apps/momentum/ios/Runner/BleHeartRateBridge.swift`
 
 Backend:
 

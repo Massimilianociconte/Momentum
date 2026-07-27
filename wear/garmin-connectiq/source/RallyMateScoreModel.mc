@@ -202,6 +202,28 @@ class RallyMateScoreEngine {
         return {"cancelled" => cancelled, "ignored" => ignored};
     }
 
+    // Ultimo punto annullabile del journal. `assignedTeam` (Duo Mode) limita la
+    // scelta ai punti del proprio team. Statica e pubblica perché è la stessa
+    // regola usata dal modello a runtime e dal test di conformità sui vettori
+    // condivisi: una seconda implementazione nel test proverebbe solo se stessa.
+    public static function lastUndoableEventIdIn(events, assignedTeam) {
+        var resolution = RallyMateScoreEngine.resolveEventMasks(events);
+        var undone = resolution["cancelled"];
+        var ignored = resolution["ignored"];
+        for (var j = events.size() - 1; j >= 0; j -= 1) {
+            var candidate = events[j];
+            var candidateType = candidate["type"];
+            if (candidateType != null
+                    && (candidateType.equals("POINT_TEAM_A") || candidateType.equals("POINT_TEAM_B"))
+                    && (assignedTeam == null || candidateType.equals("POINT_" + assignedTeam))
+                    && !ignored.hasKey(j)
+                    && !undone.hasKey(candidate["id"])) {
+                return candidate["id"];
+            }
+        }
+        return null;
+    }
+
     private static function applyPoint(state, teamA, format) {
         if (teamA) {
             state["pointsA"] += 1;
@@ -273,7 +295,14 @@ class RallyMateScoreEngine {
     }
 
     private static function formatState(state, format) {
-        if (state["complete"] == true) {
+        if (format["freePlay"] == true) {
+            // Free play conta i punti grezzi e non ha game/set: le etichette
+            // tennis li mapperebbero su 0/15/30/40 bloccandosi a "40" dal
+            // quarto punto in poi, e a fine sessione il conteggio sparirebbe
+            // dietro "0 - 0" (set). rally_core espone freePlayA/freePlayB come
+            // label, quindi qui il conteggio resta grezzo anche a match chiuso.
+            state["display"] = state["pointsA"].toString() + " - " + state["pointsB"].toString();
+        } else if (state["complete"] == true) {
             state["display"] = state["setsA"].toString() + " - " + state["setsB"].toString();
         } else if (state["tiebreak"] == true) {
             state["display"] = state["pointsA"].toString() + " - " + state["pointsB"].toString();
@@ -733,21 +762,7 @@ class RallyMateScoreModel {
     }
 
     private function lastUndoableEventId() {
-        var resolution = RallyMateScoreEngine.resolveEventMasks(_events);
-        var undone = resolution["cancelled"];
-        var ignored = resolution["ignored"];
-        for (var j = _events.size() - 1; j >= 0; j -= 1) {
-            var candidate = _events[j];
-            var candidateType = candidate["type"];
-            if (candidateType != null
-                    && (candidateType.equals("POINT_TEAM_A") || candidateType.equals("POINT_TEAM_B"))
-                    && (_assignedTeam == null || candidateType.equals("POINT_" + _assignedTeam))
-                    && !ignored.hasKey(j)
-                    && !undone.hasKey(candidate["id"])) {
-                return candidate["id"];
-            }
-        }
-        return null;
+        return RallyMateScoreEngine.lastUndoableEventIdIn(_events, _assignedTeam);
     }
 
     private function nextEventId(sequence) {

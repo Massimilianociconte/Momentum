@@ -160,7 +160,7 @@ The app provides a real onboarding state with:
 Verified on 12 July 2026:
 
 - Signed iPhone device bundle passed strict nested code-signature validation.
-- `Runner.app` embeds `RallyMateWatchApp.app` in its `Watch` directory.
+- `Runner.app` embeds `MomentumWatchApp.app` in its `Watch` directory.
 - The phone bundle is `com.rallymate.rallymate`; the watch bundle is
   `com.rallymate.rallymate.watchkitapp`; `WKCompanionAppBundleIdentifier`
   correctly points back to the phone bundle.
@@ -353,10 +353,10 @@ Cross-store release:
 - `wear/fitbit-google-health/README.md`
 - `wear/tizen-retired/README.md`
 - `wear/shared/watch_module_protocol.md`
-- `apps/rallymate/lib/features/devices/**`
-- `apps/rallymate/lib/services/wearable_*.dart`
-- `apps/rallymate/ios/Runner/GarminConnectIqBridge.swift`
-- `apps/rallymate/android/app/src/main/kotlin/com/rallymate/rallymate/GarminConnectIqBridge.kt`
+- `apps/momentum/lib/features/devices/**`
+- `apps/momentum/lib/services/wearable_*.dart`
+- `apps/momentum/ios/Runner/GarminConnectIqBridge.swift`
+- `apps/momentum/android/app/src/main/kotlin/com/rallymate/rallymate/GarminConnectIqBridge.kt`
 - `backend/supabase/functions/{wearable-gateway,google-health,google-health-webhook}/**`
 - `backend/supabase/migrations/20260711223214_wearable_provider_integrations.sql`
 - `backend/supabase/migrations/20260712023000_scope_wearable_event_idempotency.sql`

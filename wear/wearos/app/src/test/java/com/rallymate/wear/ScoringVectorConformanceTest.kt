@@ -13,7 +13,7 @@ import java.io.File
  * confronta lo snapshot dopo ogni operazione.
  *
  * Rigenerare i vettori con:
- *   cd packages/rally_core && dart run tool/generate_scoring_vectors.dart
+ *   cd packages/momentum_core && dart run tool/generate_scoring_vectors.dart
  */
 class ScoringVectorConformanceTest {
 

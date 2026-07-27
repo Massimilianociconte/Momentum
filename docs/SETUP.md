@@ -56,7 +56,7 @@ supabase secrets list
 ```
 
 Le push richiedono anche il file client Android
-`apps/rallymate/android/app/google-services.json`, la capability Push
+`apps/momentum/android/app/google-services.json`, la capability Push
 Notifications sul target iOS e un job POST ogni minuto verso
 `/functions/v1/push-dispatch`, autenticato con
 `X-Momentum-Push-Secret`. Non committare il file service account, la chiave
@@ -166,7 +166,7 @@ Avvia l'app con la configurazione client centralizzata (nessuna modifica al
 codice e nessun secret server-side nel file):
 
 ```bash
-cd apps/rallymate
+cd apps/momentum
 mkdir -p "$HOME/.config/rallymate"
 cp config/client.env.example "$HOME/.config/rallymate/client.env"
 chmod 600 "$HOME/.config/rallymate/client.env"
@@ -278,10 +278,10 @@ Server API, Google Play Developer API o RevenueCat con lo stesso `storeTxId`.
   `./gradlew :app:assembleDebug` → installa su watch.
 - **Apple Watch companion**: dalla root esegui
   `ruby scripts/sync_watchos_target.rb`, poi apri
-  `apps/rallymate/ios/Runner.xcworkspace`. Il target `RallyMateWatchApp` è
+  `apps/momentum/ios/Runner.xcworkspace`. Il target `MomentumWatchApp` è
   incorporato automaticamente in `Runner.app/Watch`, usa il bundle derivato
   `com.rallymate.rallymate.watchkitapp` e lo stesso team di firma di Runner.
-  Seleziona `RallyMateWatchApp` per il debug diretto sul Watch o `Runner` per
+  Seleziona `MomentumWatchApp` per il debug diretto sul Watch o `Runner` per
   installare telefono e companion insieme. `wear/watchos/project.yml` resta
   una spec XcodeGen opzionale per build isolate, non il percorso di release.
 - **Garmin Connect IQ**: `wear/garmin-connectiq`. Configura SDK 9.2.0 e

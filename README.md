@@ -12,11 +12,11 @@ mantengono ancora il nome storico RallyMate).
 ## Monorepo
 
 ```
-packages/rally_core/     Motore Dart condiviso: scoring event-sourced,
+packages/momentum_core/     Motore Dart condiviso: scoring event-sourced,
                          analytics, regole FIP, wrapped. 42 test.
-apps/rallymate/          App Flutter iOS+Android (Drift, Riverpod, go_router)
+apps/momentum/          App Flutter iOS+Android (Drift, Riverpod, go_router)
                          + bridge nativi watch (Kotlin/Swift). 4 test.
-apps/padelandia-web/     Landing Astro mobile-first, supporto, SEO/GEO,
+apps/momentum-web/     Landing Astro mobile-first, supporto, SEO/GEO,
                          asset art-directed desktop/mobile.
 wear/wearos/             App nativa Wear OS (Kotlin, Compose for Wear OS,
                          Data Layer). Port engine con 10 test JVM.
@@ -41,24 +41,24 @@ servizio, cambio campo, free play, undo, ricostruzione da JSON.
 
 ```bash
 # 1. Core (test)
-cd packages/rally_core && dart test
+cd packages/momentum_core && dart test
 
 # 2. App mobile
-cd apps/rallymate && flutter pub get && flutter run
+cd apps/momentum && flutter pub get && flutter run
 
 # 3. Wear OS
 cd wear/wearos && ./gradlew :app:assembleDebug :app:testDebugUnitTest
 
 # 4. watchOS (engine test + target companion nel progetto iOS)
-cd wear/watchos/RallyMateCore && swift test
+cd wear/watchos/MomentumCore && swift test
 cd ../../.. && ruby scripts/sync_watchos_target.rb
-# poi apri apps/rallymate/ios/Runner.xcworkspace e seleziona Runner o RallyMateWatchApp
+# poi apri apps/momentum/ios/Runner.xcworkspace e seleziona Runner o MomentumWatchApp
 
 # 5. Backend
 cd backend/supabase && supabase db push && supabase functions deploy
 
 # 6. Landing Momentum
-cd apps/padelandia-web && npm ci && npm test
+cd apps/momentum-web && npm ci && npm test
 ```
 
 ## Sync watch ⇄ telefono
@@ -99,7 +99,7 @@ certificato, altrimenti il Data Layer non collega le app.
 | Pacchetti, atleti, marketplace (+commissione 10-15%) | | | | ✅ |
 
 Il gating è centralizzato in
-`apps/rallymate/lib/domain/entitlements.dart`; l'acquisto va integrato con
+`apps/momentum/lib/domain/entitlements.dart`; l'acquisto va integrato con
 RevenueCat nel solo punto `PaywallScreen._activate`.
 
 ## Duo Mode (Plus+)
@@ -137,7 +137,7 @@ Due team connessi segnano la stessa partita da due smartwatch, uno per team.
 ## Account gratuito e profilo base
 
 Login / registrazione / recupero password / logout vivono in
-`apps/rallymate/lib/features/auth/auth_screen.dart` (route `/auth`);
+`apps/momentum/lib/features/auth/auth_screen.dart` (route `/auth`);
 la logica è in `CloudAuth` (`services/cloud/cloud_service.dart`):
 
 - **Free**: sincronizza SOLO il profilo base (nome, nickname, mano, ruolo,

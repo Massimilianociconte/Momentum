@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generator": "packages/rally_core/tool/generate_scoring_vectors.dart",
+  "generator": "packages/momentum_core/tool/generate_scoring_vectors.dart",
   "contract": "rally_core PadelScoringEngine è il riferimento: ogni engine watch deve riprodurre questi snapshot passo per passo.",
   "vectors": [
     {
@@ -10,7 +10,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -137,7 +138,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -414,7 +416,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -1872,7 +1875,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -2907,7 +2911,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -4442,7 +4447,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -6603,7 +6609,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -7238,7 +7245,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -12839,7 +12847,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -13474,7 +13483,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -13651,7 +13661,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -13803,7 +13814,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -13955,7 +13967,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -14614,7 +14627,8 @@
       "platforms": [
         "dart",
         "kotlin",
-        "swift"
+        "swift",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -14791,7 +14805,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -14943,7 +14958,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -15120,7 +15136,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,
@@ -15197,7 +15214,8 @@
         "dart",
         "kotlin",
         "swift",
-        "fitbit"
+        "fitbit",
+        "garmin"
       ],
       "format": {
         "formatSchemaVersion": 3,

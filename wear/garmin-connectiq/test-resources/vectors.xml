@@ -1,0 +1,8 @@
+<resources xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <!-- Risorsa SOLO di test: referenziata da test.jungle, non da
+         monkey.jungle, così i vettori non finiscono nel .prg di produzione.
+         Il JSON è generato da
+         packages/momentum_core/tool/generate_scoring_vectors.dart: non modificarlo
+         a mano, rigeneralo. -->
+    <jsonData id="RallyMateScoringVectors" filename="scoring_vectors_garmin.json" />
+</resources>

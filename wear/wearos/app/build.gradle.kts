@@ -6,7 +6,7 @@ plugins {
 
 // Same keystore as the phone app: Data Layer pairing requires that both
 // APKs share applicationId AND signing certificate. All-or-nothing check
-// mirrors apps/rallymate/android/app/build.gradle.kts.
+// mirrors apps/momentum/android/app/build.gradle.kts.
 val releaseSigningValues = mapOf(
     "RALLYMATE_ANDROID_KEYSTORE_PATH" to
         providers.environmentVariable("RALLYMATE_ANDROID_KEYSTORE_PATH").orNull,

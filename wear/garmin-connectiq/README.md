@@ -123,6 +123,37 @@ GARMIN_DEVELOPER_KEY_BASE64        Base64-encoded developer_key.der
 
 Never commit the SDK archive or developer key.
 
+## Cross-platform scoring conformance
+
+The Monkey C engine replays the same generated vectors as Dart, Kotlin and
+Swift. `packages/momentum_core/tool/generate_scoring_vectors.dart` writes both the
+canonical `wear/shared/scoring_vectors.json` and a compact Connect IQ
+projection in `test-resources/scoring_vectors_garmin.json`; never edit the
+projection by hand, regenerate it.
+
+`test-source/RallyMateScoringVectorTests.mc` replays **18 of the 23** shared
+vectors and compares the snapshot after every single step. The five it does not
+claim are excluded on purpose, not skipped silently:
+
+| Excluded vector | Reason |
+|---|---|
+| `star_point_bo3_*` (4 vectors) | Star Point FIP is not implemented in the Monkey C engine and is not offered in the watch format picker |
+| `deciding_set_without_tie_break_8_6` | The engine does not read `tieBreakInDecidingSet`; the format is phone-only |
+
+Fields not asserted, because the Garmin engine deliberately does not model them
+(the watch is a scoring terminal — the phone derives the summary at merge):
+`winner`, `advantage`, `deuceNumber`, `isStarPoint`, `completedSets`.
+
+Everything else — advantage, golden point, tie-break, super tie-break, mini
+set, single set, free play, undo across game/set boundaries, Duo team-scoped
+undo, pause/resume and manual finish — is asserted step by step against
+rally_core.
+
+The test resource and the test source live in `test-resources/` and
+`test-source/`, wired only by `test.jungle`. They are outside the production
+jungle so the shipped `.prg` never carries the ~24 KB of vector data; moving
+them into `source/` breaks the production build on purpose.
+
 ## Publication Checklist
 
 1. Confirm product targets against the current Connect IQ device reference.
@@ -132,6 +163,41 @@ Never commit the SDK archive or developer key.
    assets live in `docs/store-assets/garmin` (500x500 icon and 1440x720 hero).
 4. Verify reconnect, offline queue, duplicate delivery, Duo assignment and undo.
 5. Do not advertise public Garmin support until Garmin approves the listing.
+
+## Declaring Garmin publicly supported (GA flip)
+
+Everything that can be proven off-device is already green: 95/95 profiles
+compile, 38/38 unit tests pass (18 of them shared-vector conformance), and the
+signed `.iq` export builds. What remains cannot be produced from this
+repository — it needs Garmin and physical hardware:
+
+1. **Physical bidirectional proof.** SDK 9.2.0's simulator closes its ADB
+   socket after an otherwise successful phone→watch send, so PING/PONG,
+   reconnect and offline-queue drain must be confirmed on at least one real
+   watch per exported display class (round AMOLED, round MIP, rectangular).
+2. **Connect IQ Store submission and approval.** Upload `build/RallyMate.iq`
+   under the same UUID as `manifest.xml`, with listing, support URL and privacy
+   URL. Approval is Garmin's call and cannot be shortcut.
+
+Only once Garmin has approved the listing, flip support in **one** place:
+
+```jsonc
+// apps/momentum/assets/config/watch_compatibility.json → garmin_connect_iq
+"support": "FULL",
+// and drop this limitation, which is then no longer true:
+// "The Momentum Connect IQ listing must be approved before one-tap store
+//  installation is available"
+```
+
+That single change turns the setup screen subtitle from "Modulo nativo ·
+pubblicazione provider da completare" to "Supporto completo · API 2.4" and
+makes public Garmin claims accurate. Then, and only then, update the store
+listings (`docs/play-store-listing-*.md`, `docs/app-store-listing.md`) and
+`docs/legal/STORE_COMPLIANCE.md` §0.10 / §4.
+
+Do not flip it earlier: claiming Garmin support while the listing is unapproved
+means users cannot install the watch app at all, which is a store-listing
+accuracy problem on both Apple and Google, not just a Garmin one.
 
 Official references:
 - https://developer.garmin.com/connect-iq/

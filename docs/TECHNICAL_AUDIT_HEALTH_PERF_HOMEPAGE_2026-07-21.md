@@ -153,11 +153,11 @@ Residuo: picchi cold-start; non zero su ogni transizione di schermata non profil
 
 | File | Modifica |
 |---|---|
-| `apps/rallymate/lib/main.dart` | Frame logger opt-in aggregato → `rmframe.log` |
-| `apps/rallymate/lib/core/theme.dart` | Default glow blur ridotto (12) |
-| `apps/rallymate/lib/features/home/home_screen.dart` | Redesign premium + ombre strette, rail top al posto di glow blur, `_NeonIcon` flat, quick actions, hero LIVE READY, backdrop night wash |
-| `apps/rallymate/lib/features/live/live_scoring_screen.dart` | Blur ridotti |
-| `apps/rallymate/lib/features/social/social_screen.dart` | Blur ridotto |
+| `apps/momentum/lib/main.dart` | Frame logger opt-in aggregato → `rmframe.log` |
+| `apps/momentum/lib/core/theme.dart` | Default glow blur ridotto (12) |
+| `apps/momentum/lib/features/home/home_screen.dart` | Redesign premium + ombre strette, rail top al posto di glow blur, `_NeonIcon` flat, quick actions, hero LIVE READY, backdrop night wash |
+| `apps/momentum/lib/features/live/live_scoring_screen.dart` | Blur ridotti |
+| `apps/momentum/lib/features/social/social_screen.dart` | Blur ridotto |
 | `.../NotificationBridge.kt` | FCM registration off main thread |
 
 ### 5.2 Health / ownership / privacy
@@ -285,8 +285,8 @@ Ottimizzazioni **non** riducono precisione scoring (event-sourced locale) né bl
 
 | Suite | Risultato |
 |---|---|
-| `apps/rallymate` `flutter test` | **133 passed** |
-| `packages/rally_core` `flutter test` | **84 passed** |
+| `apps/momentum` `flutter test` | **133 passed** |
+| `packages/momentum_core` `flutter test` | **84 passed** |
 | Health association regression | 2 nuovi test green |
 | On-device profile frame scroll | before/after + redesign |
 | NotificationBridge | assenza crash FID post-fix (log) |

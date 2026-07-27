@@ -30,13 +30,13 @@ run_secret_scan() {
 
 run_core() {
   section "Dart core"
-  (cd "$ROOT/packages/rally_core" && dart pub get && dart analyze && dart test)
+  (cd "$ROOT/packages/momentum_core" && dart pub get && dart analyze && dart test)
 }
 
 run_flutter() {
   section "Flutter app"
   (
-    cd "$ROOT/apps/rallymate"
+    cd "$ROOT/apps/momentum"
     local client_env="${RALLYMATE_CLIENT_ENV:-$HOME/.config/rallymate/client.env}"
     flutter pub get
     dart run build_runner build
@@ -50,7 +50,7 @@ run_flutter() {
 run_ios() {
   section "iOS simulator build and native tests"
   (
-    cd "$ROOT/apps/rallymate"
+    cd "$ROOT/apps/momentum"
     RALLYMATE_CLIENT_ENV="${RALLYMATE_CLIENT_ENV:-$HOME/.config/rallymate/client.env}" \
       tool/rallymate build-ios --simulator --no-codesign
     local simulator_id
@@ -76,7 +76,7 @@ run_store_compliance() {
     "$ROOT/docs/legal/PRIVACY_POLICY_EN.md" \
     "$ROOT/docs/legal/TERMS_OF_SERVICE.md" \
     "$ROOT/docs/legal/STORE_COMPLIANCE.md" \
-    "$ROOT/apps/rallymate/ios/Runner/PrivacyInfo.xcprivacy"; do
+    "$ROOT/apps/momentum/ios/Runner/PrivacyInfo.xcprivacy"; do
     [[ -f "$file" ]] || {
       echo "Missing compliance file: $file" >&2
       exit 1
@@ -84,12 +84,12 @@ run_store_compliance() {
   done
 
   plutil -lint \
-    "$ROOT/apps/rallymate/ios/Runner/Info.plist" \
-    "$ROOT/apps/rallymate/ios/Runner/PrivacyInfo.xcprivacy" \
-    "$ROOT/apps/rallymate/ios/Runner/Runner.entitlements"
+    "$ROOT/apps/momentum/ios/Runner/Info.plist" \
+    "$ROOT/apps/momentum/ios/Runner/PrivacyInfo.xcprivacy" \
+    "$ROOT/apps/momentum/ios/Runner/Runner.entitlements"
 
-  local manifest="$ROOT/apps/rallymate/build/app/intermediates/packaged_manifests/debug/processDebugManifestForPackage/AndroidManifest.xml"
-  [[ -f "$manifest" ]] || manifest="$ROOT/apps/rallymate/build/app/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml"
+  local manifest="$ROOT/apps/momentum/build/app/intermediates/packaged_manifests/debug/processDebugManifestForPackage/AndroidManifest.xml"
+  [[ -f "$manifest" ]] || manifest="$ROOT/apps/momentum/build/app/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml"
   [[ -f "$manifest" ]] || {
     echo "Android manifest not found. Run flutter build apk --debug first." >&2
     exit 1
@@ -108,7 +108,7 @@ run_store_compliance() {
     exit 1
   }
   if rg 'HealthKit non viene letto|DeepSeek comporta trasferimento dati verso la Cina' \
-    "$ROOT/docs/legal" "$ROOT/apps/rallymate/lib" >/dev/null; then
+    "$ROOT/docs/legal" "$ROOT/apps/momentum/lib" >/dev/null; then
     echo "Found stale privacy/compliance wording; update docs/UI before release." >&2
     exit 1
   fi
@@ -121,7 +121,7 @@ run_wearos() {
 
 run_watchos() {
   section "watchOS Swift package"
-  (cd "$ROOT/wear/watchos/RallyMateCore" && swift test)
+  (cd "$ROOT/wear/watchos/MomentumCore" && swift test)
 }
 
 run_supabase() {

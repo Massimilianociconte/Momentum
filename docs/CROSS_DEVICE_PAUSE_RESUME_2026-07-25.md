@@ -216,7 +216,7 @@ try? await builder.addMetadata([
   indoor o outdoor a seconda del club e l'app non lo sa: dichiararlo sarebbe
   un'informazione inventata. Va aggiunto solo se in futuro l'utente lo indica.
 - **`CFBundleDisplayName`**: già `Momentum` sia su
-  `wear/watchos/RallyMateWatchApp/Info.plist` sia su `ios/Runner/Info.plist`
+  `wear/watchos/MomentumWatchApp/Info.plist` sia su `ios/Runner/Info.plist`
   (verificato, nessuna modifica necessaria). HealthKit associa la sorgente al
   nome localizzato dell'app.
 - L'UUID del workout salvato viene catturato in `externalId` sul segmento.

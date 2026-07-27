@@ -2,34 +2,38 @@
 #
 #   brew install xcodegen
 #   cd wear/watchos && xcodegen generate
-#   open RallyMateWatch.xcodeproj
+#   open MomentumWatch.xcodeproj
 #
 # Il target distribuito è incorporato anche nel progetto Flutter iOS tramite
 # scripts/sync_watchos_target.rb. Questa spec resta utile per build isolate.
 #
-# Nota brand: display name utente = Momentum; path/target tecnici restano
-# RallyMate* per non rompere sync Xcode / bundle id com.rallymate.*.
-name: RallyMateWatch
+# Nota brand: cartelle, package Swift e target sono Momentum*. Restano invece
+# sul namespace storico `com.rallymate.*` i SOLI identificatori registrati
+# presso gli store e presso il sistema operativo: bundleIdPrefix,
+# PRODUCT_BUNDLE_IDENTIFIER e WKCompanionAppBundleIdentifier. Cambiarli
+# significherebbe pubblicare una app nuova e scollegare il companion dal
+# telefono: non farlo.
+name: MomentumWatch
 options:
   bundleIdPrefix: com.rallymate
   deploymentTarget:
     watchOS: "10.0"
 packages:
-  RallyMateCore:
-    path: RallyMateCore
+  MomentumCore:
+    path: MomentumCore
 targets:
-  RallyMateWatchApp:
+  MomentumWatchApp:
     type: application
     platform: watchOS
     sources:
-      - RallyMateWatchApp
+      - MomentumWatchApp
     dependencies:
-      - package: RallyMateCore
-        product: RallyMateCore
-      - package: RallyMateCore
-        product: RallyMateWatchKit
+      - package: MomentumCore
+        product: MomentumCore
+      - package: MomentumCore
+        product: MomentumWatchKit
     info:
-      path: RallyMateWatchApp/Info.plist
+      path: MomentumWatchApp/Info.plist
       properties:
         CFBundleDisplayName: Momentum
         WKApplication: true
@@ -47,4 +51,4 @@ targets:
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "4"
         CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_ENTITLEMENTS: RallyMateWatchApp/RallyMateWatchApp.entitlements
+        CODE_SIGN_ENTITLEMENTS: MomentumWatchApp/MomentumWatchApp.entitlements

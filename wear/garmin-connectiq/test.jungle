@@ -1,4 +1,9 @@
 project.manifest = manifest.xml
-base.sourcePath = source
-base.resourcePath = resources
+# test-source e test-resources esistono solo qui, non in monkey.jungle: il
+# runner dei vettori referenzia Rez.JsonData.RallyMateScoringVectors, che nel
+# .prg di produzione non esiste (e non deve esistere: sono ~24 KB di dati di
+# test). Tenerli fuori dal sourcePath di produzione è ciò che fa fallire la
+# build se qualcuno li sposta in source/.
+base.sourcePath = source;test-source
+base.resourcePath = resources;test-resources
 base.excludeAnnotations = productionNetwork

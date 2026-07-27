@@ -27,7 +27,7 @@ Data: 13 luglio 2026
 | `device_ultrahuman_onboarding.png` | Ultrahuman via hub | 404 KB | smart ring premium isolato, metallo scuro, riflessi lime/cyan controllati |
 | `device_ble_hr_sensor_onboarding.png` | pairing HRS BLE | 358 KB | fascia toracica/sensore cardiaco standard, forma comprensibile e neutra |
 
-Percorso: `apps/rallymate/assets/onboarding/health/`.
+Percorso: `apps/momentum/assets/onboarding/health/`.
 
 ## Regole di utilizzo
 

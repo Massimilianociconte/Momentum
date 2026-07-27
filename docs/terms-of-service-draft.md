@@ -8,7 +8,7 @@
 
 - [ ] Compilare eventuali placeholder (titolare/fornitore del servizio, foro competente) nel testo esistente.
 - [x] **Pagina web implementata** (audit 2026-07-26): `https://playmomentum.it/termini/` renderizza `docs/legal/TERMS_OF_SERVICE.md` (componente `LegalPage.astro`). Resta `noindex` con avviso bozza finché nel markdown ci sono placeholder.
-- [ ] **Deploy del sito** `apps/padelandia-web` in produzione.
+- [ ] **Deploy del sito** `apps/momentum-web` in produzione.
 - [ ] Passare `RALLYMATE_TERMS_URL=https://playmomentum.it/termini/` alla build store, così l'app lo mostra accanto alla privacy policy.
 - [ ] Valutare una versione inglese se il listing EN viene pubblicato (consigliato, non obbligatorio per Play).
 

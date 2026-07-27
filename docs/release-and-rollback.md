@@ -19,7 +19,7 @@ export RALLYMATE_ANDROID_KEYSTORE_PATH=... \
        RALLYMATE_ANDROID_KEY_PASSWORD=...
 
 # Telefono (valida config produzione: URL https, sb_publishable_, goog_)
-cd apps/rallymate
+cd apps/momentum
 RALLYMATE_CLIENT_ENV=/percorso/prod.env tool/rallymate build-appbundle
 # → build/app/outputs/bundle/release/app-release.aab
 

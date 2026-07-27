@@ -6,7 +6,7 @@
 ┌────────────────┐   WatchConnectivity   ┌─────────────────┐
 │  Apple Watch   │◄─────────────────────►│                 │
 │  SwiftUI       │                       │   App Flutter    │      Supabase
-│  RallyMateCore │                       │   iOS + Android  │◄────► (solo premium:
+│  MomentumCore │                       │   iOS + Android  │◄────► (solo premium:
 └────────────────┘                       │                 │       backup, recap,
 ┌────────────────┐    Data Layer API     │  rally_core     │       assistant, coach)
 │  Galaxy/WearOS │◄─────────────────────►│  Drift (SQLite) │
@@ -35,9 +35,9 @@ connessione").
 - Sync idempotente: `eventId` univoci + `insertOrIgnore` ⇒ un re-sync
   completo del log non duplica mai nulla; i due device convergono.
 
-**Tre port, un contratto**: Dart (`packages/rally_core`), Kotlin
+**Tre port, un contratto**: Dart (`packages/momentum_core`), Kotlin
 (`wear/wearos/.../ScoringEngine.kt`), Swift
-(`wear/watchos/RallyMateCore`). Stessa semantica, stesso JSON, stessa
+(`wear/watchos/MomentumCore`). Stessa semantica, stesso JSON, stessa
 suite di test (Star Point FIP 2026, golden point, vantaggi, TB 7-6 con 2 di scarto, super TB,
 rotazione servizio 1-2-2 nel TB, cambio campo ogni 6 punti nel TB e nei
 game dispari, free play, undo, round-trip JSON). Qualunque modifica alle
@@ -59,7 +59,7 @@ regole va replicata nei tre engine **e nei tre test**.
 - Cambio campo: game dispari, ogni 6 punti nel TB, a fine set
   (`sideChangePending` nello stato + evento SIDE_CHANGE).
 
-## 3. App Flutter (apps/rallymate)
+## 3. App Flutter (apps/momentum)
 
 - **Persistenza**: Drift/SQLite locale (offline-first, PRD 5.1). Tabelle:
   players, teams, matches (header) + match_event_rows (log), trainings,

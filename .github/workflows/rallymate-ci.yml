@@ -11,8 +11,8 @@ on:
     # l'intera CI Flutter/wearable: il deploy del sito è gestito da
     # deploy-web.yml.
     paths-ignore:
-      - "apps/padelandia-web/src/content/blog/**"
-      - "apps/padelandia-web/public/blog/**"
+      - "apps/momentum-web/src/content/blog/**"
+      - "apps/momentum-web/public/blog/**"
 
 concurrency:
   group: rallymate-${{ github.workflow }}-${{ github.ref }}
@@ -33,10 +33,10 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: apps/padelandia-web/package-lock.json
+          cache-dependency-path: apps/momentum-web/package-lock.json
 
       - name: Install, build and validate static output
-        working-directory: apps/padelandia-web
+        working-directory: apps/momentum-web
         run: |
           npm ci
           npm test
@@ -74,14 +74,14 @@ jobs:
           fi
 
       - name: Dart core
-        working-directory: packages/rally_core
+        working-directory: packages/momentum_core
         run: |
           dart pub get
           dart analyze
           dart test
 
       - name: Flutter app
-        working-directory: apps/rallymate
+        working-directory: apps/momentum
         run: |
           flutter pub get
           dart run build_runner build --delete-conflicting-outputs
@@ -100,7 +100,7 @@ jobs:
       # real store build (tool/rallymate build-appbundle) cannot rot. Uses
       # placeholder config + debug signing; never a shippable artifact.
       - name: Release bundle compile check (R8)
-        working-directory: apps/rallymate
+        working-directory: apps/momentum
         env:
           RALLYMATE_ALLOW_DEBUG_RELEASE_SIGNING: "true"
         run: |
@@ -250,7 +250,7 @@ jobs:
           cache: true
 
       - name: iOS simulator build
-        working-directory: apps/rallymate
+        working-directory: apps/momentum
         run: |
           flutter pub get
           printf '%s\n' \
@@ -262,7 +262,7 @@ jobs:
             tool/rallymate build-ios --simulator --no-codesign
 
       - name: iOS native bridge and queue tests
-        working-directory: apps/rallymate
+        working-directory: apps/momentum
         run: |
           SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/{print $2; exit}')"
           test -n "$SIMULATOR_ID"
@@ -274,7 +274,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: watchOS Swift tests
-        working-directory: wear/watchos/RallyMateCore
+        working-directory: wear/watchos/MomentumCore
         run: swift test
 
   supabase:

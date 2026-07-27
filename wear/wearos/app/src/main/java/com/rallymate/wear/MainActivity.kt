@@ -77,6 +77,12 @@ private val Amber = Color(0xFFFFB83D)
 private val Coral = Color(0xFFFF665F)
 private val StarGold = Color(0xFFFFD84D)
 
+/// Disclosure IA obbligatoria sulla superficie conversazionale del watch.
+/// Reg. UE 2024/1689 art. 50 §1 (applicabile dal 2 agosto 2026). Deve restare
+/// allineata a `AppBrand.assistantAiDisclosureShort` sul telefono e a
+/// `WatchAssistantDisclosure` su watchOS.
+private const val AI_DISCLOSURE = "Risposte generate da IA: possono contenere errori."
+
 private enum class WearSurface { MAIN, SETUP, MENU, FINISH, ABANDON, ASSISTANT }
 
 class MainActivity : ComponentActivity() {
@@ -1194,6 +1200,15 @@ fun AssistantQuickScreen(vm: MatchViewModel, onClose: () -> Unit) {
             "FAQ offline e Pallino via Wi-Fi/LTE, senza bloccare lo scoring.",
             color = Color(0x99FFFFFF),
             fontSize = 10.sp,
+        )
+        // AI Act (Reg. UE 2024/1689) art. 50 §1, applicabile dal 2026-08-02:
+        // l'utente deve sapere che l'interlocutore è un sistema di IA. Il nome
+        // della mascotte non rende la cosa "ovvia", quindi la disclosure resta
+        // visibile sopra ogni risposta generata.
+        Text(
+            AI_DISCLOSURE,
+            color = Color(0x99FFFFFF),
+            fontSize = 9.sp,
         )
         if (vm.accountContext.assistantEnabled) {
             WearActionCard(

@@ -52,7 +52,7 @@ entrambe mostrano "Annulla ultimo punto" quando l'annullamento è possibile.
 ## 3. Correzione applicata
 
 ### 3.1 Apple Watch — architettura ibrida
-File: `wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/WorkoutSessionManager.swift`
+File: `wear/watchos/MomentumCore/Sources/MomentumWatchKit/WorkoutSessionManager.swift`
 
 Nuovo flusso in `start(matchId:)`:
 1. **`recoverOwnSession()`** — `recoverActiveWorkoutSession` per riagganciare una
@@ -82,7 +82,7 @@ File: `wear/wearos/app/src/main/java/com/rallymate/wear/MatchWorkoutService.kt`
   partita Momentum o se lo stato non è `OTHER_APP_IN_PROGRESS`.
 
 ### 3.3 Associazione dati salute (lato telefono)
-File: `apps/rallymate/lib/services/match_health_sync.dart`
+File: `apps/momentum/lib/services/match_health_sync.dart`
 - **Local-first**: la partita resta la fonte di verità locale.
 - Dopo la fine, importa gli aggregati OS nella finestra della partita (±5 min).
 - Associa solo metriche reali non vuote, con **confidenza onesta**
@@ -167,8 +167,8 @@ In Duo Mode l'undo resta **team-scoped**.
 
 | Suite | Comando | Risultato |
 |---|---|---|
-| watchOS RallyMateCore + WatchKit (host) | `swift test` | **41 test, 0 failure** |
-| watchOS compilazione target-reale | `xcodebuild -scheme RallyMateWatchKit -sdk watchsimulator26.5` | **BUILD SUCCEEDED** (compila il codice `#if os(watchOS)`) |
+| watchOS MomentumCore + WatchKit (host) | `swift test` | **41 test, 0 failure** |
+| watchOS compilazione target-reale | `xcodebuild -scheme MomentumWatchKit -sdk watchsimulator26.5` | **BUILD SUCCEEDED** (compila il codice `#if os(watchOS)`) |
 | Wear OS | `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest` (JBR Android Studio) | **BUILD SUCCESSFUL** |
 | Flutter app (ciclo precedente) | `flutter test` | 131 test passati |
 | rally_core (ciclo precedente) | `dart test` | 84 test passati |

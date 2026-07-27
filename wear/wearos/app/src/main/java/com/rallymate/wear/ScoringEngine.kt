@@ -1,7 +1,7 @@
 /**
  * Kotlin port of the rally_core padel scoring engine.
  *
- * MUST stay semantically identical to packages/rally_core (Dart) and the
+ * MUST stay semantically identical to packages/momentum_core (Dart) and the
  * Swift port (watchOS). The JSON wire format is the sync contract:
  * see rally_core/lib/src/model/match_event.dart.
  */

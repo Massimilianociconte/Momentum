@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Genera il keystore di upload per Google Play (telefono + Wear OS) FUORI dal
 # repository e stampa le istruzioni per le env var attese dalle build release
-# (apps/rallymate/android/app/build.gradle.kts e wear/wearos/app/build.gradle.kts).
+# (apps/momentum/android/app/build.gradle.kts e wear/wearos/app/build.gradle.kts).
 #
 # Uso:
 #   scripts/generate_upload_keystore.sh [directory-destinazione]

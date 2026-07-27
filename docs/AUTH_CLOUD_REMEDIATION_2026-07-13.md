@@ -73,7 +73,7 @@ secret server-side. Il wrapper rifiuta anche un vecchio JWT Supabase con ruolo
 ## Comandi build
 
 ```bash
-cd apps/rallymate
+cd apps/momentum
 
 tool/rallymate doctor
 tool/rallymate run -d <DEVICE_ID>
@@ -158,47 +158,47 @@ Configurazione e pipeline:
 
 - `.github/workflows/rallymate-ci.yml`
 - `scripts/ci_local.sh`
-- `apps/rallymate/.gitignore`
-- `apps/rallymate/config/client.env.example`
-- `apps/rallymate/tool/rallymate`
-- `apps/rallymate/README.md`
+- `apps/momentum/.gitignore`
+- `apps/momentum/config/client.env.example`
+- `apps/momentum/tool/rallymate`
+- `apps/momentum/README.md`
 - `docs/SETUP.md`
-- `apps/rallymate/pubspec.yaml`
-- `apps/rallymate/pubspec.lock`
+- `apps/momentum/pubspec.yaml`
+- `apps/momentum/pubspec.lock`
 
 Cloud, autenticazione e runtime:
 
-- `apps/rallymate/lib/services/cloud/cloud_config.dart`
-- `apps/rallymate/lib/services/cloud/cloud_service.dart`
-- `apps/rallymate/lib/services/cloud/secure_session_storage.dart`
-- `apps/rallymate/lib/data/repositories/repositories.dart`
-- `apps/rallymate/lib/app.dart`
-- `apps/rallymate/lib/features/auth/auth_screen.dart`
-- `apps/rallymate/lib/features/auth/cloud_diagnostics_screen.dart`
-- `apps/rallymate/lib/features/rules/pro_chat_screen.dart`
-- `apps/rallymate/lib/services/wearable_match_dispatcher.dart`
+- `apps/momentum/lib/services/cloud/cloud_config.dart`
+- `apps/momentum/lib/services/cloud/cloud_service.dart`
+- `apps/momentum/lib/services/cloud/secure_session_storage.dart`
+- `apps/momentum/lib/data/repositories/repositories.dart`
+- `apps/momentum/lib/app.dart`
+- `apps/momentum/lib/features/auth/auth_screen.dart`
+- `apps/momentum/lib/features/auth/cloud_diagnostics_screen.dart`
+- `apps/momentum/lib/features/rules/pro_chat_screen.dart`
+- `apps/momentum/lib/services/wearable_match_dispatcher.dart`
 - `backend/supabase/functions/assistant/index.ts`
 
 Ownership cloud e superfici collegate:
 
-- `apps/rallymate/lib/features/profile/profile_screen.dart`
-- `apps/rallymate/lib/features/profile/profile_edit_screen.dart`
-- `apps/rallymate/lib/features/privacy/privacy_screen.dart`
-- `apps/rallymate/lib/services/profile_image_service.dart`
-- `apps/rallymate/lib/services/team_image_service.dart`
-- `apps/rallymate/lib/features/social/social_screen.dart`
-- `apps/rallymate/lib/features/social/friends_screen.dart`
-- `apps/rallymate/lib/features/social/friend_groups_screen.dart`
-- `apps/rallymate/lib/features/social/invite_redeem_screen.dart`
-- `apps/rallymate/lib/features/match_setup/match_setup_screen.dart`
-- `apps/rallymate/lib/features/teams/team_detail_screen.dart`
-- `apps/rallymate/lib/features/training/athlete_coach_section.dart`
+- `apps/momentum/lib/features/profile/profile_screen.dart`
+- `apps/momentum/lib/features/profile/profile_edit_screen.dart`
+- `apps/momentum/lib/features/privacy/privacy_screen.dart`
+- `apps/momentum/lib/services/profile_image_service.dart`
+- `apps/momentum/lib/services/team_image_service.dart`
+- `apps/momentum/lib/features/social/social_screen.dart`
+- `apps/momentum/lib/features/social/friends_screen.dart`
+- `apps/momentum/lib/features/social/friend_groups_screen.dart`
+- `apps/momentum/lib/features/social/invite_redeem_screen.dart`
+- `apps/momentum/lib/features/match_setup/match_setup_screen.dart`
+- `apps/momentum/lib/features/teams/team_detail_screen.dart`
+- `apps/momentum/lib/features/training/athlete_coach_section.dart`
 
 iOS e test:
 
-- `apps/rallymate/ios/Runner/Runner.entitlements`
-- `apps/rallymate/ios/Runner.xcodeproj/project.pbxproj`
-- `apps/rallymate/test/cloud_auth_contract_test.dart`
+- `apps/momentum/ios/Runner/Runner.entitlements`
+- `apps/momentum/ios/Runner.xcodeproj/project.pbxproj`
+- `apps/momentum/test/cloud_auth_contract_test.dart`
 
 I file Flutter/Xcode/Gradle generati sono stati aggiornati dalle build. Tre file
 preesistenti (`coach_athletes_tab.dart`, `live_match_controller.dart` e

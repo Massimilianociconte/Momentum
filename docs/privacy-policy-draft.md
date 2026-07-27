@@ -11,7 +11,7 @@ Entrambe coprono già: GDPR (artt. 13-14), principio local-first, dati cloud opz
 
 - [ ] **Titolare del trattamento**: compilare i placeholder `[DA COMPLETARE]` in entrambe le versioni (nome/ragione sociale, sede, P.IVA/C.F.).
 - [x] **Pagine web implementate** (audit 2026-07-26): `https://playmomentum.it/privacy/` (IT), `https://playmomentum.it/privacy-en/` (EN) e `https://playmomentum.it/termini/` renderizzano direttamente i markdown di `docs/legal/` (componente `LegalPage.astro`). Restano `noindex` e mostrano l'avviso bozza finché nei markdown ci sono placeholder; l'avviso sparisce da solo quando il titolare è compilato.
-- [ ] **Deploy del sito** `apps/padelandia-web` sull'hosting di produzione (dominio `playmomentum.it`).
+- [ ] **Deploy del sito** `apps/momentum-web` sull'hosting di produzione (dominio `playmomentum.it`).
 - [ ] Passare `RALLYMATE_PRIVACY_URL=https://playmomentum.it/privacy/` alla build (`tool/rallymate build-appbundle`) così l'app lo mostra in "Privacy e dati".
 - [ ] Inserire lo stesso URL in Play Console → Store listing → Privacy policy e nel form Health apps.
 

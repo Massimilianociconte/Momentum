@@ -45,6 +45,6 @@ Azioni che solo il proprietario dell'account sviluppatore può completare. Spunt
 - [ ] Configurare rollout graduale (10% → 50% → 100%) come da `release-and-rollback.md`.
 
 ## 8. Fuori Play Console
-- [ ] Deployare `apps/padelandia-web` (le pagine `/privacy/`, `/privacy-en/`, `/termini/`, `/elimina-account/` sono pronte); impostare `PUBLIC_SUPPORT_EMAIL` nell'ambiente di build del sito e compilare il titolare in `docs/legal/*.md` per togliere l'avviso bozza.
+- [ ] Deployare `apps/momentum-web` (le pagine `/privacy/`, `/privacy-en/`, `/termini/`, `/elimina-account/` sono pronte); impostare `PUBLIC_SUPPORT_EMAIL` nell'ambiente di build del sito e compilare il titolare in `docs/legal/*.md` per togliere l'avviso bozza.
 - [ ] Verificare che il progetto Supabase di produzione abbia: secrets edge functions impostati, redirect URL `rallymate://auth-callback` in Auth, retention job attivi.
-- [ ] Google Cloud/Firebase: `google-services.json` di produzione in `apps/rallymate/android/app/` al momento della build (non committato).
+- [ ] Google Cloud/Firebase: `google-services.json` di produzione in `apps/momentum/android/app/` al momento della build (non committato).

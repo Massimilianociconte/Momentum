@@ -11,7 +11,7 @@ GPT privato (ChatGPT, anche da smartphone)
 momentum-blog-publisher (questo Worker)
    │  GITHUB_TOKEN (secret, mai visto da ChatGPT)
    ▼
-GitHub Contents API → commit in apps/padelandia-web/src/content/blog/
+GitHub Contents API → commit in apps/momentum-web/src/content/blog/
    │  push su main
    ▼
 GitHub Actions (deploy-web.yml) → astro build → wrangler deploy
@@ -45,7 +45,7 @@ riusa la stessa pipeline di deploy del GPT.
   `GET /blog/*` fa da proxy delle immagini da GitHub così l'editor le
   mostra subito, prima del deploy del sito.
 - **Immagini**: incollate o trascinate nell'editor → commit in
-  `apps/padelandia-web/public/blog/<slug>/` → inserite come
+  `apps/momentum-web/public/blog/<slug>/` → inserite come
   `/blog/<slug>/<file>` (jpg, png, webp, max 8 MB).
 
 Secret aggiuntivi del pannello:

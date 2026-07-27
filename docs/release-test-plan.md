@@ -6,8 +6,8 @@ Copre: test automatici (già in CI), test manuali pre-submission e closed testin
 
 | Suite | Comando | Esito audit |
 |---|---|---|
-| Core Dart | `dart test` in `packages/rally_core` | ✅ in CI |
-| Flutter app | `flutter analyze` + `flutter test` in `apps/rallymate` | ✅ "No issues found!", 139 test passati |
+| Core Dart | `dart test` in `packages/momentum_core` | ✅ in CI |
+| Flutter app | `flutter analyze` + `flutter test` in `apps/momentum` | ✅ "No issues found!", 139 test passati |
 | Build release mobile (R8) | `flutter build appbundle --release` (placeholders) | ✅ AAB 89.7 MB |
 | Wear OS | `./gradlew testDebugUnitTest assembleRelease` | ✅ BUILD SUCCESSFUL |
 | Supabase | pgTAP + advisors in CI | ✅ in CI |

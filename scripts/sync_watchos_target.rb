@@ -6,15 +6,15 @@ require "xcodeproj"
 ROOT = File.expand_path("..", __dir__)
 PROJECT_PATH = ENV.fetch(
   "RALLYMATE_XCODE_PROJECT",
-  File.join(ROOT, "apps/rallymate/ios/Runner.xcodeproj")
+  File.join(ROOT, "apps/momentum/ios/Runner.xcodeproj")
 )
-WATCH_GROUP_PATH = "../../../wear/watchos/RallyMateWatchApp"
-WATCH_PACKAGE_PATH = "../../../wear/watchos/RallyMateCore"
-WATCH_CORE_SOURCE_PATH = "#{WATCH_PACKAGE_PATH}/Sources/RallyMateCore"
-WATCH_KIT_SOURCE_PATH = "#{WATCH_PACKAGE_PATH}/Sources/RallyMateWatchKit"
+WATCH_GROUP_PATH = "../../../wear/watchos/MomentumWatchApp"
+WATCH_PACKAGE_PATH = "../../../wear/watchos/MomentumCore"
+WATCH_CORE_SOURCE_PATH = "#{WATCH_PACKAGE_PATH}/Sources/MomentumCore"
+WATCH_KIT_SOURCE_PATH = "#{WATCH_PACKAGE_PATH}/Sources/MomentumWatchKit"
 WATCH_MASCOT_PATH = "#{WATCH_KIT_SOURCE_PATH}/Resources/Mascot"
 WATCH_BACKGROUNDS_PATH = "#{WATCH_KIT_SOURCE_PATH}/Resources/Backgrounds"
-WATCH_TARGET_NAME = "RallyMateWatchApp"
+WATCH_TARGET_NAME = "MomentumWatchApp"
 WATCH_BUNDLE_ID = "com.rallymate.rallymate.watchkitapp"
 
 def ensure_file(group, path)
@@ -64,9 +64,9 @@ watch_group ||= project.main_group.new_group(WATCH_TARGET_NAME, WATCH_GROUP_PATH
 watch_group.path = WATCH_GROUP_PATH
 watch_group.source_tree = "<group>"
 
-watch_source = ensure_file(watch_group, "RallyMateWatchApp.swift")
+watch_source = ensure_file(watch_group, "MomentumWatchApp.swift")
 watch_info = ensure_file(watch_group, "Info.plist")
-watch_entitlements = ensure_file(watch_group, "RallyMateWatchApp.entitlements")
+watch_entitlements = ensure_file(watch_group, "MomentumWatchApp.entitlements")
 watch_assets = ensure_file(watch_group, "Assets.xcassets")
 watch_privacy = ensure_file(watch_group, "PrivacyInfo.xcprivacy")
 
@@ -79,10 +79,10 @@ ensure_build_file(watch_target.resources_build_phase, watch_privacy)
 # iPhone output folder. Reference the package's canonical source files directly
 # in the embedded target; SwiftPM remains the source of truth for host tests.
 watch_target.frameworks_build_phase.files.select do |file|
-  file.product_ref&.product_name == "RallyMateWatchKit"
+  file.product_ref&.product_name == "MomentumWatchKit"
 end.each(&:remove_from_project)
 watch_target.package_product_dependencies.select do |dependency|
-  dependency.product_name == "RallyMateWatchKit"
+  dependency.product_name == "MomentumWatchKit"
 end.each(&:remove_from_project)
 project.root_object.package_references.select do |reference|
   reference.respond_to?(:relative_path) && reference.relative_path == WATCH_PACKAGE_PATH
@@ -90,8 +90,8 @@ end.each(&:remove_from_project)
 
 project_dir = File.dirname(PROJECT_PATH)
 [
-  ["RallyMateCore Sources", WATCH_CORE_SOURCE_PATH],
-  ["RallyMateWatchKit Sources", WATCH_KIT_SOURCE_PATH],
+  ["MomentumCore Sources", WATCH_CORE_SOURCE_PATH],
+  ["MomentumWatchKit Sources", WATCH_KIT_SOURCE_PATH],
 ].each do |name, relative_path|
   group = ensure_group(project.main_group, name, relative_path)
   Dir.glob(File.expand_path("*.swift", File.join(project_dir, relative_path))).sort.each do |path|
@@ -100,7 +100,7 @@ project_dir = File.dirname(PROJECT_PATH)
   end
 end
 
-mascot_group = ensure_group(project.main_group, "RallyMateWatch Mascot", WATCH_MASCOT_PATH)
+mascot_group = ensure_group(project.main_group, "MomentumWatch Mascot", WATCH_MASCOT_PATH)
 Dir.glob(File.expand_path("*.png", File.join(project_dir, WATCH_MASCOT_PATH))).sort.each do |path|
   reference = ensure_file(mascot_group, File.basename(path))
   ensure_build_file(watch_target.resources_build_phase, reference)
@@ -108,7 +108,7 @@ end
 
 background_group = ensure_group(
   project.main_group,
-  "RallyMateWatch Backgrounds",
+  "MomentumWatch Backgrounds",
   WATCH_BACKGROUNDS_PATH
 )
 Dir.glob(File.expand_path("*.png", File.join(project_dir, WATCH_BACKGROUNDS_PATH))).sort.each do |path|
@@ -119,7 +119,7 @@ end
 common_settings = {
   "APPLICATION_EXTENSION_API_ONLY" => "NO",
   "ASSETCATALOG_COMPILER_APPICON_NAME" => "AppIcon",
-  "CODE_SIGN_ENTITLEMENTS" => "#{WATCH_GROUP_PATH}/RallyMateWatchApp.entitlements",
+  "CODE_SIGN_ENTITLEMENTS" => "#{WATCH_GROUP_PATH}/MomentumWatchApp.entitlements",
   "CODE_SIGN_STYLE" => "Automatic",
   "CURRENT_PROJECT_VERSION" => "$(FLUTTER_BUILD_NUMBER)",
   "ENABLE_PREVIEWS" => "YES",

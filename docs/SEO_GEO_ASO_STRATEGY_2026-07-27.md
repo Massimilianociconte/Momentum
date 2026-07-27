@@ -124,7 +124,7 @@ Pagina pilastro generata dal dataset di `rally_core`, non riscritta a mano:
   `scroll-margin-top` perché il link diretto non finisca sotto l'indice;
 - link interni verso home e guida introduttiva.
 
-La fonte unica resta `packages/rally_core/lib/src/rules/rules_data.dart`:
+La fonte unica resta `packages/momentum_core/lib/src/rules/rules_data.dart`:
 `dart run tool/generate_web_rules.dart` rigenera il JSON del sito. Una
 regola aggiunta al dataset senza sezione **fa fallire la generazione**,
 così non può sparire in silenzio dalla pagina.

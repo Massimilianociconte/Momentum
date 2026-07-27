@@ -1,7 +1,7 @@
 /**
  * Costruzione e parsing del Markdown con frontmatter compatibile con
  * lo schema della collection `blog` in
- * apps/padelandia-web/src/content.config.ts.
+ * apps/momentum-web/src/content.config.ts.
  */
 
 export type ArticleInput = {

@@ -26,8 +26,8 @@
     "GITHUB_OWNER": "Massimilianociconte",
     "GITHUB_REPO": "Momentum",
     "GITHUB_BRANCH": "main",
-    "BLOG_CONTENT_DIR": "apps/padelandia-web/src/content/blog",
-    "BLOG_IMAGES_DIR": "apps/padelandia-web/public/blog"
+    "BLOG_CONTENT_DIR": "apps/momentum-web/src/content/blog",
+    "BLOG_IMAGES_DIR": "apps/momentum-web/public/blog"
   },
 
   "observability": {

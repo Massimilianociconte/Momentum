@@ -127,16 +127,16 @@ errorAnotherWorkoutSessionStarted ──▶ PREEMPTED ──▶ chiude e SALVA i
 
 | File | Modifica |
 |---|---|
-| `wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/WorkoutRecordingPolicy.swift` | **nuovo** — state machine pura, modalità, segmenti, qualità dati |
-| `wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/WorkoutRecordingLog.swift` | **nuovo** — log strutturato privacy-safe (`os.Logger`) |
-| `wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/WorkoutSessionManager.swift` | riscritto: `.tennis`, gate unico, finalizzazione idempotente, watchdog, rimozione osservazione passiva ed euristica |
-| `wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/WatchMatchViewModel.swift` | rimosso il riarmo per punto; modalità congelata per partita; persistenza segmenti/stato; `restartHealthRecording()` |
-| `wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/LocalMatchStore.swift` | preferenza default + per-partita, segmenti, stato registrazione |
-| `wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/WatchViews.swift` | sezione "Registrazione allenamento", banner di interruzione, riga qualità dati |
-| `wear/watchos/RallyMateWatchApp/RallyMateWatchApp.swift` | recovery di sistema: ripristina segmenti prima di riagganciare la sessione |
-| `wear/watchos/RallyMateCore/Tests/RallyMateWatchKitTests/WorkoutRecordingPolicyTests.swift` | **nuovo** — 22 test |
-| `wear/watchos/RallyMateCore/Tests/RallyMateWatchKitTests/WatchWorkoutOwnershipTests.swift` | **nuovo** — 8 test end-to-end sul view model |
-| `apps/rallymate/ios/Runner.xcodeproj` | rigenerato con `scripts/sync_watchos_target.rb` (nuovi sorgenti nel target watch) |
+| `wear/watchos/MomentumCore/Sources/MomentumWatchKit/WorkoutRecordingPolicy.swift` | **nuovo** — state machine pura, modalità, segmenti, qualità dati |
+| `wear/watchos/MomentumCore/Sources/MomentumWatchKit/WorkoutRecordingLog.swift` | **nuovo** — log strutturato privacy-safe (`os.Logger`) |
+| `wear/watchos/MomentumCore/Sources/MomentumWatchKit/WorkoutSessionManager.swift` | riscritto: `.tennis`, gate unico, finalizzazione idempotente, watchdog, rimozione osservazione passiva ed euristica |
+| `wear/watchos/MomentumCore/Sources/MomentumWatchKit/WatchMatchViewModel.swift` | rimosso il riarmo per punto; modalità congelata per partita; persistenza segmenti/stato; `restartHealthRecording()` |
+| `wear/watchos/MomentumCore/Sources/MomentumWatchKit/LocalMatchStore.swift` | preferenza default + per-partita, segmenti, stato registrazione |
+| `wear/watchos/MomentumCore/Sources/MomentumWatchKit/WatchViews.swift` | sezione "Registrazione allenamento", banner di interruzione, riga qualità dati |
+| `wear/watchos/MomentumWatchApp/MomentumWatchApp.swift` | recovery di sistema: ripristina segmenti prima di riagganciare la sessione |
+| `wear/watchos/MomentumCore/Tests/MomentumWatchKitTests/WorkoutRecordingPolicyTests.swift` | **nuovo** — 22 test |
+| `wear/watchos/MomentumCore/Tests/MomentumWatchKitTests/WatchWorkoutOwnershipTests.swift` | **nuovo** — 8 test end-to-end sul view model |
+| `apps/momentum/ios/Runner.xcodeproj` | rigenerato con `scripts/sync_watchos_target.rb` (nuovi sorgenti nel target watch) |
 
 ### Wear OS
 
@@ -169,7 +169,7 @@ errorAnotherWorkoutSessionStarted ──▶ PREEMPTED ──▶ chiude e SALVA i
 | `wear/fitbit-os/package.json` | aggiunto il permesso `access_exercise` |
 | `wear/fitbit-os/test/workout_recording.test.mjs` | **nuovo** — 12 test |
 
-**Non modificato (verificato e già corretto):** `apps/rallymate/lib/services/match_health_sync.dart`
+**Non modificato (verificato e già corretto):** `apps/momentum/lib/services/match_health_sync.dart`
 importa gli aggregati OS nella finestra della partita (±5 min) con confidenza
 onesta (`windowMetricsOnly` → MEDIUM, nessun hard-link falso). È esattamente il
 percorso previsto per la modalità `EXTERNAL_MANAGED`.
@@ -300,10 +300,10 @@ Tutti i comandi eseguiti su questa macchina, esito riportato senza aggiustamenti
 
 | Suite | Comando | Esito |
 |---|---|---|
-| Apple Watch — unit | `swift test` (`wear/watchos/RallyMateCore`) | **71 test, 0 failure** (erano 41 prima: +30) |
-| Apple Watch — compilazione watchOS | `xcodebuild -scheme RallyMateWatchKit -destination 'generic/platform=watchOS'` | **BUILD SUCCEEDED**, 0 warning |
-| Apple Watch — app target Debug | `xcodebuild -scheme RallyMateWatchApp -destination 'generic/platform=watchOS Simulator'` | **BUILD SUCCEEDED** |
-| Apple Watch — app target Release device | `xcodebuild -scheme RallyMateWatchApp -configuration Release -destination 'generic/platform=watchOS'` | **BUILD SUCCEEDED** |
+| Apple Watch — unit | `swift test` (`wear/watchos/MomentumCore`) | **71 test, 0 failure** (erano 41 prima: +30) |
+| Apple Watch — compilazione watchOS | `xcodebuild -scheme MomentumWatchKit -destination 'generic/platform=watchOS'` | **BUILD SUCCEEDED**, 0 warning |
+| Apple Watch — app target Debug | `xcodebuild -scheme MomentumWatchApp -destination 'generic/platform=watchOS Simulator'` | **BUILD SUCCEEDED** |
+| Apple Watch — app target Release device | `xcodebuild -scheme MomentumWatchApp -configuration Release -destination 'generic/platform=watchOS'` | **BUILD SUCCEEDED** |
 | Wear OS — unit | `./gradlew testDebugUnitTest` | **44 test, 0 failure** (erano 29: +15) |
 | Wear OS — APK | `./gradlew assembleDebug` | **BUILD SUCCESSFUL** |
 | Garmin — app | `scripts/build.sh venu3` | compilazione **BUILD SUCCESSFUL** |

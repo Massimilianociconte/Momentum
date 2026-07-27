@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="$ROOT/apps/rallymate"
+APP="$ROOT/apps/momentum"
 SOLID="$APP/assets/brand/rallymate_app_icon_1024.png"
 FOREGROUND="$APP/assets/brand/rallymate_icon_foreground_1024.png"
 
@@ -55,5 +55,5 @@ resize "$FOREGROUND" 336 "$LAUNCH/LaunchImage@2x.png"
 resize "$FOREGROUND" 504 "$LAUNCH/LaunchImage@3x.png"
 
 resize "$SOLID" 1024 \
-  "$ROOT/wear/watchos/RallyMateWatchApp/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
+  "$ROOT/wear/watchos/MomentumWatchApp/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
 cp "$SOLID" "$APP/assets/rallymate_app_icon_1024.png"

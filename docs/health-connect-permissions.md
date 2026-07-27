@@ -1,6 +1,6 @@
 # Permessi Health Connect — Momentum
 
-Dettaglio tecnico dei permessi Health Connect dichiarati e usati. Fonte: `apps/rallymate/android/app/src/main/AndroidManifest.xml` + `HealthConnectBridge.kt` (audit 2026-07-26).
+Dettaglio tecnico dei permessi Health Connect dichiarati e usati. Fonte: `apps/momentum/android/app/src/main/AndroidManifest.xml` + `HealthConnectBridge.kt` (audit 2026-07-26).
 
 ## Permessi dichiarati (tutti READ, nessun WRITE)
 

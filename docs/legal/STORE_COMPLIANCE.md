@@ -19,7 +19,7 @@ submission.
 | 7 | `assistant` e migration sono attive; predisporre una routine interna per controllare le segnalazioni AI in `assistant_reports` | backend attivo / processo da definire |
 | 8 | Configurare RevenueCat, prodotti store e offering mensile; verificare acquisto, restore e gestione/disdetta dallo store | da fare |
 | 9 | Test su device fisici: HealthKit/Apple Watch workout, Health Connect Android, Wear OS Health Services/Samsung Galaxy Watch con permessi negati/concessi/revocati | da fare |
-| 10 | Garmin è compilata su 95 profili e ha un export firmato; completare QA visiva/hardware e review Connect IQ. Fitbit richiede ancora QA hardware e Gallery review | da fare prima dei claim pubblici |
+| 10 | Garmin: 95/95 profili compilano, 38/38 test passano (18 sono conformità sui vettori condivisi con rally_core), export `.iq` firmato. Restano **solo** due gate esterni: QA bidirezionale su hardware fisico e approvazione della listing Connect IQ. Procedura di flip a `FULL` in `wear/garmin-connectiq/README.md` → "Declaring Garmin publicly supported". Fitbit richiede ancora QA hardware e Gallery review | Garmin: bloccato solo da Garmin + hardware / Fitbit: da fare |
 | 11 | ⚠️ Configurare upload key Android tramite le quattro variabili `RALLYMATE_ANDROID_*`, generare AAB firmato e iscriversi a Play App Signing | da fare |
 | 12 | ⚠️ Configurare RevenueCat e il relativo webhook secret prima di deployare `revenuecat-webhook` | da fare |
 | 13 | ⚠️ Configurare dominio e file `apple-app-site-association` / `assetlinks.json` prima di pubblicizzare Universal Links e Android App Links; oggi è registrato solo lo schema `rallymate://` | da fare se gli inviti web entrano nel listing |
@@ -74,10 +74,33 @@ condivisione pubblicitaria, tracking, Firebase Analytics o export BigQuery.
 
 Play Console → Contenuti app → **Health apps / Health & Fitness permissions**:
 dichiarare sia l'uso di Health Connect sul telefono sia i permessi salute del
-modulo Wear OS. Tipi: **Steps, Active calories burned, Heart rate, Exercise
-sessions**; Wear OS: `ACTIVITY_RECOGNITION`, `BODY_SENSORS` e foreground
-service `health` per sessione partita. Categoria d'uso: *Fitness and wellness /
-attività sportiva*.
+modulo Wear OS. La dichiarazione deve elencare **tutti** i tipi richiesti nel
+manifest: quelli non dichiarati vengono bloccati da Health Connect (fonte:
+developer.android.com/health-and-fitness/guides/health-connect/publish/declare-access,
+verificata il 2026-07-27).
+
+Tipi effettivamente richiesti — **6**, allineati 1:1 con `AndroidManifest.xml`
+e `HealthConnectBridge.kt` (dettaglio in `docs/health-connect-permissions.md`):
+
+| Tipo Health Connect | Permesso |
+|---|---|
+| Steps | `READ_STEPS` |
+| Active calories burned | `READ_ACTIVE_CALORIES_BURNED` |
+| Heart rate | `READ_HEART_RATE` |
+| Exercise | `READ_EXERCISE` |
+| **Heart rate variability** | `READ_HEART_RATE_VARIABILITY` |
+| **Sleep** | `READ_SLEEP` |
+
+HRV e Sonno alimentano l'indicatore di recupero/readiness e restano opzionali:
+il grant parziale è gestito (il riepilogo funziona con i soli tipi concessi).
+Wear OS: `ACTIVITY_RECOGNITION`, `BODY_SENSORS` e foreground service `health`
+per sessione partita. Categoria d'uso: *Fitness and wellness / attività
+sportiva*.
+
+⚠️ Aggiungendo o rimuovendo un permesso aggiornare **insieme**: manifest,
+bridge, questa tabella, `docs/health-connect-permissions.md`,
+`docs/health-app-declaration.md`, `docs/data-safety-mapping.md`, privacy policy
+pubblicata e form Health apps in Play Console.
 
 Requisiti policy (tutti già rispettati dall'app — non regredire):
 - [x] Uso limitato alla funzionalità visibile all'utente (insight fitness)
@@ -102,9 +125,12 @@ Requisiti policy (tutti già rispettati dall'app — non regredire):
   Wear OS `ACTIVITY_RECOGNITION`, `BODY_SENSORS`, foreground service `health`,
   `POST_NOTIFICATIONS` (reminder locali e push operative social/account, solo
   dopo consenso). Nessuna posizione.
-- **Target SDK**: a luglio 2026 Google richiede API 35 per nuove app/update
-  mobile e API 34 per Wear OS. Momentum usa target 36 sul telefono e 35 sul
-  modulo Wear OS; ricontrollare comunque la pagina ufficiale al submit.
+- **Target SDK** (verificato su
+  https://developer.android.com/google/play/requirements/target-sdk il
+  2026-07-27): **dal 31 agosto 2026** nuove app e aggiornamenti devono
+  targettare **API 36** (Android 16); **Wear OS e Automotive: API 35**; TV e XR:
+  API 34. Proroga richiedibile da Play Console fino al **1 novembre 2026**.
+  Momentum usa target 36 sul telefono e 35 sul modulo Wear OS → **conforme**.
 - **Contenuti**: nessuna pubblicità; questionario IARC → app sportiva, chat
   tra utenti moderata (social) → rating atteso PEGI 3/Everyone con
   segnalazione "interazione tra utenti".
@@ -175,7 +201,29 @@ NSPrivacyTracking=false e required-reason API dichiarate).
   Info.plist (solo HTTPS standard) — nessuna domanda in fase di submit.
 - **DSA (UE)**: in App Store Connect dichiarare lo **status di trader** e
   fornire indirizzo/contatto verificati (obbligatorio per vendere in UE).
-- **Privacy manifest**: ✅ `PrivacyInfo.xcprivacy` incluso nel target.
+- **Privacy manifest**: ✅ `PrivacyInfo.xcprivacy` incluso nel target e
+  allineato alle nutrition label di §2.1, **Device ID compreso** (token APNs +
+  UUID installazione, raccolti solo dopo il consenso notifiche). Ogni nuovo
+  tipo dichiarato in App Store Connect va aggiunto anche qui.
+- **2.5.4 Background modes**: `Info.plist` dichiara **solo**
+  `bluetooth-central`, ed è richiesta dal **SDK Garmin Connect IQ**:
+  `GarminConnectIqBridge` usa
+  `initializeWithUrlScheme:uiOverrideDelegate:stateRestorationIdentifier:` e
+  il SDK passa quella stringa come `CBCentralManagerOptionRestoreIdentifierKey`
+  al proprio `CBCentralManager` (documentato in `ConnectIQ.h`); senza la
+  background mode la state restoration è inefficace.
+  ⚠️ Il bridge BLE cardio (`BleHeartRateBridge`) è foreground-only e **non**
+  giustifica la modalità: se in review chiedono quale funzione la richiede, la
+  risposta corretta è *comunicazione con gli orologi Garmin* (Profilo →
+  Dispositivi), non il sensore cardiaco.
+  ⚠️ Rischio residuo: finché Garmin non è dichiarato pubblicamente (punto 0.10),
+  questa modalità è la parte più difficile da difendere in review. Se si decide
+  di spedire senza Garmin, passare a `initializeWithUrlScheme:uiOverrideDelegate:`
+  (2 argomenti) **e** rimuovere `UIBackgroundModes` nello stesso commit.
+- **3.1.2 Prezzi**: ✅ il paywall mostra esclusivamente il prezzo localizzato
+  dello store; senza dato disponibile mostra `—` e disabilita l'acquisto. Non
+  reintrodurre il listino EUR hardcoded (`Plan.monthlyEur`) nella UI: in un
+  mercato non-euro mostrerebbe un importo diverso da quello addebitato.
 
 ### 2.3 Checklist UI, navigazione e paywall
 
@@ -262,11 +310,20 @@ Demo account: [email] / [password] (Pro plan enabled).
 - **GDPR**: informativa completa (docs/legal), diritti esercitabili in-app,
   registro trattamenti consigliato; DPIA leggera raccomandata per Assistant
   (trasferimento extra-UE) e social.
-- **AI Act (Reg. 2024/1689), art. 50** — in vigore per i chatbot dal
-  **2 agosto 2026**: obbligo di informare che si interagisce con un'AI.
-  ✅ Coperto: disclosure in privacy policy sez. 7, ToS sez. 5; l'app presenta
-  l'assistente come "Pallino Assistant" e consente la segnalazione in-app
-  delle risposte problematiche.
+- **AI Act (Reg. 2024/1689), art. 50 §1** — applicabile dal **2 agosto 2026**
+  (art. 113): «Providers shall ensure that AI systems intended to interact
+  directly with natural persons are informed that they are interacting with an
+  AI system, unless this is obvious».
+  ✅ Coperto: disclosure in privacy policy sez. 7 e ToS sez. 5 **+ disclosure
+  in-app persistente su tutte e tre le superfici conversazionali** —
+  `AssistantAiDisclosureBanner` (telefono, sopra la conversazione),
+  `AI_DISCLOSURE` (Wear OS) e `WatchAssistantDisclosure` (watchOS).
+  ⚠️ Il solo nome "Pallino Assistant" **non** soddisfa l'esenzione "unless this
+  is obvious": una mascotte con nome proprio non rende evidente la natura
+  artificiale dell'interlocutore. Non rimuovere le disclosure in-app.
+  ✅ Segnalazione in-app delle risposte problematiche ("Segnala risposta" →
+  `assistant_reports`), che copre anche il requisito Google Play *AI-Generated
+  Content* (in-app reporting/flagging obbligatorio).
 - **Data Act**: non applicabile (l'app non è il produttore del wearable).
 - **Codice del Consumo**: recesso digitale gestito via store (ToS sez. 4);
   garanzia contenuti digitali citata (ToS sez. 10).
@@ -290,14 +347,26 @@ Demo account: [email] / [password] (Pro plan enabled).
   `ACTIVITY_RECOGNITION`, un `PassiveListenerService` e notifiche normali: niente
   polling, full-screen intent o apertura forzata. Se l'esercizio appartiene a
   un'altra app, Momentum resta in scoring-only e non lo sostituisce.
-- **Garmin Connect IQ**: UUID, lista device target, scoring offline, bridge
-  mobile e unit-test binary sono presenti. Prima della pubblicazione servono
-  developer key/SDK custoditi fuori dal repo, esecuzione `monkeydo` interattiva
-  e test su almeno un watch fisico per famiglia esportata. Il permesso `Fit`
-  serve alla sessione avviata esplicitamente da Momentum; il sub-sport Padel è
-  disponibile su API 4.1.6+, con fallback Tennis/generico. Non esiste un evento
-  background pubblico di inizio attività esterna. Non dichiarare supporto
-  Garmin pubblico finche il modulo non supera la review Connect IQ.
+- **Garmin Connect IQ**: modulo completo — UUID, 95 profili device, scoring
+  offline, bridge mobile iOS+Android, export `.iq` firmato. Lo scoring è
+  verificato contro rally_core dagli stessi vettori condivisi usati da Wear OS,
+  watchOS e Fitbit: 18/23 replicati passo per passo
+  (`test-source/RallyMateScoringVectorTests.mc`). I 5 esclusi sono dichiarati e
+  motivati nel README del modulo — Star Point non è implementato sull'engine
+  Monkey C e il set decisivo senza tie-break resta phone-only: **non
+  pubblicizzare Star Point su Garmin**.
+  Il permesso `Fit` serve alla sessione avviata esplicitamente da Momentum; il
+  sub-sport Padel richiede API 4.1.6+, con fallback Tennis/generico sui prodotti
+  più vecchi tra i 95 dichiarati. Non esiste un evento background pubblico di
+  inizio attività esterna.
+  Restano due gate **esterni al repo**: (a) QA bidirezionale su hardware fisico
+  — il simulatore SDK 9.2.0 chiude il socket ADB dopo un send riuscito, quindi
+  PING/PONG e drain della coda offline si provano solo su orologio reale; (b)
+  approvazione della listing Connect IQ da parte di Garmin.
+  Non dichiarare supporto Garmin pubblico prima di (a) e (b): la procedura di
+  passaggio a `FULL` è in `wear/garmin-connectiq/README.md` → "Declaring Garmin
+  publicly supported (GA flip)" ed è una singola modifica in
+  `assets/config/watch_compatibility.json`.
 - **Fitbit OS**: binari OS 4 e OS 5 separati nella stessa Gallery listing;
   nessun callback pubblico di avvio esercizio esterno. Google ha rimosso
   l'installazione di app Fitbit terze nell'EEA da giugno 2024: il modulo non va

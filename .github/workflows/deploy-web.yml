@@ -14,7 +14,7 @@ on:
       - main
       - master
     paths:
-      - "apps/padelandia-web/**"
+      - "apps/momentum-web/**"
       - "workers/blog-publisher/**"
       - ".github/workflows/deploy-web.yml"
 
@@ -41,7 +41,7 @@ jobs:
         with:
           filters: |
             web:
-              - 'apps/padelandia-web/**'
+              - 'apps/momentum-web/**'
               - '.github/workflows/deploy-web.yml'
             publisher:
               - 'workers/blog-publisher/**'
@@ -62,16 +62,16 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: apps/padelandia-web/package-lock.json
+          cache-dependency-path: apps/momentum-web/package-lock.json
 
       - name: Install, build and validate
-        working-directory: apps/padelandia-web
+        working-directory: apps/momentum-web
         run: |
           npm ci
           npm test
 
       - name: Deploy with Wrangler
-        working-directory: apps/padelandia-web
+        working-directory: apps/momentum-web
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

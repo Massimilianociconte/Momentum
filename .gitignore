@@ -49,7 +49,7 @@ artifacts/builds/
 **/key.properties
 
 # Large unoptimized 3D sources (optimized GLBs are in mesh-3d/*.glb)
-apps/rallymate/assets/mesh-3d/source/
+apps/momentum/assets/mesh-3d/source/
 
 # Tool-local state
 .claude/settings.local.json

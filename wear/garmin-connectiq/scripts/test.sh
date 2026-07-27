@@ -26,9 +26,14 @@ OUTPUT=$("$SDK/bin/monkeyc" \
     exit "$STATUS"
   }
 printf '%s\n' "$OUTPUT"
+# La sola eccezione oltre all'icona è la dimensione dei vettori di conformità:
+# è una risorsa presente unicamente nel binario di test (test.jungle), mai nel
+# .prg di produzione, quindi non incide sulla memoria dell'app pubblicata.
+# NON replicare questa eccezione in build.sh.
 UNEXPECTED_WARNINGS=$(printf '%s\n' "$OUTPUT" |
   grep '^WARNING:' |
-  grep -v "launcher icon .* will be scaled to the target size" || true)
+  grep -v "launcher icon .* will be scaled to the target size" |
+  grep -v "record RallyMateScoringVectors is large" || true)
 if [ -n "$UNEXPECTED_WARNINGS" ]; then
   printf '%s\n' "$UNEXPECTED_WARNINGS" >&2
   echo "Garmin test build rejected compiler warnings for $DEVICE" >&2

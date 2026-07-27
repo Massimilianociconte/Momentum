@@ -102,7 +102,7 @@ il dispatcher non può consegnare, altrimenti l'outbox accumula eventi senza
 consumer.
 
 1. Android: scarica il solo `google-services.json` client nel percorso
-   `apps/rallymate/android/app/google-services.json` (ignorato da Git). Il
+   `apps/momentum/android/app/google-services.json` (ignorato da Git). Il
    service account FCM resta invece esclusivamente nel secret server-side
    `FCM_SERVICE_ACCOUNT_JSON`.
 2. Apple: abilita Push Notifications sull'App ID/target Runner e crea una APNs

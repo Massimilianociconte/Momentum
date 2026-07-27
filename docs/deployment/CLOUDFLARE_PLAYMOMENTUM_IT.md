@@ -1,13 +1,13 @@
 # Deploy di playmomentum.it su Cloudflare (piano Free)
 
-Guida operativa per pubblicare `apps/padelandia-web` (Astro, sito statico) su
+Guida operativa per pubblicare `apps/momentum-web` (Astro, sito statico) su
 **Cloudflare Workers static assets** — gratuito, CDN globale, TLS automatico —
 con il dominio `playmomentum.it` acquistato su Aruba.
 
 ## Architettura
 
 - **Build**: `astro build` → `dist/` (HTML statico, zero server).
-- **Hosting**: Worker "assets-only" (`wrangler.jsonc` in `apps/padelandia-web`):
+- **Hosting**: Worker "assets-only" (`wrangler.jsonc` in `apps/momentum-web`):
   nessun codice server, solo asset statici serviti dalla CDN.
 - **Header di sicurezza**: `public/_headers` (HSTS, CSP, nosniff, ecc.).
 - **Redirect**: `public/_redirects` (www → apex 301).
@@ -41,7 +41,7 @@ salta al punto 4.
 ## 2. Autenticazione Wrangler (una tantum)
 
 ```bash
-cd apps/padelandia-web
+cd apps/momentum-web
 npm ci                 # installa anche wrangler (devDependency)
 npx wrangler login     # apre il browser, autorizza l'account Cloudflare
 npx wrangler whoami    # verifica account e permessi
@@ -60,7 +60,7 @@ cp .env.example .env
 ## 4. Deploy
 
 ```bash
-cd apps/padelandia-web
+cd apps/momentum-web
 npm run deploy         # = build + validazione + wrangler deploy
 ```
 
@@ -90,7 +90,7 @@ Pagine da controllare a mano: `/`, `/supporto/`, `/download/`, `/privacy/`,
 Ogni modifica al sito si pubblica con lo stesso comando:
 
 ```bash
-cd apps/padelandia-web && npm run deploy
+cd apps/momentum-web && npm run deploy
 ```
 
 `npm run deploy:dry` esegue una prova senza pubblicare. I rollback si fanno

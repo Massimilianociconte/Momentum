@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate all Momentum brand assets from apps/rallymate/assets/logo.png.
+"""Generate all Momentum brand assets from apps/momentum/assets/logo.png.
 
 Run from repo root:  python3 scripts/generate_momentum_assets.py
 Then regenerate platform icon sets:  scripts/generate_app_icon_assets.sh
@@ -9,7 +9,7 @@ import math
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = f'{ROOT}/apps/rallymate/assets/logo.png'
+SRC = f'{ROOT}/apps/momentum/assets/logo.png'
 
 logo = Image.open(SRC).convert('RGBA')
 
@@ -100,15 +100,15 @@ def fit_center(img, box, canvas_size, bg=None):
     canvas.paste(scaled, pos, scaled if scaled.mode == 'RGBA' else None)
     return canvas
 
-BRAND = f'{ROOT}/apps/rallymate/assets/brand'
+BRAND = f'{ROOT}/apps/momentum/assets/brand'
 
 # Solid app icons (full-bleed, RGB)
 for size, path in [
     (1024, f'{BRAND}/padelandia_app_icon_1024.png'),
     (4096, f'{BRAND}/padelandia_app_icon_4096.png'),
     (1024, f'{BRAND}/rallymate_app_icon_1024.png'),
-    (1024, f'{ROOT}/apps/rallymate/assets/rallymate_app_icon_1024.png'),
-    (1024, f'{ROOT}/apps/padelandia-web/src/assets/brand/padelandia-app-icon.png'),
+    (1024, f'{ROOT}/apps/momentum/assets/rallymate_app_icon_1024.png'),
+    (1024, f'{ROOT}/apps/momentum-web/src/assets/brand/padelandia-app-icon.png'),
     (512, f'{ROOT}/docs/store-assets/google-play/play-store-icon-512.png'),
 ]:
     save_rgb(solid, size, path)
@@ -148,9 +148,9 @@ print('wrote wear launcher foreground')
 
 # watchOS: in-app mark shown by WatchViews (asset catalog + SPM resource bundle)
 watch_mark = fit_center(mark_alpha, 200, 256)
-watch_mark.save(f'{ROOT}/wear/watchos/RallyMateWatchApp/Assets.xcassets/'
+watch_mark.save(f'{ROOT}/wear/watchos/MomentumWatchApp/Assets.xcassets/'
                 'RallyAppMark.imageset/rally_app_mark.png')
-watch_mark.save(f'{ROOT}/wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/'
+watch_mark.save(f'{ROOT}/wear/watchos/MomentumCore/Sources/MomentumWatchKit/'
                 'Resources/Backgrounds/rally_app_mark.png')
 print('wrote watchos marks')
 

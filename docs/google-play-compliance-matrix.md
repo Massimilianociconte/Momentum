@@ -6,11 +6,11 @@ Stati ammessi: CONFORME · CORRETTO DURANTE L'AUDIT · NON CONFORME · DA VERIFI
 
 | # | Requisito | Stato | Evidenza / File | Note |
 |---|-----------|-------|------------------|------|
-| 1 | Target API level mobile ≥ 36 | CONFORME | Merged manifest release: `uses-sdk targetSdkVersion=36` (`apps/rallymate/build/app/intermediates/merged_manifests/release/.../AndroidManifest.xml`) | FlutterExtension default 36; minSdk 26 esplicito |
+| 1 | Target API level mobile ≥ 36 | CONFORME | Merged manifest release: `uses-sdk targetSdkVersion=36` (`apps/momentum/build/app/intermediates/merged_manifests/release/.../AndroidManifest.xml`) | FlutterExtension default 36; minSdk 26 esplicito |
 | 2 | Target API level Wear OS ≥ 35 | CONFORME | `wear/wearos/app/build.gradle.kts` (`targetSdk = 35`), merged manifest release | minSdk 30 (Wear OS 3+) |
 | 3 | Supporto 16 KB page size | CONFORME | zipalign `-P 16` OK su entrambi gli APK release; ELF LOAD align ≥ 16384 su tutte le .so a 64 bit (libapp/libflutter 65536, altre 16384); `extractNativeLibs=false` | Verificato con zipalign 37.0.0 + parsing ELF |
 | 4 | Formato AAB | CONFORME | `flutter build appbundle` produce `app-release.aab`; verificato in audit | Wear si pubblica come AAB/APK legato alla stessa release |
-| 5 | Firma release mobile | CONFORME | `apps/rallymate/android/app/build.gradle.kts`: signing da env var all-or-nothing, fail se parziale | Nessun keystore nel repo. Play App Signing: DA VERIFICARE MANUALMENTE in Console |
+| 5 | Firma release mobile | CONFORME | `apps/momentum/android/app/build.gradle.kts`: signing da env var all-or-nothing, fail se parziale | Nessun keystore nel repo. Play App Signing: DA VERIFICARE MANUALMENTE in Console |
 | 6 | Firma release Wear (stesso certificato) | CORRETTO DURANTE L'AUDIT | `wear/wearos/app/build.gradle.kts`: aggiunta signingConfig release con le stesse env var del telefono | Prima assente: release non firmabile |
 | 7 | Offuscamento/shrinking release mobile | CORRETTO DURANTE L'AUDIT | `isMinifyEnabled/isShrinkResources = true` + `proguard-rules.pro` creato (keep Garmin CIQ) | Prima il release era non minificato |
 | 8 | Versioning coerente phone/wear | CORRETTO DURANTE L'AUDIT | Wear versionCode 1→1001 (range 1xxx), versionName allineato 0.1.0 | Phone da pubspec (0.1.0+1) |

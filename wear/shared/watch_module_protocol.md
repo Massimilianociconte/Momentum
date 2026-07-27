@@ -243,8 +243,8 @@ manual/shortcut/deferred paths described in the compatibility matrix.
 semantics. It is generated from the canonical Dart engine and replayed by the
 platform engines step by step:
 
-- Generator: `cd packages/rally_core && dart run tool/generate_scoring_vectors.dart`
-- Drift guard (Dart): `packages/rally_core/test/scoring_vectors_test.dart`
+- Generator: `cd packages/momentum_core && dart run tool/generate_scoring_vectors.dart`
+- Drift guard (Dart): `packages/momentum_core/test/scoring_vectors_test.dart`
   fails when the committed file no longer matches the engine.
 - Runners: `ScoringVectorConformanceTest.kt` (Wear OS/JVM),
   `ScoringVectorConformanceTests.swift` (watchOS package),
