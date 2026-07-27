@@ -422,8 +422,8 @@ class _ConnectionCard extends ConsumerWidget {
         .proposeMatch(
           connection.userId,
           message: duo
-              ? 'Ti propongo una partita Padelandia in Duo Mode.'
-              : 'Ti va una partita con Padelandia?',
+              ? 'Ti propongo una partita Momentum in Duo Mode.'
+              : 'Ti va una partita con Momentum?',
         );
     if (!context.mounted) return;
     if (error == null && duo) context.push('/match/new?duo=1');
@@ -636,7 +636,7 @@ class _RetryState extends StatelessWidget {
     children: [
       EmptyStateCard(
         icon: icon,
-        title: 'Amici Padelandia',
+        title: 'Amici Momentum',
         message: message,
         primaryLabel: 'Aggiorna',
         primaryIcon: Icons.refresh,

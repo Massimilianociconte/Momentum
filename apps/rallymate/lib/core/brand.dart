@@ -6,8 +6,8 @@
 library;
 
 abstract final class AppBrand {
-  static const name = 'Padelandia';
-  static const nameUpper = 'PADELANDIA';
+  static const name = 'Momentum';
+  static const nameUpper = 'MOMENTUM';
   static const tagline = 'Padel companion';
 
   /// Conversational AI coach mascot (chatbot / rules assistant).

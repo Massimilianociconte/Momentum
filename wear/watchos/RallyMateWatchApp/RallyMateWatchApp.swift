@@ -11,15 +11,17 @@ import WatchKit
 enum RallyMateWorkoutStyle: String, AppEnum {
     case lastFormat
     case advantages
+    case starPoint
     case goldenPoint
     case training
 
     static let typeDisplayRepresentation = TypeDisplayRepresentation(
-        name: "Formato Padelandia"
+        name: "Formato Momentum"
     )
     static let caseDisplayRepresentations: [Self: DisplayRepresentation] = [
         .lastFormat: "Ultimo formato",
         .advantages: "Vantaggi, 3 set",
+        .starPoint: "Star Point FIP, 3 set",
         .goldenPoint: "Golden point, 3 set",
         .training: "Allenamento libero",
     ]
@@ -30,6 +32,8 @@ enum RallyMateWorkoutStyle: String, AppEnum {
             LocalMatchStore().loadLastFormat()
         case .advantages:
             .advantageBo3
+        case .starPoint:
+            .starPointBo3
         case .goldenPoint:
             .goldenPointBo3
         case .training:
@@ -39,13 +43,14 @@ enum RallyMateWorkoutStyle: String, AppEnum {
 }
 
 struct StartRallyMateWorkoutIntent: StartWorkoutIntent {
-    static let title: LocalizedStringResource = "Avvia partita Padelandia"
+    static let title: LocalizedStringResource = "Avvia partita Momentum"
     static let description = IntentDescription(
-        "Apre Padelandia e avvia una partita con il formato scelto."
+        "Apre Momentum e avvia una partita con il formato scelto."
     )
     static let suggestedWorkouts: [Self] = [
         Self(style: .lastFormat),
         Self(style: .advantages),
+        Self(style: .starPoint),
         Self(style: .goldenPoint),
         Self(style: .training),
     ]
@@ -55,7 +60,7 @@ struct StartRallyMateWorkoutIntent: StartWorkoutIntent {
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "Padelandia",
+            title: "Momentum",
             subtitle: workoutStyle.caseDisplayRepresentationsTitle
         )
     }
@@ -81,6 +86,7 @@ private extension RallyMateWorkoutStyle {
         switch self {
         case .lastFormat: "Ultimo formato"
         case .advantages: "Vantaggi, 3 set"
+        case .starPoint: "Star Point FIP, 3 set"
         case .goldenPoint: "Golden point, 3 set"
         case .training: "Allenamento libero"
         }

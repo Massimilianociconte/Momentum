@@ -80,6 +80,8 @@ public final class WatchMatchViewModel: ObservableObject {
     }
     public var isFreePlay: Bool { format.freePlay }
     public var usesGoldenPoint: Bool { format.goldenPoint }
+    public var gameScoringMode: GameScoringMode { format.gameScoringMode }
+    public var usesStarPoint: Bool { format.gameScoringMode == .starPoint }
     public var activeMatchId: String { matchId }
     public var activeFormat: MatchFormat { format }
     public var lastFormat: MatchFormat { store.loadLastFormat() }
@@ -168,6 +170,7 @@ public final class WatchMatchViewModel: ObservableObject {
         format: MatchFormat,
         persisted: [MatchEvent],
         duoTeam: TeamId? = nil,
+        firstServer: TeamId? = nil,
         teamVisual: WatchTeamVisual? = nil,
         startWorkout: Bool = false,
         /// True when the user resumes a match paused in an earlier session.
@@ -201,9 +204,13 @@ public final class WatchMatchViewModel: ObservableObject {
         teamScoringStyle = visual.style
         teamImage = decodeTeamImage(visual.imageURL)
         let assignedTeam = duoTeam ?? store.loadDuoTeam(id)
+        if let firstServer {
+            store.saveFirstServer(id, team: firstServer)
+        }
         let e = ScoringEngine(
             matchId: id,
             format: format,
+            firstServer: firstServer ?? store.loadFirstServer(id),
             sourceUserId: accountContext.sourceUserId,
             assignedTeam: assignedTeam,
             duoMode: assignedTeam != nil
@@ -432,21 +439,23 @@ public final class WatchMatchViewModel: ObservableObject {
 
     // MARK: - Resumable matches (cross-device)
 
-    /// Rebuilds the list shown on the home screen: everything the watch knows
-    /// locally, merged with the latest phone snapshot. Works with no
-    /// connectivity at all.
+    /// Rebuilds the list from the authoritative phone snapshot plus only the
+    /// unsynced tail authored on this watch. Fully-synced rows omitted by the
+    /// phone remain tombstoned across relaunch and reconnect.
     public func refreshResumableMatches() {
         var snapshot = store.loadResumableSnapshot()
-        // Locally known matches that the phone never told us about (started on
-        // this watch, or abandoned here) must still be offered.
-        for id in store.knownMatchIds() where snapshot.match(id) == nil {
+        // A locally authored, not-yet-acknowledged tail must remain available
+        // offline even when the latest phone snapshot does not contain it.
+        for id in store.pendingLocalMatchIds() where snapshot.match(id) == nil {
             guard let summary = localSummary(for: id) else { continue }
             snapshot = snapshot.applying(summary)
         }
         store.saveResumableSnapshot(snapshot)
         resumableMatches = snapshot.resumable.filter { $0.matchId != matchId }
         recoverableMatchId = resumableMatches.first?.matchId
-            ?? store.lastIncompleteMatchId()
+            ?? store.lastIncompleteMatchId().flatMap {
+                store.pendingLocalSyncCount($0) > 0 ? $0 : nil
+            }
     }
 
     /// Applies the phone's "latest state" snapshot (application context).
@@ -468,6 +477,41 @@ public final class WatchMatchViewModel: ObservableObject {
     /// Applies a durable per-match lifecycle change (queued transfer).
     /// Idempotent: a redelivered payload is ignored.
     public func applyMatchLifecycle(_ lifecycle: WatchMatchLifecycle) {
+        let declaredScope: WatchSnapshotAuthorityScope?
+        if let rawScope = lifecycle.authorityScope {
+            // A sender that declares an unknown scope is not allowed to fall
+            // back to format inference and overwrite a different partition.
+            guard let parsed = WatchSnapshotAuthorityScope(rawValue: rawScope)
+            else { return }
+            declaredScope = parsed
+        } else {
+            declaredScope = nil
+        }
+        let knownFormats = [
+            lifecycle.format,
+            lifecycle.summary?.format,
+            store.loadFormat(lifecycle.matchId),
+        ].compactMap { $0 }
+        let inferredScopes = knownFormats.map {
+            $0.gameScoringMode == .starPoint
+                ? WatchSnapshotAuthorityScope.starPoint
+                : WatchSnapshotAuthorityScope.nonStarPoint
+        }
+        if let declaredScope,
+           inferredScopes.contains(where: { $0 != declaredScope }) {
+            return
+        }
+        let authorityScope = declaredScope
+            ?? inferredScopes.first
+        // Queued lifecycle transfers and application-context snapshots have
+        // independent delivery order. Share the phone authority high-water
+        // mark before dedup or mutation so an older PAUSED transfer cannot
+        // resurrect a row removed by a newer authoritative snapshot.
+        guard store.acceptLifecycleAuthority(
+            source: lifecycle.authoritySource,
+            scope: authorityScope,
+            version: lifecycle.authorityVersion
+        ) else { return }
         guard store.markLifecycleApplied(lifecycle.idempotencyKey) else { return }
         let known = store.stateVersion(lifecycle.matchId)
         // A lower version never overwrites a newer local state, but a terminal
@@ -613,7 +657,7 @@ public final class WatchMatchViewModel: ObservableObject {
     static let completedElsewhereMessage =
         "Questa partita è già stata terminata su un altro dispositivo."
     static let notSynchronisedMessage =
-        "Partita non ancora sincronizzata su questo Watch. Apri Padelandia sull'iPhone quando sono vicini."
+        "Partita non ancora sincronizzata su questo Watch. Apri Momentum sull'iPhone quando sono vicini."
 
     /// Publishes the status of the match owned by this watch so the local list
     /// stays right even with no phone contact.
@@ -688,7 +732,10 @@ public final class WatchMatchViewModel: ObservableObject {
     private func pullJournal(_ id: String) {
         Task { [weak self] in
             guard let self,
-                  let events = await self.sync.requestState(matchId: id),
+                  let events = await self.sync.requestState(
+                    matchId: id,
+                    format: self.store.loadFormat(id) ?? MatchFormat()
+                  ),
                   !events.isEmpty
             else { return }
             let format = self.store.loadFormat(id) ?? MatchFormat()
@@ -702,7 +749,10 @@ public final class WatchMatchViewModel: ObservableObject {
         let id = matchId
         Task { [weak self] in
             guard let self,
-                  let events = await self.sync.requestState(matchId: id),
+                  let events = await self.sync.requestState(
+                    matchId: id,
+                    format: self.format
+                  ),
                   !events.isEmpty
             else { return }
             let remoteIds = Set(events.map(\.eventId))
@@ -955,13 +1005,15 @@ public final class WatchMatchViewModel: ObservableObject {
 
     private func wireSyncCallbacks() {
         syncStatus = sync.status
-        sync.onStartMatch = { [weak self] id, format, events, duoTeam, visual in
+        sync.onStartMatch = {
+            [weak self] id, format, events, duoTeam, firstServer, visual in
             Task { @MainActor in
                 self?.startMatch(
                     id: id,
                     format: format,
                     persisted: events,
                     duoTeam: duoTeam,
+                    firstServer: firstServer,
                     teamVisual: visual,
                     startWorkout: true
                 )

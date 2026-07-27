@@ -90,7 +90,7 @@ class MatchViewModel(app: Application) : AndroidViewModel(app) {
         get() = duoTeam?.let { engine?.canUndoTeam(it) == true }
             ?: (engine?.canUndo == true)
     val isFreePlay: Boolean get() = format.freePlay
-    val usesGoldenPoint: Boolean get() = format.goldenPoint
+    val gameScoringMode: GameScoringMode get() = format.gameScoringMode
     val activeMatchId: String get() = matchId
     val activeFormat: MatchFormat get() = format
     val lastFormat: MatchFormat get() = store.loadLastFormat()
@@ -195,6 +195,7 @@ class MatchViewModel(app: Application) : AndroidViewModel(app) {
         val e = ScoringEngine(
             matchId = id,
             format = f,
+            firstServer = store.loadFirstServer(id),
             sourceUserId = accountContext.sourceUserId,
             assignedTeam = assignedTeam,
             duoMode = assignedTeam != null,
@@ -345,16 +346,17 @@ class MatchViewModel(app: Application) : AndroidViewModel(app) {
         const val COMPLETED_ELSEWHERE =
             "Questa partita è già stata terminata su un altro dispositivo."
         const val NOT_SYNCHRONISED =
-            "Partita non ancora sincronizzata su questo watch. Apri Padelandia sul telefono quando sono vicini."
+            "Partita non ancora sincronizzata su questo watch. Apri Momentum sul telefono quando sono vicini."
     }
 
     /**
-     * Rebuilds the list shown on the home screen from the local database merged
-     * with the phone snapshot. Works with no connectivity at all.
+     * Rebuilds the list from the authoritative phone snapshot plus only the
+     * unsynced tail authored on this watch. Fully-synced rows omitted by the
+     * phone are tombstoned instead of being resurrected on relaunch.
      */
     fun refreshResumableMatches() {
         var snapshot = store.loadResumableSnapshot()
-        for (id in store.knownMatchIds()) {
+        for (id in store.pendingLocalMatchIds()) {
             if (snapshot.match(id) != null) continue
             val summary = localSummary(id) ?: continue
             snapshot = snapshot.applying(summary)
@@ -363,6 +365,7 @@ class MatchViewModel(app: Application) : AndroidViewModel(app) {
         resumableMatches = snapshot.resumable.filter { it.matchId != matchId }
         recoverableMatchId = resumableMatches.firstOrNull()?.matchId
             ?: store.lastIncompleteMatchId()
+                ?.takeIf { store.pendingLocalSyncCount(it) > 0 }
     }
 
     /**

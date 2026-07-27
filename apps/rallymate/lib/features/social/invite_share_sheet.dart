@@ -134,7 +134,7 @@ class _InviteShareContentState extends ConsumerState<_InviteShareContent> {
             else ...[
               Semantics(
                 image: true,
-                label: 'Codice QR invito Padelandia',
+                label: 'Codice QR invito Momentum',
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(

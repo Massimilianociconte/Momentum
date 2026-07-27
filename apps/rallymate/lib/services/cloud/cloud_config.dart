@@ -123,7 +123,11 @@ abstract final class CloudConfig {
   /// coach) restano protette da RLS sul piano reale del profilo — per
   /// testarle end-to-end imposta il piano sul DB:
   ///   update profiles set plan='pro' where user_id='...';
-  static const testPremium = bool.fromEnvironment('RALLYMATE_TEST_PREMIUM');
+  /// Neutralizzato in release (dart.vm.product): una build store non può
+  /// attivare il bypass nemmeno passando il dart-define per errore.
+  static const testPremium =
+      bool.fromEnvironment('RALLYMATE_TEST_PREMIUM') &&
+      !bool.fromEnvironment('dart.vm.product');
 
   static CloudConfigValidation get validation =>
       validateCloudClientConfig(supabaseUrl, supabaseAnonKey);

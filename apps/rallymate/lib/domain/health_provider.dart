@@ -81,15 +81,15 @@ enum HealthMetricType {
   }
 }
 
-/// How a workout/session is owned relative to Padelandia.
+/// How a workout/session is owned relative to Momentum.
 ///
 /// Distinguishes app-started sessions from external, imported and multi-source
 /// recordings so scoring, watch and phone health never confuse them.
 enum WorkoutSessionOwnership {
-  /// Session started and owned by Padelandia (phone/watch companion).
+  /// Session started and owned by Momentum (phone/watch companion).
   appOwned('APP_OWNED'),
 
-  /// External session detected; Padelandia observes without taking ownership.
+  /// External session detected; Momentum observes without taking ownership.
   externalPassive('EXTERNAL_PASSIVE'),
 
   /// Aggregates imported later from HealthKit / Health Connect.

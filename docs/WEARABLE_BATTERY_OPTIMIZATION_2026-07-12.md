@@ -1,4 +1,4 @@
-# Padelandia wearable power audit - 12 July 2026
+# Momentum wearable power audit - 12 July 2026
 
 ## Scope and non-negotiable behavior
 
@@ -17,11 +17,11 @@ Network coalescing therefore cannot lose a point or make the score feel slower.
 ### Apple Watch
 
 - Apple says the Always On state updates at a much lower rate and recommends
-  system-managed date styles for timers. Padelandia now uses `Text(...,
+  system-managed date styles for timers. Momentum now uses `Text(...,
   style: .timer)` and a reduced-luminance score surface instead of a 1 Hz
   application timeline.
 - Wrist-down is an `inactive` transition before the app is actually backgrounded.
-  Padelandia persists locally on inactive and performs a radio retry only on a
+  Momentum persists locally on inactive and performs a radio retry only on a
   true background or active/reconnected transition.
 - A real match uses `HKWorkoutSession`; it is not emulated with a generic
   extended runtime session. HealthKit callbacks are rendered at most every five
@@ -52,7 +52,7 @@ Sources:
 - Health Services capabilities are fetched once when starting the workout, and
   the callback is cleared when the service ends.
 
-Padelandia intentionally keeps the cross-vendor Health Services implementation
+Momentum intentionally keeps the cross-vendor Health Services implementation
 for heart rate and calories. Samsung Health Sensor SDK is appropriate only when
 raw or Samsung-exclusive BioActive data is required. Adding it for the same
 heart-rate value would duplicate listeners and reduce compatibility. If a future
@@ -73,7 +73,7 @@ Sources:
 - The device app has no explicit GPS or high-rate sensor listener and redraws
   only after model/user events. A user-started match now owns one native FIT
   recording session; Garmin's recorder handles its lifecycle without polling.
-- A pre-existing activity forces scoring-only mode. Padelandia never acquires
+- A pre-existing activity forces scoring-only mode. Momentum never acquires
   the singleton recording object unless persisted match ID and start time prove
   ownership.
 - Transport retries now use 5, 15, 30, 60 and 120 second intervals instead of a
@@ -112,7 +112,7 @@ Sources:
   presented as a native app for devices that do not run third-party Fitbit OS
   apps.
 - Google Fitbit Air is officially screenless and syncs through the Google Health
-  phone app. It cannot host Padelandia scoring UI. Padelandia can consume allowed
+  phone app. It cannot host Momentum scoring UI. Momentum can consume allowed
   health data through the phone integration, but there is no Air-side app loop,
   AOD, title layout or battery workload to optimize.
 
@@ -148,7 +148,7 @@ battery percentage improvement. Release acceptance requires physical traces.
    after the change.
 3. Capture Xcode Instruments Power Profiler and SwiftUI updates, including 15
    minutes wrist-up, 60 minutes wrist-down and 15 minutes mixed interaction.
-4. Verify no 1 Hz Padelandia timer, no repeated `WCSession` retry on every
+4. Verify no 1 Hz Momentum timer, no repeated `WCSession` retry on every
    inactive transition, and no workout left active after finish.
 
 ### Wear OS physical test
@@ -159,7 +159,7 @@ battery percentage improvement. Release acceptance requires physical traces.
 3. Inspect `adb shell dumpsys batterystats com.rallymate.rallymate`, Perfetto,
    wakelocks and Health Services state.
 4. Verify at least 85% black pixels in ambient screenshots and no manual
-   Padelandia wake lock.
+   Momentum wake lock.
 
 ### Garmin physical test
 
@@ -184,4 +184,4 @@ battery percentage improvement. Release acceptance requires physical traces.
   is not credible across Apple Watch SE/Ultra, AMOLED/MIP Garmin, Galaxy/Pixel
   Watch and legacy Fitbit devices.
 - OS-managed heart-rate sampling is intentionally not reduced below the workout
-  service's policy. Padelandia only reduces UI publication frequency.
+  service's policy. Momentum only reduces UI publication frequency.

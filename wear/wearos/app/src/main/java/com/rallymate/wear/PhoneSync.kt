@@ -6,6 +6,10 @@
  *  - /rallymate/events        watch → phone  {matchId, events[]}
  *  - /rallymate/request_state watch → phone  {matchId} → risposta con log
  *
+ * Star Point usa esclusivamente i corrispondenti path sotto /rallymate/v2/.
+ * Non esiste downgrade automatico: un telefono legacy deve ignorare il
+ * payload e lasciare gli eventi pending, non rileggerli come Advantage.
+ *
  * Offline-first: gli eventi vengono SEMPRE salvati in locale
  * (SharedPreferences, "salvataggio temporaneo offline" PRD 6.1) e
  * marcati synced solo dopo l'ack del telefono. Il flush è idempotente
@@ -24,10 +28,15 @@ import org.json.JSONObject
 
 object SyncPaths {
     const val START_MATCH = "/rallymate/start_match"
+    const val START_MATCH_V2 = "/rallymate/v2/start_match"
     const val EVENTS = "/rallymate/events"
+    const val EVENTS_V2 = "/rallymate/v2/events"
     const val EVENTS_ACK = "/rallymate/events_ack"
+    const val EVENTS_ACK_V2 = "/rallymate/v2/events_ack"
     const val REQUEST_STATE = "/rallymate/request_state"
+    const val REQUEST_STATE_V2 = "/rallymate/v2/request_state"
     const val STATE_RESPONSE = "/rallymate/state_response"
+    const val STATE_RESPONSE_V2 = "/rallymate/v2/state_response"
     const val PING = "/rallymate/ping"
     const val TEST_POINT = "/rallymate/test_point"
     const val PONG = "/rallymate/pong"
@@ -37,13 +46,49 @@ object SyncPaths {
         "/rallymate/workout_detection_preferences"
     /** Latest snapshot of resumable matches (Data Item). */
     const val RESUMABLE = "/rallymate/resumable"
+    const val RESUMABLE_V2 = "/rallymate/v2/resumable"
     /** Durable per-match lifecycle change (Data Item + live message). */
     const val LIFECYCLE = "/rallymate/lifecycle"
+    const val LIFECYCLE_V2 = "/rallymate/v2/lifecycle"
+
+    fun isStartMatch(path: String?): Boolean =
+        path == START_MATCH || path == START_MATCH_V2
+
+    fun isResumable(path: String?): Boolean =
+        path == RESUMABLE || path == RESUMABLE_V2
+
+    fun isLifecycle(path: String?): Boolean =
+        path == LIFECYCLE || path == LIFECYCLE_V2
+
+    fun scoringTransport(format: MatchFormat): ScoringTransportPaths =
+        if (format.gameScoringMode == GameScoringMode.STAR_POINT) {
+            ScoringTransportPaths(
+                events = EVENTS_V2,
+                eventsAck = EVENTS_ACK_V2,
+                requestState = REQUEST_STATE_V2,
+                stateResponse = STATE_RESPONSE_V2,
+            )
+        } else {
+            ScoringTransportPaths(
+                events = EVENTS,
+                eventsAck = EVENTS_ACK,
+                requestState = REQUEST_STATE,
+                stateResponse = STATE_RESPONSE,
+            )
+        }
 }
+
+data class ScoringTransportPaths(
+    val events: String,
+    val eventsAck: String,
+    val requestState: String,
+    val stateResponse: String,
+)
 
 internal class PendingEventAck(
     val matchId: String,
     val expectedIds: Set<String>,
+    val expectedAckPath: String,
 ) {
     val result = CompletableDeferred<Set<String>>()
 }
@@ -57,8 +102,12 @@ internal object EventAckRegistry {
     private val lock = Any()
     private val waiters = mutableSetOf<PendingEventAck>()
 
-    fun register(matchId: String, expectedIds: Set<String>): PendingEventAck =
-        PendingEventAck(matchId, expectedIds).also { waiter ->
+    fun register(
+        matchId: String,
+        expectedIds: Set<String>,
+        expectedAckPath: String,
+    ): PendingEventAck =
+        PendingEventAck(matchId, expectedIds, expectedAckPath).also { waiter ->
             synchronized(lock) { waiters += waiter }
         }
 
@@ -67,14 +116,19 @@ internal object EventAckRegistry {
         waiter.result.cancel()
     }
 
-    fun acknowledge(matchId: String, eventIds: Set<String>) {
+    fun acknowledge(matchId: String, eventIds: Set<String>, ackPath: String) {
         if (eventIds.isEmpty()) return
         val completed = mutableListOf<Pair<PendingEventAck, Set<String>>>()
         synchronized(lock) {
             val iterator = waiters.iterator()
             while (iterator.hasNext()) {
                 val waiter = iterator.next()
-                if (waiter.matchId != matchId) continue
+                if (
+                    waiter.matchId != matchId ||
+                    waiter.expectedAckPath != ackPath
+                ) {
+                    continue
+                }
                 val acknowledged = waiter.expectedIds.intersect(eventIds)
                 if (acknowledged.isEmpty()) continue
                 iterator.remove()
@@ -226,6 +280,23 @@ class LocalMatchStore(context: Context) {
         ?.takeIf { java.io.File(it).isFile }
 
     /** Duo Mode: team assegnato a questo watch per la partita (o null). */
+    /**
+     * Serving rotation of the match (FIP Rule 4), pushed by the phone.
+     * Stored per match so a resume after an app restart keeps attributing
+     * holds and breaks to the right pair.
+     */
+    fun saveFirstServer(matchId: String, team: TeamId?) {
+        prefs.edit().apply {
+            if (team == null) remove("first_server_$matchId")
+            else putString("first_server_$matchId", team.wire)
+        }.commit()
+    }
+
+    fun loadFirstServer(matchId: String): TeamId =
+        prefs.getString("first_server_$matchId", null)
+            ?.let { runCatching { TeamId.fromWire(it) }.getOrNull() }
+            ?: TeamId.A
+
     fun saveDuoTeam(matchId: String, team: TeamId?) {
         prefs.edit().apply {
             if (team == null) remove("duo_team_$matchId")
@@ -322,13 +393,49 @@ class LocalMatchStore(context: Context) {
             ?: WearResumableSnapshot.EMPTY
 
     fun mergeResumableSnapshot(incoming: WearResumableSnapshot): WearResumableSnapshot {
-        val merged = loadResumableSnapshot().merging(incoming)
+        val merged = loadResumableSnapshot().merging(
+            incoming,
+            protectedMatchIds = pendingLocalMatchIds().toSet(),
+        )
         saveResumableSnapshot(merged)
+        lastIncompleteMatchId()
+            ?.takeIf { merged.match(it) == null && pendingLocalSyncCount(it) == 0 }
+            ?.let(::clearIncomplete)
         return merged
     }
 
+    /**
+     * Orders durable lifecycle transfers against authoritative snapshots.
+     * Legacy unversioned transfers remain compatible only until this scope has
+     * observed a versioned phone authority.
+     */
+    fun acceptLifecycleAuthority(
+        source: String?,
+        scope: WearSnapshotAuthorityScope?,
+        version: Long,
+    ): Boolean {
+        val current = loadResumableSnapshot()
+        val accepted = current.acceptingLifecycleAuthority(
+            source = source,
+            scope = scope,
+            version = version,
+        ) ?: return false
+        if (accepted != current) saveResumableSnapshot(accepted)
+        return true
+    }
+
     fun applyLocalMatchUpdate(update: WearResumableMatch): WearResumableSnapshot {
-        val merged = loadResumableSnapshot().applying(update)
+        val current = loadResumableSnapshot()
+        // Ownership stays PHONE for a phone-created row while the watch has an
+        // unsynced local tail. The authoritative clear can then remove it as
+        // soon as the tail is acknowledged, instead of leaving a permanent
+        // WEAR_OS orphan.
+        val ownedUpdate = if (current.match(update.matchId)?.sourceDevice == "PHONE") {
+            update.copy(sourceDevice = "PHONE")
+        } else {
+            update
+        }
+        val merged = current.applying(ownedUpdate)
         saveResumableSnapshot(merged)
         return merged
     }
@@ -413,6 +520,17 @@ class LocalMatchStore(context: Context) {
     fun pendingSyncCount(matchId: String): Int =
         loadEvents(matchId).count { !it.synced }
 
+    /** Unsynced tail authored on this watch, never phone-originated events. */
+    fun pendingLocalSyncCount(matchId: String): Int =
+        loadEvents(matchId).count {
+            !it.synced && it.sourceDevice == "WEAR_OS"
+        }
+
+    fun pendingLocalMatchIds(): List<String> =
+        prefs.getStringSet("known_match_ids", emptySet()).orEmpty()
+            .filter { pendingLocalSyncCount(it) > 0 && loadFormat(it) != null }
+            .sorted()
+
     fun pendingMatchIds(): List<String> =
         prefs.getStringSet("known_match_ids", emptySet()).orEmpty()
             .filter { pendingSyncCount(it) > 0 && loadFormat(it) != null }
@@ -453,8 +571,13 @@ class PhoneSync(private val context: Context) {
     ): Set<String> {
         val expectedIds = events.map { it.eventId }.filter { it.isNotBlank() }.toSet()
         if (expectedIds.isEmpty()) return emptySet()
-        val waiter = EventAckRegistry.register(matchId, expectedIds)
-        val delivered = send(SyncPaths.EVENTS, JSONObject().apply {
+        val transport = SyncPaths.scoringTransport(format)
+        val waiter = EventAckRegistry.register(
+            matchId = matchId,
+            expectedIds = expectedIds,
+            expectedAckPath = transport.eventsAck,
+        )
+        val delivered = send(transport.events, JSONObject().apply {
             put("matchId", matchId)
             put("format", format.toJson().toString())
             put("events", MatchEvent.listToJson(events))
@@ -472,10 +595,15 @@ class PhoneSync(private val context: Context) {
 
     /**
      * Chiede al telefono il log completo della partita; la risposta arriva
-     * in modo asincrono su STATE_RESPONSE (gestita da PhoneListenerService).
+     * in modo asincrono sul path della stessa versione di scoring.
      */
-    suspend fun requestState(matchId: String): Boolean =
-        send(SyncPaths.REQUEST_STATE, JSONObject().put("matchId", matchId))
+    suspend fun requestState(matchId: String, format: MatchFormat): Boolean =
+        send(
+            SyncPaths.scoringTransport(format).requestState,
+            JSONObject()
+                .put("matchId", matchId)
+                .put("format", format.toJson().toString()),
+        )
 
     private suspend fun send(path: String, json: JSONObject): Boolean {
         val payload = json.toString().toByteArray()

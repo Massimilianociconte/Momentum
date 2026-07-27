@@ -1,4 +1,4 @@
-/// Maps Padelandia drill names to bundled vertical demo videos.
+/// Maps Momentum drill names to bundled vertical demo videos.
 library;
 
 /// Returns an asset path for a drill demo video when available.

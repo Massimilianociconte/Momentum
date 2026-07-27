@@ -1,10 +1,10 @@
 # Samsung Tizen Watch Status
 
-Padelandia intentionally contains no new Tizen watch binary.
+Momentum intentionally contains no new Tizen watch binary.
 
 Samsung has discontinued distribution of Tizen-based watch apps: developers
 can no longer register new apps or updates in Seller Portal. Existing listings
-may remain available, but Padelandia has no grandfathered listing to update.
+may remain available, but Momentum has no grandfathered listing to update.
 Creating a new package would therefore produce an unpublishable artifact and a
 false compatibility promise.
 

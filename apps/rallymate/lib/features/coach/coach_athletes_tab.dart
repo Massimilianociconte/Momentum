@@ -100,7 +100,7 @@ class CoachAthletesTab extends ConsumerWidget {
                               onPressed: () => SharePlus.instance.share(
                                 ShareParams(
                                   text:
-                                      'Collegati a me su Padelandia! Apri '
+                                      'Collegati a me su Momentum! Apri '
                                       'Allenamenti → "Il tuo coach" e inserisci '
                                       'il codice: $value',
                                 ),
@@ -384,7 +384,7 @@ class _AthleteDetailSheet extends ConsumerWidget {
         '(${_statusLabel(a.status)})',
       );
     }
-    buffer.write('\nGenerato con Padelandia Coach');
+    buffer.write('\nGenerato con Momentum Coach');
     await SharePlus.instance.share(ShareParams(text: buffer.toString()));
   }
 

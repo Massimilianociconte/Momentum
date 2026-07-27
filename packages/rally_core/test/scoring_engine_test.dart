@@ -23,6 +23,18 @@ void winGame(PadelScoringEngine e, TeamId team) {
   }
 }
 
+/// Like [winGame] but returns the [ScoringResult] of the game-winning point.
+ScoringResult playGame(PadelScoringEngine e, TeamId team) {
+  final wasGames = team == TeamId.a ? e.state.gamesA : e.state.gamesB;
+  final wasSets = team == TeamId.a ? e.state.setsA : e.state.setsB;
+  while (true) {
+    final r = e.addPoint(team);
+    final games = team == TeamId.a ? e.state.gamesA : e.state.gamesB;
+    final sets = team == TeamId.a ? e.state.setsA : e.state.setsB;
+    if (games > wasGames || sets > wasSets || e.state.isCompleted) return r;
+  }
+}
+
 void winSet(PadelScoringEngine e, TeamId team) {
   final wasSets = team == TeamId.a ? e.state.setsA : e.state.setsB;
   while (!e.state.isCompleted) {
@@ -76,7 +88,9 @@ void main() {
       }
       expect(e.state.points.isDeuce, isTrue);
       expect(
-        e.state.points.situationLabel(goldenPoint: true),
+        e.state.points.situationLabel(
+          gameScoringMode: GameScoringMode.goldenPoint,
+        ),
         '40 PARI · prossimo punto decisivo',
       );
       e.addPoint(TeamId.b);
@@ -92,26 +106,32 @@ void main() {
         e.addPoint(TeamId.b);
       }
       expect(
-        e.state.points.situationLabel(goldenPoint: false),
+        e.state.points.situationLabel(
+          gameScoringMode: GameScoringMode.advantage,
+        ),
         '40 PARI · si gioca ai vantaggi',
       );
       e.addPoint(TeamId.a); // AD A
       expect(e.state.points.labelFor(TeamId.a), 'AD');
       expect(
-        e.state.points.situationLabel(goldenPoint: false),
+        e.state.points.situationLabel(
+          gameScoringMode: GameScoringMode.advantage,
+        ),
         'VANTAGGIO NOI · un punto per il game',
       );
       e.addPoint(TeamId.b); // back to deuce
       expect(e.state.points.labelFor(TeamId.a), '40');
       expect(e.state.points.labelFor(TeamId.b), '40');
       expect(
-        e.state.points.situationLabel(goldenPoint: false),
+        e.state.points.situationLabel(
+          gameScoringMode: GameScoringMode.advantage,
+        ),
         '40 PARI · si gioca ai vantaggi',
       );
       e.addPoint(TeamId.b); // AD B
       expect(
         e.state.points.situationLabel(
-          goldenPoint: false,
+          gameScoringMode: GameScoringMode.advantage,
           teamALabel: 'CASA',
           teamBLabel: 'OSPITI',
         ),
@@ -149,6 +169,179 @@ void main() {
       e.undo();
       expect(e.state.points.labelFor(TeamId.a), '40');
       expect(e.state.points.labelFor(TeamId.b), '40');
+    });
+  });
+
+  group('FIP Star Point scoring', () {
+    void reachFirstDeuce(PadelScoringEngine e) {
+      for (var i = 0; i < 3; i++) {
+        e.addPoint(TeamId.a);
+        e.addPoint(TeamId.b);
+      }
+    }
+
+    test('deuce 1 → AD1 → deuce 2 → AD2 → Star Point → game', () {
+      final e = engine(MatchFormat.starPointBo3)..start();
+      reachFirstDeuce(e);
+
+      expect(e.state.points.deuceNumber, 1);
+      expect(e.state.points.isStarPoint, isFalse);
+      expect(
+        e.state.points.situationLabel(
+          gameScoringMode: GameScoringMode.starPoint,
+        ),
+        'PARITÀ 1 · prossimo punto vale VANTAGGIO 1',
+      );
+
+      e.addPoint(TeamId.a); // Advantage 1 A.
+      expect(e.state.points.advantage, TeamId.a);
+      expect(e.state.points.deuceNumber, 1);
+      expect(
+        e.state.points.situationLabel(
+          gameScoringMode: GameScoringMode.starPoint,
+        ),
+        'VANTAGGIO 1 NOI · un punto per il game',
+      );
+
+      e.addPoint(TeamId.b); // Deuce 2.
+      expect(e.state.points.advantage, isNull);
+      expect(e.state.points.deuceNumber, 2);
+      expect(
+        e.state.points.situationLabel(
+          gameScoringMode: GameScoringMode.starPoint,
+        ),
+        'PARITÀ 2 · prossimo punto vale VANTAGGIO 2',
+      );
+
+      e.addPoint(TeamId.b); // Advantage 2 B.
+      expect(e.state.points.advantage, TeamId.b);
+      expect(e.state.points.deuceNumber, 2);
+      e.addPoint(TeamId.a); // Deuce 3 / Star Point.
+      expect(e.state.points.advantage, isNull);
+      expect(e.state.points.deuceNumber, 3);
+      expect(e.state.points.isStarPoint, isTrue);
+      expect(
+        e.state.points.situationLabel(
+          gameScoringMode: GameScoringMode.starPoint,
+        ),
+        'STAR POINT · prossimo punto decide il game',
+      );
+
+      final result = e.addPoint(TeamId.b);
+      expect(result.transitions, contains(ScoreTransition.gameWon));
+      expect(e.state.gamesB, 1);
+      expect(e.state.points.deuceNumber, 0);
+      final deciding = e.pointRecords.last;
+      expect(deciding.isStarPoint, isTrue);
+      expect(deciding.gamePointFor, {TeamId.a, TeamId.b});
+      expect(deciding.breakPointFor, {TeamId.b});
+    });
+
+    test('the holder can close the game from advantage 1 or advantage 2', () {
+      final fromAdvantageOne = engine(MatchFormat.starPointBo3)..start();
+      reachFirstDeuce(fromAdvantageOne);
+      fromAdvantageOne.addPoint(TeamId.a);
+      fromAdvantageOne.addPoint(TeamId.a);
+      expect(fromAdvantageOne.state.gamesA, 1);
+
+      final fromAdvantageTwo = engine(MatchFormat.starPointBo3)..start();
+      reachFirstDeuce(fromAdvantageTwo);
+      fromAdvantageTwo.addPoint(TeamId.a);
+      fromAdvantageTwo.addPoint(TeamId.b); // Deuce 2.
+      fromAdvantageTwo.addPoint(TeamId.b);
+      fromAdvantageTwo.addPoint(TeamId.b);
+      expect(fromAdvantageTwo.state.gamesB, 1);
+    });
+
+    test('undo restores the exact Star Point phase across game boundary', () {
+      final e = engine(MatchFormat.starPointBo3)..start();
+      reachFirstDeuce(e);
+      e.addPoint(TeamId.a);
+      e.addPoint(TeamId.b); // Deuce 2.
+      e.addPoint(TeamId.b);
+      e.addPoint(TeamId.a); // Deuce 3.
+      e.addPoint(TeamId.b); // Game B.
+      expect(e.state.gamesB, 1);
+
+      e.undo();
+      expect(e.state.gamesB, 0);
+      expect(e.state.points.deuceNumber, 3);
+      expect(e.state.points.isStarPoint, isTrue);
+
+      e.undo(); // Undo the point that cancelled Advantage 2 B.
+      expect(e.state.points.advantage, TeamId.b);
+      expect(e.state.points.deuceNumber, 2);
+    });
+
+    test('score edit carries phase and legacy 40-40 defaults to deuce 1', () {
+      final legacy = engine(MatchFormat.starPointBo3)..start();
+      legacy.editScore(pointsA: 3, pointsB: 3, gamesA: 2, gamesB: 2);
+      expect(legacy.state.points.deuceNumber, 1);
+      expect(legacy.state.points.isStarPoint, isFalse);
+
+      final explicit = engine(MatchFormat.starPointBo3)..start();
+      final edit = explicit.editScore(
+        pointsA: 3,
+        pointsB: 3,
+        gamesA: 2,
+        gamesB: 2,
+        deuceNumber: 3,
+      );
+      expect(edit.newEvents.single.payload?['deuceNumber'], 3);
+      expect(explicit.state.points.deuceNumber, 3);
+      expect(explicit.state.points.isStarPoint, isTrue);
+      explicit.addPoint(TeamId.a);
+      expect(explicit.state.gamesA, 3);
+    });
+
+    test(
+      'score edit preserves advantage phases and normalizes invalid 4-4',
+      () {
+        final advantage = engine(MatchFormat.starPointBo3)..start();
+        advantage.editScore(
+          pointsA: 4,
+          pointsB: 3,
+          gamesA: 1,
+          gamesB: 1,
+          deuceNumber: 2,
+        );
+        expect(advantage.state.points.advantage, TeamId.a);
+        expect(advantage.state.points.deuceNumber, 2);
+        advantage.addPoint(TeamId.a);
+        expect(advantage.state.gamesA, 2);
+
+        final invalid = engine(MatchFormat.starPointBo3)..start();
+        invalid.editScore(
+          pointsA: 4,
+          pointsB: 4,
+          gamesA: 0,
+          gamesB: 0,
+          deuceNumber: 3,
+        );
+        expect(invalid.state.points.advantage, isNull);
+        expect(invalid.state.points.isStarPoint, isTrue);
+      },
+    );
+
+    test('replay reconstructs deuce number without persisted snapshots', () {
+      final original = engine(MatchFormat.starPointBo3)..start();
+      reachFirstDeuce(original);
+      original.addPoint(TeamId.a);
+      original.addPoint(TeamId.b);
+      original.addPoint(TeamId.b);
+      original.addPoint(TeamId.a);
+      expect(original.state.points.deuceNumber, 3);
+
+      final replayed = PadelScoringEngine.replay(
+        matchId: original.matchId,
+        format: MatchFormat.starPointBo3,
+        events: original.events,
+      );
+      expect(replayed.state.display, original.state.display);
+      expect(replayed.state.points.deuceNumber, 3);
+      expect(replayed.state.points.isStarPoint, isTrue);
+      expect(replayed.state.toJson()['deuceNumber'], 3);
+      expect(replayed.state.toJson()['isStarPoint'], isTrue);
     });
   });
 
@@ -218,6 +411,142 @@ void main() {
       e.addPoint(TeamId.a);
       final r = e.addPoint(TeamId.b);
       expect(r.transitions, contains(ScoreTransition.sideChange));
+    });
+  });
+
+  // FIP Rules of Padel, Rule 11 (Change of ends): every odd game, and at the
+  // end of a set only when that set's total number of games is odd.
+  group('change of ends', () {
+    test('set won 6-4 does not change ends (even total)', () {
+      final e = engine(MatchFormat.goldenPointBo3)..start();
+      for (var i = 0; i < 4; i++) {
+        playGame(e, TeamId.a);
+        playGame(e, TeamId.b);
+      }
+      playGame(e, TeamId.a); // 5-4
+      final r = playGame(e, TeamId.a); // 6-4 → set
+      expect(r.transitions, contains(ScoreTransition.setWon));
+      expect(r.transitions, isNot(contains(ScoreTransition.sideChange)));
+      expect(e.state.sideChangePending, isFalse);
+    });
+
+    test('deferred change happens after game 1 of the next set', () {
+      final e = engine(MatchFormat.goldenPointBo3)..start();
+      for (var i = 0; i < 4; i++) {
+        playGame(e, TeamId.a);
+        playGame(e, TeamId.b);
+      }
+      playGame(e, TeamId.a);
+      playGame(e, TeamId.a); // 6-4, no change of ends yet
+      final r = playGame(e, TeamId.b); // first game of set 2
+      expect(r.transitions, contains(ScoreTransition.sideChange));
+      expect(e.state.sideChangePending, isTrue);
+    });
+
+    test('set won 6-3 changes ends (odd total)', () {
+      final e = engine(MatchFormat.goldenPointBo3)..start();
+      for (var i = 0; i < 3; i++) {
+        playGame(e, TeamId.a);
+        playGame(e, TeamId.b);
+      }
+      playGame(e, TeamId.a);
+      playGame(e, TeamId.a); // 5-3
+      final r = playGame(e, TeamId.a); // 6-3 → set
+      expect(r.transitions, contains(ScoreTransition.setWon));
+      expect(r.transitions, contains(ScoreTransition.sideChange));
+      expect(e.state.sideChangePending, isTrue);
+    });
+
+    test('set won 6-0 does not change ends', () {
+      final e = engine(MatchFormat.goldenPointBo3)..start();
+      for (var i = 0; i < 5; i++) {
+        playGame(e, TeamId.a);
+      }
+      final r = playGame(e, TeamId.a); // 6-0 → set
+      expect(r.transitions, isNot(contains(ScoreTransition.sideChange)));
+      expect(e.state.sideChangePending, isFalse);
+    });
+
+    test('set won on tie-break changes ends (7-6 = 13 games)', () {
+      final e = engine(MatchFormat.goldenPointBo3)..start();
+      for (var i = 0; i < 6; i++) {
+        playGame(e, TeamId.a);
+        playGame(e, TeamId.b);
+      }
+      expect(e.state.inTieBreak, isTrue);
+      late ScoringResult r;
+      for (var i = 0; i < 7; i++) {
+        r = e.addPoint(TeamId.a);
+      }
+      expect(r.transitions, contains(ScoreTransition.setWon));
+      expect(r.transitions, contains(ScoreTransition.sideChange));
+      expect(e.state.sideChangePending, isTrue);
+    });
+
+    test('match-winning set leaves no pending change of ends', () {
+      final e = engine(MatchFormat.goldenPointBo3)..start();
+      winSet(e, TeamId.a);
+      for (var i = 0; i < 3; i++) {
+        playGame(e, TeamId.a);
+        playGame(e, TeamId.b);
+      }
+      playGame(e, TeamId.a);
+      playGame(e, TeamId.a); // 5-3
+      final r = playGame(e, TeamId.a); // 6-3 → set and match
+      expect(r.transitions, contains(ScoreTransition.matchWon));
+      expect(e.state.isCompleted, isTrue);
+      expect(e.state.sideChangePending, isFalse);
+    });
+  });
+
+  // FIP Regola 4: chi serve per primo si decide al sorteggio. Break e hold
+  // sono derivati dalla rotazione, quindi devono seguire quella scelta.
+  group('first server', () {
+    PadelScoringEngine engineServing(TeamId first) {
+      var t = 0;
+      var i = 0;
+      return PadelScoringEngine(
+        matchId: 'm-first-server',
+        format: MatchFormat.goldenPointBo3,
+        firstServer: first,
+        clock: () => t += 1000,
+        idGenerator: () => 'e${i++}',
+      );
+    }
+
+    test('team B serving first owns the rotation', () {
+      final e = engineServing(TeamId.b)..start();
+      expect(e.state.servingTeam, TeamId.b);
+      playGame(e, TeamId.a);
+      expect(e.state.servingTeam, TeamId.a);
+      playGame(e, TeamId.a);
+      expect(e.state.servingTeam, TeamId.b);
+    });
+
+    test('break point belongs to the returning team', () {
+      final e = engineServing(TeamId.b)..start();
+      for (var i = 0; i < 3; i++) {
+        e.addPoint(TeamId.a);
+      }
+      // A is returning: 40-0 for A is a break point, not a hold.
+      final record = e.pointRecords.last;
+      expect(record.servingTeam, TeamId.b);
+      final next = e.addPoint(TeamId.a);
+      expect(next.transitions, contains(ScoreTransition.gameWon));
+      expect(e.pointRecords.last.breakPointFor, contains(TeamId.a));
+    });
+
+    test('replay keeps the first server it was given', () {
+      final e = engineServing(TeamId.b)..start();
+      playGame(e, TeamId.a);
+      final replayed = PadelScoringEngine.replay(
+        matchId: 'm-first-server',
+        format: MatchFormat.goldenPointBo3,
+        events: e.events,
+        firstServer: TeamId.b,
+      );
+      expect(replayed.state.servingTeam, e.state.servingTeam);
+      expect(replayed.state.servingTeam, TeamId.a);
     });
   });
 
@@ -336,23 +665,26 @@ void main() {
       expect(e.state.setsA, 0);
     });
 
-    test('manual finish seals the match: undo and double finish are no-ops', () {
-      final e = engine(MatchFormat.training)..start();
-      e.addPoint(TeamId.a);
-      e.addPoint(TeamId.b);
-      e.finish(winner: TeamId.a);
-      expect(e.state.isCompleted, isTrue);
-      expect(e.canUndo, isFalse);
-      final eventCount = e.events.length;
-      final undo = e.undo();
-      expect(undo.newEvents, isEmpty);
-      expect(e.state.freePlayA, 1);
-      expect(e.state.isCompleted, isTrue);
-      final again = e.finish(winner: TeamId.b);
-      expect(again.newEvents, isEmpty);
-      expect(e.events, hasLength(eventCount));
-      expect(e.state.winner, TeamId.a);
-    });
+    test(
+      'manual finish seals the match: undo and double finish are no-ops',
+      () {
+        final e = engine(MatchFormat.training)..start();
+        e.addPoint(TeamId.a);
+        e.addPoint(TeamId.b);
+        e.finish(winner: TeamId.a);
+        expect(e.state.isCompleted, isTrue);
+        expect(e.canUndo, isFalse);
+        final eventCount = e.events.length;
+        final undo = e.undo();
+        expect(undo.newEvents, isEmpty);
+        expect(e.state.freePlayA, 1);
+        expect(e.state.isCompleted, isTrue);
+        final again = e.finish(winner: TeamId.b);
+        expect(again.newEvents, isEmpty);
+        expect(e.events, hasLength(eventCount));
+        expect(e.state.winner, TeamId.a);
+      },
+    );
 
     test('free-play display shows rally counters', () {
       final e = engine(MatchFormat.training)..start();
@@ -549,31 +881,33 @@ void main() {
       expect(e.state.points.labelFor(TeamId.a), '0');
     });
 
-    test('replay applies delayed watch point after pause as implicit resume',
-        () {
-      MatchEvent event(String id, int timestamp, MatchEventType type) =>
-          MatchEvent(
-            eventId: id,
-            matchId: 'm1',
-            timestampMs: timestamp,
-            type: type,
-            teamId: type == MatchEventType.pointTeamA ? TeamId.a : null,
-          );
-      final replayed = PadelScoringEngine.replay(
-        matchId: 'm1',
-        format: MatchFormat.goldenPointBo3,
-        events: [
-          event('start', 1, MatchEventType.matchStarted),
-          event('pause', 2, MatchEventType.matchPaused),
-          event('late-point', 3, MatchEventType.pointTeamA),
-        ],
-      );
+    test(
+      'replay applies delayed watch point after pause as implicit resume',
+      () {
+        MatchEvent event(String id, int timestamp, MatchEventType type) =>
+            MatchEvent(
+              eventId: id,
+              matchId: 'm1',
+              timestampMs: timestamp,
+              type: type,
+              teamId: type == MatchEventType.pointTeamA ? TeamId.a : null,
+            );
+        final replayed = PadelScoringEngine.replay(
+          matchId: 'm1',
+          format: MatchFormat.goldenPointBo3,
+          events: [
+            event('start', 1, MatchEventType.matchStarted),
+            event('pause', 2, MatchEventType.matchPaused),
+            event('late-point', 3, MatchEventType.pointTeamA),
+          ],
+        );
 
-      // Dual-device desync: journal points after pause resume then score.
-      expect(replayed.state.status, MatchStatus.inProgress);
-      expect(replayed.state.points.labelFor(TeamId.a), '15');
-      expect(replayed.pointRecords, hasLength(1));
-    });
+        // Dual-device desync: journal points after pause resume then score.
+        expect(replayed.state.status, MatchStatus.inProgress);
+        expect(replayed.state.points.labelFor(TeamId.a), '15');
+        expect(replayed.pointRecords, hasLength(1));
+      },
+    );
 
     test('undo and score edit are no-ops while paused', () {
       final e = engine(MatchFormat.goldenPointBo3)..start();

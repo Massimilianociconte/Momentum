@@ -7,7 +7,7 @@
 # Il target distribuito è incorporato anche nel progetto Flutter iOS tramite
 # scripts/sync_watchos_target.rb. Questa spec resta utile per build isolate.
 #
-# Nota brand: display name utente = Padelandia; path/target tecnici restano
+# Nota brand: display name utente = Momentum; path/target tecnici restano
 # RallyMate* per non rompere sync Xcode / bundle id com.rallymate.*.
 name: RallyMateWatch
 options:
@@ -31,14 +31,14 @@ targets:
     info:
       path: RallyMateWatchApp/Info.plist
       properties:
-        CFBundleDisplayName: Padelandia
+        CFBundleDisplayName: Momentum
         WKApplication: true
         WKWatchOnly: false
         WKSupportsAlwaysOnDisplay: true
         WKCompanionAppBundleIdentifier: com.rallymate.rallymate
         WKRunsIndependentlyOfCompanionApp: false
-        NSHealthShareUsageDescription: Padelandia legge battito e calorie durante una partita per mostrare metriche live sul polso.
-        NSHealthUpdateUsageDescription: Padelandia salva la sessione workout della partita su Apple Health solo con il tuo consenso.
+        NSHealthShareUsageDescription: Momentum legge battito e calorie durante una partita per mostrare metriche live sul polso.
+        NSHealthUpdateUsageDescription: Momentum salva la sessione workout della partita su Apple Health solo con il tuo consenso.
         WKBackgroundModes:
           - workout-processing
     settings:

@@ -42,4 +42,21 @@ void main() {
       expect((vector['steps'] as List), isNotEmpty, reason: '${vector['id']}');
     }
   });
+
+  test('i vettori Star Point restano limitati agli engine supportati', () {
+    final doc = generator.buildVectorsDocument();
+    final vectors = (doc['vectors'] as List)
+        .cast<Map<String, Object?>>()
+        .where((vector) => (vector['id'] as String).startsWith('star_point_'))
+        .toList();
+
+    expect(vectors, hasLength(4));
+    for (final vector in vectors) {
+      expect(vector['platforms'], [
+        'dart',
+        'kotlin',
+        'swift',
+      ], reason: '${vector['id']}');
+    }
+  });
 }

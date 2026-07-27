@@ -892,7 +892,7 @@ class CloudAuth extends Notifier<AuthState> {
         return;
       } catch (_) {
         // Network errors do not invalidate a locally cached session. The
-        // user can keep using Padelandia offline and retry later.
+        // user can keep using Momentum offline and retry later.
         await _hydrateAccountState(cachedUser);
         return;
       }
@@ -1318,7 +1318,7 @@ class BackupService {
       final schemaVersion = row['schema_ver'] as int? ?? 0;
       if (schemaVersion > BackupPayloadCodec.currentVersion) {
         return 'Backup creato da una versione più recente dell’app: '
-            'aggiorna Padelandia per ripristinarlo.';
+            'aggiorna Momentum per ripristinarlo.';
       }
       await _importLocalDb(BackupPayloadCodec.decode(payload));
       // Force live/history rebuild after external DB mutation.

@@ -1,6 +1,6 @@
 <strings>
-    <string id="AppName">Padelandia</string>
-    <string id="Brand">PADELANDIA</string>
+    <string id="AppName">Momentum</string>
+    <string id="Brand">MOMENTUM</string>
     <string id="TeamUs">NOI</string>
     <string id="TeamThem">LORO</string>
     <string id="PointOurs">PUNTO NOI</string>
@@ -43,7 +43,7 @@
     <string id="FreeTraining">ALLENAMENTO LIBERO</string>
     <string id="ExternalActivityScoringOnly">ATTIVITA ATTIVA: SOLO PUNTEGGIO</string>
     <string id="RecordingChoice">REGISTRAZIONE ALLENAMENTO</string>
-    <string id="RecordingRallyMate">REGISTRA CON PADELANDIA</string>
+    <string id="RecordingRallyMate">REGISTRA CON MOMENTUM</string>
     <string id="RecordingExternal">USO UN'ALTRA APP</string>
     <string id="RecordingDisabled">NON REGISTRARE</string>
     <string id="RecordingNote">UNA SOLA ATTIVITA ALLA VOLTA</string>

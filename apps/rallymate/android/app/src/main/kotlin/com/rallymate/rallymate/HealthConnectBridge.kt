@@ -49,6 +49,9 @@ class HealthConnectBridge(
         HealthPermission.getReadPermission(SleepSessionRecord::class),
     )
     private val permissions = corePermissions + optionalPermissions
+    private var channel: MethodChannel? = null
+    /** Set when the app is opened via the Health Connect rationale intent. */
+    private var pendingRationale = false
     private var pendingPermissionResult: MethodChannel.Result? = null
     private var pendingPermissionAtMs: Long = 0L
     private val permissionLauncher = activity.registerForActivityResult(
@@ -61,14 +64,31 @@ class HealthConnectBridge(
     }
 
     init {
-        MethodChannel(messenger, CHANNEL).setMethodCallHandler { call, result ->
+        val ch = MethodChannel(messenger, CHANNEL)
+        channel = ch
+        ch.setMethodCallHandler { call, result ->
             when (call.method) {
                 "status" -> status(result)
                 "requestPermissions" -> requestPermissions(result)
                 "readSummary" -> readSummary(call, result)
+                "consumeRationaleRequest" -> {
+                    result.success(pendingRationale)
+                    pendingRationale = false
+                }
                 else -> result.notImplemented()
             }
         }
+    }
+
+    /**
+     * Chiamato quando l'app viene aperta dal foglio permessi di Health
+     * Connect (ACTION_SHOW_PERMISSIONS_RATIONALE / VIEW_PERMISSION_USAGE).
+     * Cold start: Flutter recupera il flag con consumeRationaleRequest.
+     * Warm start: l'evento push "showRationale" naviga subito.
+     */
+    fun onRationaleIntent() {
+        pendingRationale = true
+        channel?.invokeMethod("showRationale", null)
     }
 
     private fun status(result: MethodChannel.Result) {

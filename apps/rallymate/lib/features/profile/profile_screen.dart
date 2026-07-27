@@ -375,7 +375,7 @@ class _ProfileQuickActionsCard extends StatelessWidget {
                 path: '/pro-chat',
                 queryParameters: const {
                   'mode': 'APP_HELP',
-                  'q': 'Come posso usare al meglio Padelandia con il mio piano?',
+                  'q': 'Come posso usare al meglio Momentum con il mio piano?',
                 },
               ).toString(),
             ),
@@ -856,7 +856,7 @@ class _NotificationsCard extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Padelandia usa le notifiche per richieste, inviti e promemoria '
+              'Momentum usa le notifiche per richieste, inviti e promemoria '
               'scelti da te. Non invia aggiornamenti continui del punteggio e '
               'puoi disattivarle dalle impostazioni di sistema.',
               style: TextStyle(
@@ -1042,7 +1042,7 @@ class _HealthConnectCardState extends ConsumerState<_HealthConnectCard>
               ),
               const SizedBox(height: 6),
               Text(
-                'Padelandia legge passi, calorie attive, minuti di esercizio e '
+                'Momentum legge passi, calorie attive, minuti di esercizio e '
                 'frequenza cardiaca media. I permessi sono separati e restano '
                 'revocabili da ${HealthConnectService.isApple ? 'Impostazioni → Salute; Apple mostra lì lo stato dei singoli accessi di lettura' : 'Health Connect'}.',
                 style: const TextStyle(

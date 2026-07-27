@@ -395,7 +395,7 @@ class _ProChatScreenState extends ConsumerState<ProChatScreen> {
 
   String _emptyTitle() => switch (_mode) {
     'TRAINING' => 'Costruiamo il prossimo allenamento.',
-    'APP_HELP' => 'Ti aiuto a usare Padelandia meglio.',
+    'APP_HELP' => 'Ti aiuto a usare Momentum meglio.',
     'POST_MATCH' => 'Analizziamo la partita con lucidità.',
     'LIVE_MATCH' => 'Una risposta veloce per la partita.',
     _ => 'Chiedimi regole, tattica o come migliorare.',
@@ -767,7 +767,7 @@ class _StaticAssistantScaffoldState
       return _StaticTextCard(
         title: 'Consiglio training base',
         body: trainingAnswer,
-        source: 'Training locale Padelandia',
+        source: 'Training locale Momentum',
       );
     }
 
@@ -813,7 +813,7 @@ class _StaticAssistantScaffoldState
           'racchetta stabile.';
     }
     return 'Per iniziare scegli una routine breve tra: $titles. Registra RPE '
-        'e minuti a fine sessione: dopo qualche settimana Padelandia collega '
+        'e minuti a fine sessione: dopo qualche settimana Momentum collega '
         'meglio partite e allenamenti.';
   }
 

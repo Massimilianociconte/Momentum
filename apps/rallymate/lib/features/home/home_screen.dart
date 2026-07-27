@@ -577,7 +577,7 @@ class _HomeHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'PADELANDIA',
+                          'MOMENTUM',
                           style: TextStyle(
                             color: RallyColors.lime.withValues(alpha: 0.95),
                             fontSize: 11,

@@ -15,21 +15,21 @@ enum class WearHealthRecordingMode(val wire: String) {
 
     val title: String
         get() = when (this) {
-            RALLYMATE_MANAGED -> "Registra con Padelandia"
+            RALLYMATE_MANAGED -> "Registra con Momentum"
             EXTERNAL_MANAGED -> "Uso un'altra app"
             DISABLED -> "Non registrare"
         }
 
     val subtitle: String
         get() = when (this) {
-            RALLYMATE_MANAGED -> "Padelandia apre e chiude l'unico allenamento."
+            RALLYMATE_MANAGED -> "Momentum apre e chiude l'unico allenamento."
             EXTERNAL_MANAGED -> "Solo punteggio, workout gestito dall'altra app."
             DISABLED -> "Nessun dato salute."
         }
 
     val shortLabel: String
         get() = when (this) {
-            RALLYMATE_MANAGED -> "Padelandia"
+            RALLYMATE_MANAGED -> "Momentum"
             EXTERNAL_MANAGED -> "App esterna"
             DISABLED -> "Off"
         }

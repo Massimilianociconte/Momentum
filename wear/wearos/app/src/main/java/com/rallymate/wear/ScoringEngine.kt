@@ -47,53 +47,137 @@ enum class EventType(val wire: String) {
     }
 }
 
+/**
+ * Game rule used at 40-40.
+ *
+ * The wire value is deliberately explicit: two booleans (`goldenPoint` and
+ * `starPoint`) could describe impossible combinations and make offline replay
+ * diverge across app versions.
+ */
+enum class GameScoringMode(val wire: String) {
+    ADVANTAGE("ADVANTAGE"),
+    STAR_POINT("STAR_POINT"),
+    GOLDEN_POINT("GOLDEN_POINT");
+
+    companion object {
+        fun fromWireOrNull(value: String?): GameScoringMode? =
+            entries.firstOrNull { it.wire == value }
+
+        fun fromLegacyGoldenPoint(goldenPoint: Boolean): GameScoringMode =
+            if (goldenPoint) GOLDEN_POINT else ADVANTAGE
+    }
+}
+
 data class MatchFormat(
     val id: String = "GOLDEN_BO3",
     val name: String = "Golden point — meglio di 3",
+    val formatSchemaVersion: Int = CURRENT_SCHEMA_VERSION,
     val setsToWin: Int = 2,
     val gamesPerSet: Int = 6,
-    val goldenPoint: Boolean = true,
+    val gameScoringMode: GameScoringMode = GameScoringMode.GOLDEN_POINT,
     val tieBreakAtGamesAll: Boolean = true,
     val tieBreakPoints: Int = 7,
+    /**
+     * FIP Rule 1, Option 1.4: when false the deciding set is played to two
+     * games of margin instead of a tie-break.
+     */
+    val tieBreakInDecidingSet: Boolean = true,
     val superTieBreakDecider: Boolean = false,
     val superTieBreakPoints: Int = 10,
     val freePlay: Boolean = false,
 ) {
+    /** Legacy source compatibility while callers migrate to [gameScoringMode]. */
+    val goldenPoint: Boolean
+        get() = gameScoringMode == GameScoringMode.GOLDEN_POINT
+
     fun toJson(): JSONObject = JSONObject().apply {
+        put("formatSchemaVersion", CURRENT_SCHEMA_VERSION)
         put("id", id); put("name", name)
         put("setsToWin", setsToWin); put("gamesPerSet", gamesPerSet)
+        put("gameScoringMode", gameScoringMode.wire)
+        // Kept during the v1 → v2 rollout for old phone/watch readers.
         put("goldenPoint", goldenPoint)
         put("tieBreakAtGamesAll", tieBreakAtGamesAll)
         put("tieBreakPoints", tieBreakPoints)
+        put("tieBreakInDecidingSet", tieBreakInDecidingSet)
         put("superTieBreakDecider", superTieBreakDecider)
         put("superTieBreakPoints", superTieBreakPoints)
         put("freePlay", freePlay)
     }
 
     companion object {
-        fun fromJson(j: JSONObject) = MatchFormat(
-            id = j.optString("id", "GOLDEN_BO3"),
-            name = j.optString("name", "Custom"),
-            setsToWin = j.optInt("setsToWin", 2),
-            gamesPerSet = j.optInt("gamesPerSet", 6),
-            goldenPoint = j.optBoolean("goldenPoint", true),
-            tieBreakAtGamesAll = j.optBoolean("tieBreakAtGamesAll", true),
-            tieBreakPoints = j.optInt("tieBreakPoints", 7),
-            superTieBreakDecider = j.optBoolean("superTieBreakDecider", false),
-            superTieBreakPoints = j.optInt("superTieBreakPoints", 10),
-            freePlay = j.optBoolean("freePlay", false),
-        )
+        /** v3 adds [MatchFormat.tieBreakInDecidingSet]. */
+        const val CURRENT_SCHEMA_VERSION = 3
+
+        fun fromJson(j: JSONObject): MatchFormat {
+            val gameScoringMode = GameScoringMode.fromWireOrNull(
+                j.optString("gameScoringMode").takeIf { it.isNotBlank() },
+            ) ?: GameScoringMode.fromWireOrNull(
+                // Temporary compatibility with pre-canonical schema-v2 builds.
+                j.optString("mode").takeIf { it.isNotBlank() },
+            ) ?: if (j.has("goldenPoint")) {
+                GameScoringMode.fromLegacyGoldenPoint(
+                    j.optBoolean("goldenPoint", true),
+                )
+            } else {
+                // Preserve the historical default when both v1 and v2 fields
+                // are absent. Known ids make recovery deterministic.
+                when (j.optString("id")) {
+                    "ADV_BO3" -> GameScoringMode.ADVANTAGE
+                    "STAR_POINT_BO3" -> GameScoringMode.STAR_POINT
+                    else -> GameScoringMode.GOLDEN_POINT
+                }
+            }
+            return MatchFormat(
+                id = j.optString("id", "GOLDEN_BO3"),
+                name = j.optString("name", "Custom"),
+                // Decoded formats are normalized before persistence/re-emission.
+                formatSchemaVersion = CURRENT_SCHEMA_VERSION,
+                setsToWin = j.optInt("setsToWin", 2),
+                gamesPerSet = j.optInt("gamesPerSet", 6),
+                gameScoringMode = gameScoringMode,
+                tieBreakAtGamesAll = j.optBoolean("tieBreakAtGamesAll", true),
+                tieBreakPoints = j.optInt("tieBreakPoints", 7),
+                // Absent in v1/v2 payloads: those always had a deciding tie-break.
+                tieBreakInDecidingSet = j.optBoolean("tieBreakInDecidingSet", true),
+                superTieBreakDecider = j.optBoolean("superTieBreakDecider", false),
+                superTieBreakPoints = j.optInt("superTieBreakPoints", 10),
+                freePlay = j.optBoolean("freePlay", false),
+            )
+        }
 
         val GOLDEN_BO3 = MatchFormat()
+        val STAR_POINT_BO3 = MatchFormat(
+            id = "STAR_POINT_BO3",
+            name = "Star Point FIP 2026 — meglio di 3",
+            gameScoringMode = GameScoringMode.STAR_POINT,
+        )
         val ADVANTAGE_BO3 = MatchFormat(
             id = "ADV_BO3",
             name = "Vantaggi - meglio di 3",
-            goldenPoint = false,
+            gameScoringMode = GameScoringMode.ADVANTAGE,
         )
         val SUPER_TIE_BREAK = MatchFormat(
             id = "SUPER_TB_BO3",
             name = "Super tie-break al terzo",
             superTieBreakDecider = true,
+        )
+        val MATCH_TB7_BO3 = MatchFormat(
+            id = "MATCH_TB7_BO3",
+            name = "Tie-break decisivo a 7",
+            superTieBreakDecider = true,
+            superTieBreakPoints = 7,
+        )
+        val MINI_SET_BO3 = MatchFormat(
+            id = "MINI_SET_BO3",
+            name = "Mini-set a 4 game",
+            gamesPerSet = 4,
+        )
+        val ADV_NO_TB_THIRD_BO3 = MatchFormat(
+            id = "ADV_NO_TB_THIRD_BO3",
+            name = "Terzo set senza tie-break",
+            gameScoringMode = GameScoringMode.ADVANTAGE,
+            tieBreakInDecidingSet = false,
         )
         val SINGLE_SET = MatchFormat(
             id = "SINGLE_SET",
@@ -108,8 +192,16 @@ data class MatchFormat(
         )
         val PRESETS = listOf(
             GOLDEN_BO3,
+            STAR_POINT_BO3,
             ADVANTAGE_BO3,
             SUPER_TIE_BREAK,
+            MATCH_TB7_BO3,
+            MINI_SET_BO3,
+            // ADV_NO_TB_THIRD_BO3 is deliberately absent: a watch-authored
+            // match travels to the phone without a capability handshake, and a
+            // phone on the previous build would replay the deciding set with a
+            // tie-break. The format is selectable on the phone, which gates the
+            // dispatch on `deciding_set_no_tiebreak_v1`.
             SINGLE_SET,
             TRAINING,
         )
@@ -207,9 +299,12 @@ enum class Transition { POINT, GAME_WON, SET_WON, MATCH_WON, SIDE_CHANGE, UNDONE
 data class MatchState(
     val completed: Boolean,
     val paused: Boolean,
+    val scoringMode: GameScoringMode,
     val pointsA: Int,
     val pointsB: Int,
     val advantage: TeamId?,
+    /** 0 before deuce; 1/2 are the two advantage cycles; 3 is Star Point. */
+    val deuceNumber: Int,
     val gamesA: Int,
     val gamesB: Int,
     val setsA: Int,
@@ -225,6 +320,15 @@ data class MatchState(
     val sideChangePending: Boolean,
     val winner: TeamId?,
 ) {
+    val starPointActive: Boolean
+        get() = scoringMode == GameScoringMode.STAR_POINT &&
+            deuceNumber == 3 &&
+            advantage == null &&
+            pointsA >= 3 &&
+            pointsB >= 3 &&
+            !inTieBreak &&
+            !inSuperTieBreak
+
     fun pointsLabel(team: TeamId): String {
         val labels = arrayOf("0", "15", "30", "40")
         if (advantage != null) return if (advantage == team) "AD" else "40"
@@ -233,20 +337,48 @@ data class MatchState(
     }
 
     fun pointSituation(
-        goldenPoint: Boolean,
         teamALabel: String = "NOI",
         teamBLabel: String = "LORO",
     ): String? {
         if (inTieBreak || inSuperTieBreak) return null
         advantage?.let {
             val label = if (it == TeamId.A) teamALabel else teamBLabel
-            return "VANTAGGIO $label · GAME POINT"
+            return if (scoringMode == GameScoringMode.STAR_POINT) {
+                "AD ${deuceNumber.coerceIn(1, 2)} · VANTAGGIO $label"
+            } else {
+                "VANTAGGIO $label · GAME POINT"
+            }
         }
         if (pointsA < 3 || pointsB < 3) return null
-        return if (goldenPoint) {
-            "40 PARI · PUNTO DECISIVO"
+        return when (scoringMode) {
+            GameScoringMode.GOLDEN_POINT -> "40 PARI · PUNTO DECISIVO"
+            GameScoringMode.ADVANTAGE -> "40 PARI · VANTAGGI"
+            GameScoringMode.STAR_POINT -> when (deuceNumber.coerceIn(1, 3)) {
+                1 -> "DEUCE 1 · VANTAGGI"
+                2 -> "DEUCE 2 · VANTAGGI"
+                else -> "STAR POINT"
+            }
+        }
+    }
+
+    fun pointSituationHint(): String? =
+        if (starPointActive) "La coppia in risposta sceglie il lato" else null
+
+    fun pointSituationAccessibility(
+        teamALabel: String = "NOI",
+        teamBLabel: String = "LORO",
+    ): String? {
+        if (starPointActive) {
+            return "Star Point. Punto decisivo. La coppia in risposta sceglie il lato."
+        }
+        val situation = pointSituation(teamALabel, teamBLabel) ?: return null
+        return if (
+            scoringMode == GameScoringMode.STAR_POINT &&
+            advantage != null
+        ) {
+            "$situation. Ciclo ${deuceNumber.coerceIn(1, 2)} di 2."
         } else {
-            "40 PARI · VANTAGGI"
+            situation
         }
     }
 }
@@ -530,6 +662,7 @@ class ScoringEngine(
         var paused = false
         var completed = false
         var pA = 0; var pB = 0
+        var deuceNumber = 0
         var gA = 0; var gB = 0
         var sA = 0; var sB = 0
         val sets = mutableListOf<SetResult>()
@@ -565,38 +698,102 @@ class ScoringEngine(
             return if (inTb || inStb) tieBreakPoint(team) else gamePoint(team)
         }
 
-        private fun gamePoint(team: TeamId): List<Transition> {
-            var gameWon = false
-            if (f.goldenPoint) {
-                if (team == TeamId.A) pA++ else pB++
-                gameWon = pA >= 4 || pB >= 4
-            } else if (pA == 4 && pB == 3) {
-                if (team == TeamId.A) gameWon = true else { pA = 3; pB = 3 }
-            } else if (pB == 4 && pA == 3) {
-                if (team == TeamId.B) gameWon = true else { pA = 3; pB = 3 }
-            } else if (pA == 3 && pB == 3) {
-                if (team == TeamId.A) pA = 4 else pB = 4
-            } else {
-                if (team == TeamId.A) pA++ else pB++
-                gameWon = (pA >= 4 && pA - pB >= 2) ||
-                    (pB >= 4 && pB - pA >= 2)
-            }
-            if (!gameWon) return listOf(Transition.POINT)
+        /** The set in play is the last one the match can have. */
+        private val inDecidingSet: Boolean
+            get() = sA == f.setsToWin - 1 && sB == f.setsToWin - 1
 
-            val gWinner = if (pA > pB) TeamId.A else TeamId.B
-            pA = 0; pB = 0
+        /**
+         * Whether gamesPerSet-all opens a tie-break in the set being played.
+         * FIP Rule 1, Option 1.4 allows the deciding set to be played out.
+         */
+        private val tieBreakAvailable: Boolean
+            get() = f.tieBreakAtGamesAll && (f.tieBreakInDecidingSet || !inDecidingSet)
+
+        private fun gamePoint(team: TeamId): List<Transition> {
+            var gameWinner: TeamId? = null
+            when (f.gameScoringMode) {
+                GameScoringMode.GOLDEN_POINT -> {
+                    if (team == TeamId.A) pA++ else pB++
+                    if (pA >= 4 || pB >= 4) gameWinner = team
+                }
+                GameScoringMode.ADVANTAGE,
+                GameScoringMode.STAR_POINT,
+                -> when {
+                    pA == 4 && pB == 3 -> {
+                        if (team == TeamId.A) {
+                            gameWinner = TeamId.A
+                        } else {
+                            pA = 3
+                            pB = 3
+                            if (f.gameScoringMode == GameScoringMode.STAR_POINT) {
+                                deuceNumber = (deuceNumber + 1).coerceIn(1, 3)
+                            }
+                        }
+                    }
+                    pB == 4 && pA == 3 -> {
+                        if (team == TeamId.B) {
+                            gameWinner = TeamId.B
+                        } else {
+                            pA = 3
+                            pB = 3
+                            if (f.gameScoringMode == GameScoringMode.STAR_POINT) {
+                                deuceNumber = (deuceNumber + 1).coerceIn(1, 3)
+                            }
+                        }
+                    }
+                    pA == 3 && pB == 3 -> {
+                        if (
+                            f.gameScoringMode == GameScoringMode.STAR_POINT &&
+                            deuceNumber >= 3
+                        ) {
+                            gameWinner = team
+                        } else if (team == TeamId.A) {
+                            pA = 4
+                        } else {
+                            pB = 4
+                        }
+                    }
+                    else -> {
+                        if (team == TeamId.A) pA++ else pB++
+                        if (
+                            (pA >= 4 && pA - pB >= 2) ||
+                            (pB >= 4 && pB - pA >= 2)
+                        ) {
+                            gameWinner = team
+                        }
+                    }
+                }
+            }
+            if (
+                gameWinner == null &&
+                f.gameScoringMode == GameScoringMode.STAR_POINT &&
+                pA == 3 &&
+                pB == 3 &&
+                deuceNumber == 0
+            ) {
+                deuceNumber = 1
+            }
+            if (gameWinner == null) return listOf(Transition.POINT)
+
+            val gWinner = gameWinner
+            pA = 0; pB = 0; deuceNumber = 0
             if (gWinner == TeamId.A) gA++ else gB++
             serving = serving.opponent
 
             val out = mutableListOf(Transition.POINT, Transition.GAME_WON)
-            if ((gA + gB) % 2 == 1) { sidePending = true; out.add(Transition.SIDE_CHANGE) }
 
+            // Set won outright? completeSet owns the end-of-set change of ends,
+            // which follows the same odd-total rule applied below to mid-set
+            // games.
             val lg = if (gWinner == TeamId.A) gA else gB
             val og = if (gWinner == TeamId.A) gB else gA
             if (lg >= f.gamesPerSet && lg - og >= 2) {
                 out.addAll(completeSet(gWinner, tb = false)); return out
             }
-            if (f.tieBreakAtGamesAll && gA == f.gamesPerSet && gB == f.gamesPerSet) {
+
+            if ((gA + gB) % 2 == 1) { sidePending = true; out.add(Transition.SIDE_CHANGE) }
+            // No tie-break in a deciding set played to two games of margin.
+            if (tieBreakAvailable && gA == f.gamesPerSet && gB == f.gamesPerSet) {
                 inTb = true; tbA = 0; tbB = 0; tbFirstServer = serving
             }
             return out
@@ -630,15 +827,30 @@ class ScoringEngine(
                 ) else SetResult(gA, gB)
             )
             if (setWinner == TeamId.A) sA++ else sB++
-            gA = 0; gB = 0; pA = 0; pB = 0
+            // Captured before the reset below: the games actually played in the
+            // set that just finished.
+            val setTotalGames = if (tb) f.gamesPerSet * 2 + 1 else gA + gB
+            gA = 0; gB = 0; pA = 0; pB = 0; deuceNumber = 0
             if (inTb) serving = tbFirstServer.opponent
             inTb = false; tbA = 0; tbB = 0
-            sidePending = true
 
-            val out = mutableListOf(Transition.SET_WON, Transition.SIDE_CHANGE)
+            // FIP Rules of Padel (Rule 11 — Change of ends): teams change ends
+            // at the end of every odd game, and at the end of a set only when
+            // the set's total number of games is odd. After an even set (6-0,
+            // 6-2, 6-4) the change is deferred to the end of the first game of
+            // the next set, which the per-game odd rule in gamePoint already
+            // produces. A set won on a tie-break is 7-6 = 13 games, so it
+            // always changes ends.
+            val changeEnds = setTotalGames % 2 == 1
+            sidePending = changeEnds
+
+            val out = mutableListOf(Transition.SET_WON)
+            if (changeEnds) out.add(Transition.SIDE_CHANGE)
             val winSets = if (setWinner == TeamId.A) sA else sB
             if (winSets >= f.setsToWin) {
                 completed = true; winner = setWinner
+                // The match is over: there is no next game to change ends for.
+                sidePending = false
                 out.add(Transition.MATCH_WON)
                 return out
             }
@@ -658,6 +870,7 @@ class ScoringEngine(
             )
             if (stbWinner == TeamId.A) sA++ else sB++
             inStb = false
+            deuceNumber = 0
             completed = true; winner = stbWinner
             return listOf(Transition.SET_WON, Transition.MATCH_WON)
         }
@@ -665,8 +878,49 @@ class ScoringEngine(
         fun applyEdit(p: JSONObject) {
             pA = p.optInt("pointsA", pA).coerceIn(0, 4)
             pB = p.optInt("pointsB", pB).coerceIn(0, 4)
-            gA = p.optInt("gamesA", gA).coerceIn(0, f.gamesPerSet + 1)
-            gB = p.optInt("gamesB", gB).coerceIn(0, f.gamesPerSet + 1)
+            // A deciding set without tie-break has no gamesPerSet+1 ceiling
+            // (8-6, 9-7, ...), so the bound follows the set in play.
+            val maxGames = if (tieBreakAvailable) f.gamesPerSet + 1 else f.gamesPerSet * 4
+            gA = p.optInt("gamesA", gA).coerceIn(0, maxGames)
+            gB = p.optInt("gamesB", gB).coerceIn(0, maxGames)
+
+            if (
+                f.freePlay ||
+                inTb ||
+                inStb ||
+                f.gameScoringMode == GameScoringMode.GOLDEN_POINT
+            ) {
+                pA = pA.coerceIn(0, 3)
+                pB = pB.coerceIn(0, 3)
+                deuceNumber = 0
+            } else {
+                // AD is valid only as 4-3 or 3-4. Normalize corrupted/legacy
+                // absolute edits before replaying subsequent points.
+                if (pA == 4 && pB == 4) {
+                    pA = 3
+                    pB = 3
+                } else {
+                    if (pA == 4 && pB != 3) pA = 3
+                    if (pB == 4 && pA != 3) pB = 3
+                }
+
+                val inDeucePhase =
+                    (pA == 3 && pB == 3) ||
+                        (pA == 4 && pB == 3) ||
+                        (pB == 4 && pA == 3)
+                deuceNumber = if (
+                    f.gameScoringMode == GameScoringMode.STAR_POINT &&
+                    inDeucePhase
+                ) {
+                    // Legacy SCORE_EDITED carried no phase: always restart
+                    // from deuce 1 rather than inheriting replay state.
+                    p.optInt("deuceNumber", 1).coerceIn(1, 3).let { requested ->
+                        if ((pA == 4 || pB == 4) && requested == 3) 2 else requested
+                    }
+                } else {
+                    0
+                }
+            }
             if (inTb || inStb) {
                 tbA = p.optInt("tieBreakA", tbA)
                 tbB = p.optInt("tieBreakB", tbB)
@@ -675,16 +929,18 @@ class ScoringEngine(
 
         fun snapshot(): MatchState {
             var adv: TeamId? = null
-            if (!f.goldenPoint) {
+            if (f.gameScoringMode != GameScoringMode.GOLDEN_POINT) {
                 if (pA == 4 && pB == 3) adv = TeamId.A
                 if (pB == 4 && pA == 3) adv = TeamId.B
             }
             return MatchState(
                 completed = completed,
                 paused = paused,
+                scoringMode = f.gameScoringMode,
                 pointsA = pA.coerceIn(0, 3),
                 pointsB = pB.coerceIn(0, 3),
                 advantage = adv,
+                deuceNumber = deuceNumber.coerceIn(0, 3),
                 gamesA = gA, gamesB = gB,
                 setsA = sA, setsB = sB,
                 completedSets = sets.toList(),

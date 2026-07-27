@@ -277,10 +277,10 @@ class InviteService {
 
   Future<void> share(CreatedInvite invite, {String? subject}) async {
     final text =
-        'Unisciti a me su Padelandia\n${invite.uri}\n'
+        'Unisciti a me su Momentum\n${invite.uri}\n'
         'Codice: ${invite.code}';
     await SharePlus.instance.share(
-      ShareParams(text: text, subject: subject ?? 'Invito Padelandia'),
+      ShareParams(text: text, subject: subject ?? 'Invito Momentum'),
     );
   }
 

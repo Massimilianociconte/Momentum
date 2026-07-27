@@ -47,6 +47,25 @@ final class ScoringEngineTests: XCTestCase {
         }
     }
 
+    /// Like `winGame` but returns the transitions of the game-winning point.
+    private func playGame(_ e: ScoringEngine, _ team: TeamId) -> [Transition] {
+        let games = team == .a ? e.state.gamesA : e.state.gamesB
+        let sets = team == .a ? e.state.setsA : e.state.setsB
+        while true {
+            let (_, transitions) = e.addPoint(team)
+            let g = team == .a ? e.state.gamesA : e.state.gamesB
+            let s = team == .a ? e.state.setsA : e.state.setsB
+            if g > games || s > sets || e.state.completed { return transitions }
+        }
+    }
+
+    private func reachDeuce(_ e: ScoringEngine) {
+        for _ in 0 ..< 3 {
+            e.addPoint(.a)
+            e.addPoint(.b)
+        }
+    }
+
     func testGoldenPointFourPointsWinGame() {
         let e = engine()
         e.start()
@@ -123,6 +142,143 @@ final class ScoringEngineTests: XCTestCase {
         e.undo()
         XCTAssertEqual(e.state.pointsLabel(.a), "40")
         XCTAssertEqual(e.state.pointsLabel(.b), "40")
+    }
+
+    func testStarPointFIPDeuceAndAdvantageSequenceEndsAtDecidingPoint() {
+        let e = engine(.starPointBo3)
+        e.start()
+        reachDeuce(e)
+
+        XCTAssertEqual(e.state.deuceNumber, 1)
+        XCTAssertFalse(e.state.isStarPoint)
+        XCTAssertEqual(
+            e.state.pointSituation(gameScoringMode: .starPoint),
+            "40 PARI · DEUCE 1"
+        )
+
+        e.addPoint(.a)
+        XCTAssertEqual(e.state.advantage, .a)
+        XCTAssertEqual(e.state.deuceNumber, 1)
+        XCTAssertEqual(
+            e.state.pointSituation(
+                gameScoringMode: .starPoint,
+                teamALabel: "CASA",
+                teamBLabel: "OSPITI"
+            ),
+            "AD 1 CASA · GAME POINT"
+        )
+
+        e.addPoint(.b)
+        XCTAssertNil(e.state.advantage)
+        XCTAssertEqual(e.state.deuceNumber, 2)
+        XCTAssertEqual(
+            e.state.pointSituation(gameScoringMode: .starPoint),
+            "40 PARI · DEUCE 2"
+        )
+
+        e.addPoint(.b)
+        XCTAssertEqual(e.state.advantage, .b)
+        XCTAssertEqual(e.state.deuceNumber, 2)
+        XCTAssertEqual(
+            e.state.pointSituation(gameScoringMode: .starPoint),
+            "AD 2 LORO · GAME POINT"
+        )
+
+        e.addPoint(.a)
+        XCTAssertNil(e.state.advantage)
+        XCTAssertEqual(e.state.deuceNumber, 3)
+        XCTAssertTrue(e.state.isStarPoint)
+        XCTAssertEqual(
+            e.state.pointSituation(gameScoringMode: .starPoint),
+            "DEUCE 3 · STAR POINT"
+        )
+
+        e.addPoint(.b)
+        XCTAssertEqual(e.state.gamesB, 1)
+        XCTAssertEqual(e.state.deuceNumber, 0)
+        XCTAssertFalse(e.state.isStarPoint)
+        XCTAssertEqual(e.state.pointsLabel(.a), "0")
+        XCTAssertEqual(e.state.pointsLabel(.b), "0")
+    }
+
+    func testStarPointCanCloseAtAdvantageOneOrAdvantageTwo() {
+        let atAdvantageOne = engine(.starPointBo3)
+        atAdvantageOne.start()
+        reachDeuce(atAdvantageOne)
+        atAdvantageOne.addPoint(.a)
+        atAdvantageOne.addPoint(.a)
+        XCTAssertEqual(atAdvantageOne.state.gamesA, 1)
+
+        let atAdvantageTwo = engine(.starPointBo3)
+        atAdvantageTwo.start()
+        reachDeuce(atAdvantageTwo)
+        atAdvantageTwo.addPoint(.a)
+        atAdvantageTwo.addPoint(.b)
+        atAdvantageTwo.addPoint(.b)
+        atAdvantageTwo.addPoint(.b)
+        XCTAssertEqual(atAdvantageTwo.state.gamesB, 1)
+    }
+
+    func testStarPointUndoAndJsonReplayRestoreExactDeucePhase() {
+        let e = engine(.starPointBo3)
+        e.start()
+        reachDeuce(e)
+        e.addPoint(.a)
+        e.addPoint(.b)
+        e.addPoint(.b)
+        e.addPoint(.a)
+        XCTAssertEqual(e.state.deuceNumber, 3)
+
+        let rebuilt = engine(.starPointBo3)
+        rebuilt.loadEvents(
+            MatchEvent.listFromJson(MatchEvent.listToJson(e.allEvents))
+        )
+        XCTAssertEqual(rebuilt.state, e.state)
+        XCTAssertEqual(rebuilt.state.deuceNumber, 3)
+
+        e.addPoint(.a)
+        XCTAssertEqual(e.state.gamesA, 1)
+        e.undo()
+        XCTAssertEqual(e.state.gamesA, 0)
+        XCTAssertEqual(e.state.deuceNumber, 3)
+        XCTAssertNil(e.state.advantage)
+
+        e.undo()
+        XCTAssertEqual(e.state.deuceNumber, 2)
+        XCTAssertEqual(e.state.advantage, .b)
+    }
+
+    func testStarPointScoreEditRestoresDeuceThree() {
+        let e = engine(.starPointBo3)
+        e.loadEvents([
+            MatchEvent(
+                eventId: "start",
+                matchId: "m1",
+                ts: 1,
+                type: .matchStarted
+            ),
+            MatchEvent(
+                eventId: "edit",
+                matchId: "m1",
+                ts: 2,
+                type: .scoreEdited,
+                sourceMethod: "MANUAL_EDIT",
+                payload: [
+                    "pointsA": 3,
+                    "pointsB": 3,
+                    "deuceNumber": 3,
+                ]
+            ),
+        ])
+
+        XCTAssertEqual(e.state.deuceNumber, 3)
+        XCTAssertEqual(
+            e.state.pointSituation(gameScoringMode: .starPoint),
+            "DEUCE 3 · STAR POINT"
+        )
+        e.addPoint(.a)
+        XCTAssertEqual(e.state.gamesA, 1)
+        XCTAssertEqual(e.state.deuceNumber, 0)
     }
 
     func testTieBreakRecorded76() {
@@ -208,6 +364,65 @@ final class ScoringEngineTests: XCTestCase {
         XCTAssertTrue(format.goldenPoint)
         XCTAssertTrue(format.freePlay)
         XCTAssertTrue(format.toJsonString().contains("\"freePlay\":true"))
+    }
+
+    func testMatchFormatSchemaV3RoundTripAndLegacyFallbacks() throws {
+        let json = MatchFormat.starPointBo3.toJsonString()
+        XCTAssertTrue(json.contains("\"formatSchemaVersion\":3"))
+        XCTAssertFalse(json.contains("\"schemaVersion\":"))
+        XCTAssertTrue(json.contains("\"gameScoringMode\":\"STAR_POINT\""))
+        XCTAssertTrue(json.contains("\"goldenPoint\":false"))
+
+        let decoded = try XCTUnwrap(MatchFormat.fromJsonString(json))
+        XCTAssertEqual(decoded, .starPointBo3)
+        XCTAssertEqual(decoded.gameScoringMode, .starPoint)
+        XCTAssertFalse(decoded.goldenPoint)
+        XCTAssertTrue(MatchFormat.presets.contains(.starPointBo3))
+
+        let legacyAdvantage = try XCTUnwrap(
+            MatchFormat.fromJsonString(
+                "{\"id\":\"ADV_OLD\",\"goldenPoint\":false}"
+            )
+        )
+        XCTAssertEqual(legacyAdvantage.gameScoringMode, .advantage)
+
+        let legacyGolden = try XCTUnwrap(
+            MatchFormat.fromJsonString(
+                "{\"id\":\"GOLDEN_OLD\",\"goldenPoint\":true}"
+            )
+        )
+        XCTAssertEqual(legacyGolden.gameScoringMode, .goldenPoint)
+
+        let unknownMode = try XCTUnwrap(
+            MatchFormat.fromJsonString(
+                """
+                {
+                  "id": "FUTURE",
+                  "gameScoringMode": "FUTURE_RULE",
+                  "goldenPoint": false
+                }
+                """
+            )
+        )
+        XCTAssertEqual(unknownMode.gameScoringMode, .advantage)
+
+        let transitionalAlias = try XCTUnwrap(
+            MatchFormat.fromJsonString(
+                """
+                {
+                  "schemaVersion": 2,
+                  "id": "STAR_ALIAS",
+                  "gameScoringMode": "STAR_POINT",
+                  "goldenPoint": false
+                }
+                """
+            )
+        )
+        XCTAssertEqual(transitionalAlias.gameScoringMode, .starPoint)
+        XCTAssertTrue(
+            transitionalAlias.toJsonString()
+                .contains("\"formatSchemaVersion\":3")
+        )
     }
 
     func testServeRotation() {
@@ -373,6 +588,92 @@ final class ScoringEngineTests: XCTestCase {
         let result = e.undo(team: .b)
         XCTAssertTrue(result.newEvents.isEmpty)
         XCTAssertEqual(e.state.pointsLabel(.a), "15")
+    }
+
+    // FIP Rules of Padel, Rule 11 (Change of ends): every odd game, and at the
+    // end of a set only when that set's total number of games is odd.
+
+    func testSetWonSixFourDoesNotChangeEnds() {
+        let e = engine()
+        e.start()
+        for _ in 0..<4 {
+            playGame(e, .a)
+            playGame(e, .b)
+        }
+        playGame(e, .a)
+        let transitions = playGame(e, .a) // 6-4 → set
+        XCTAssertTrue(transitions.contains(.setWon))
+        XCTAssertFalse(transitions.contains(.sideChange))
+        XCTAssertFalse(e.state.sideChangePending)
+    }
+
+    func testDeferredChangeOfEndsHappensAfterFirstGameOfNextSet() {
+        let e = engine()
+        e.start()
+        for _ in 0..<4 {
+            playGame(e, .a)
+            playGame(e, .b)
+        }
+        playGame(e, .a)
+        playGame(e, .a) // 6-4, no change of ends yet
+        let transitions = playGame(e, .b) // first game of set 2
+        XCTAssertTrue(transitions.contains(.sideChange))
+        XCTAssertTrue(e.state.sideChangePending)
+    }
+
+    func testSetWonSixThreeChangesEnds() {
+        let e = engine()
+        e.start()
+        for _ in 0..<3 {
+            playGame(e, .a)
+            playGame(e, .b)
+        }
+        playGame(e, .a)
+        playGame(e, .a)
+        let transitions = playGame(e, .a) // 6-3 → set
+        XCTAssertTrue(transitions.contains(.setWon))
+        XCTAssertTrue(transitions.contains(.sideChange))
+        XCTAssertTrue(e.state.sideChangePending)
+    }
+
+    func testSetWonSixLoveDoesNotChangeEnds() {
+        let e = engine()
+        e.start()
+        for _ in 0..<5 { playGame(e, .a) }
+        let transitions = playGame(e, .a) // 6-0 → set
+        XCTAssertFalse(transitions.contains(.sideChange))
+        XCTAssertFalse(e.state.sideChangePending)
+    }
+
+    func testSetWonOnTieBreakChangesEnds() {
+        let e = engine()
+        e.start()
+        for _ in 0..<6 {
+            playGame(e, .a)
+            playGame(e, .b)
+        }
+        XCTAssertTrue(e.state.inTieBreak)
+        var transitions: [Transition] = []
+        for _ in 0..<7 { transitions = e.addPoint(.a).transitions }
+        XCTAssertTrue(transitions.contains(.setWon))
+        XCTAssertTrue(transitions.contains(.sideChange))
+        XCTAssertTrue(e.state.sideChangePending)
+    }
+
+    func testMatchWinningSetLeavesNoPendingChangeOfEnds() {
+        let e = engine()
+        e.start()
+        winSet(e, .a)
+        for _ in 0..<3 {
+            playGame(e, .a)
+            playGame(e, .b)
+        }
+        playGame(e, .a)
+        playGame(e, .a)
+        let transitions = playGame(e, .a) // 6-3 → set and match
+        XCTAssertTrue(transitions.contains(.matchWon))
+        XCTAssertTrue(e.state.completed)
+        XCTAssertFalse(e.state.sideChangePending)
     }
 
     func testDuoLifecycleEventsAreAuditOnlyOnReplay() {

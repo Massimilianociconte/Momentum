@@ -191,9 +191,39 @@ class HealthDayWindow {
 
 class HealthConnectService {
   HealthConnectService({MethodChannel? channel})
-    : _channel = channel ?? const MethodChannel('com.rallymate/health_connect');
+    : _channel = channel ?? const MethodChannel('com.rallymate/health_connect') {
+    _channel.setMethodCallHandler(_onNativeCall);
+  }
 
   final MethodChannel _channel;
+  final StreamController<void> _rationaleRequests =
+      StreamController<void>.broadcast();
+
+  /// Warm start dal foglio permessi Health Connect: l'app deve mostrare la
+  /// schermata privacy/rationale (requisito Play per le app salute).
+  Stream<void> get rationaleRequests => _rationaleRequests.stream;
+
+  Future<void> _onNativeCall(MethodCall call) async {
+    if (call.method == 'showRationale') _rationaleRequests.add(null);
+  }
+
+  /// Cold start: true se l'app è stata lanciata dall'intent rationale di
+  /// Health Connect e il flag nativo non è ancora stato consumato.
+  Future<bool> consumeRationaleRequest() async {
+    if (!supportedPlatform || isApple) return false;
+    try {
+      return await _channel
+              .invokeMethod<bool>('consumeRationaleRequest')
+              .timeout(_channelTimeout) ??
+          false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    } on TimeoutException {
+      return false;
+    }
+  }
 
   /// The native side can lose a pending result (Health Connect permission
   /// sheet surviving an activity recreation, provider process death), and the

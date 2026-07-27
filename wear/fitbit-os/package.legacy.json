@@ -9,7 +9,7 @@
   },
   "fitbit": {
     "appType": "app",
-    "appDisplayName": "Padelandia",
+    "appDisplayName": "Momentum",
     "iconFile": "resources/icon.png",
     "wipeColor": "#07101F",
     "requestedPermissions": [

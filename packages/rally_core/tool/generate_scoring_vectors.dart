@@ -17,11 +17,16 @@ import 'dart:io';
 import 'package:rally_core/rally_core.dart';
 
 /// Operazioni supportate da tutti i runner.
-/// { "op": "point"|"undo"|"pause"|"resume"|"finish", "team": "TEAM_A"|null }
+/// {
+///   "op": "point"|"edit"|"undo"|"pause"|"resume"|"finish",
+///   "team": "TEAM_A"|null,
+///   "payload": { ... }|null
+/// }
 class _Step {
-  const _Step(this.op, [this.team]);
+  const _Step(this.op, [this.team, this.payload]);
   final String op;
   final TeamId? team;
+  final Map<String, int>? payload;
 }
 
 class _Vector {
@@ -42,6 +47,19 @@ class _Vector {
 
 _Step _pA() => const _Step('point', TeamId.a);
 _Step _pB() => const _Step('point', TeamId.b);
+_Step _edit({
+  required int pointsA,
+  required int pointsB,
+  required int gamesA,
+  required int gamesB,
+  int? deuceNumber,
+}) => _Step('edit', null, {
+  'pointsA': pointsA,
+  'pointsB': pointsB,
+  'gamesA': gamesA,
+  'gamesB': gamesB,
+  'deuceNumber': ?deuceNumber,
+});
 
 List<_Step> _game(TeamId team, {required bool golden}) =>
     List.filled(4, _Step('point', team));
@@ -91,6 +109,97 @@ List<_Vector> _vectors() => [
     ],
   ),
   _Vector(
+    id: 'star_point_bo3_full_cycle',
+    description:
+        'Star Point FIP: parità 1, vantaggio 1, parità 2, vantaggio 2, '
+        'parità 3 e punto decisivo.',
+    format: MatchFormat.starPointBo3,
+    platforms: const ['dart', 'kotlin', 'swift'],
+    steps: [
+      _pA(), _pA(), _pA(), // 40-0
+      _pB(), _pB(), _pB(), // parità 1
+      _pA(), // vantaggio 1 A
+      _pB(), // parità 2
+      _pB(), // vantaggio 2 B
+      _pA(), // parità 3 / Star Point
+      _pA(), // punto decisivo → game A
+    ],
+  ),
+  _Vector(
+    id: 'star_point_bo3_advantage_two_conversion',
+    description: 'Star Point FIP: il titolare di vantaggio 2 chiude il game.',
+    format: MatchFormat.starPointBo3,
+    platforms: const ['dart', 'kotlin', 'swift'],
+    steps: [
+      _pA(), _pA(), _pA(), // 40-0
+      _pB(), _pB(), _pB(), // parità 1
+      _pA(), // vantaggio 1 A
+      _pB(), // parità 2
+      _pB(), // vantaggio 2 B
+      _pB(), // conversione → game B
+    ],
+  ),
+  _Vector(
+    id: 'star_point_bo3_undo_game_to_decider',
+    description:
+        'Star Point FIP: undo dopo il game ripristina parità 3 e il punto '
+        'decisivo.',
+    format: MatchFormat.starPointBo3,
+    platforms: const ['dart', 'kotlin', 'swift'],
+    steps: [
+      _pA(), _pA(), _pA(), // 40-0
+      _pB(), _pB(), _pB(), // parità 1
+      _pA(), // vantaggio 1 A
+      _pB(), // parità 2
+      _pB(), // vantaggio 2 B
+      _pA(), // parità 3 / Star Point
+      _pA(), // punto decisivo → game A
+      const _Step('undo'), // torna allo Star Point
+    ],
+  ),
+  _Vector(
+    id: 'star_point_score_edit_replay_normalization',
+    description:
+        'Replay SCORE_EDITED Star Point: un edit legacy dopo parità 2 '
+        'riparte da parità 1; AD 3 è limitato ad AD 2 e i punteggi '
+        'malformati 4-4/4-2 sono normalizzati.',
+    format: MatchFormat.starPointBo3,
+    platforms: const ['dart', 'kotlin', 'swift'],
+    steps: [
+      _pA(), _pA(), _pA(), // 40-0
+      _pB(), _pB(), _pB(), // parità 1
+      _pA(), // vantaggio 1 A
+      _pB(), // parità 2
+      _edit(
+        pointsA: 3,
+        pointsB: 3,
+        gamesA: 0,
+        gamesB: 0,
+      ), // payload legacy: non eredita parità 2
+      _edit(
+        pointsA: 4,
+        pointsB: 3,
+        gamesA: 0,
+        gamesB: 0,
+        deuceNumber: 3,
+      ), // Star Point non ammette AD 3: diventa AD 2
+      _edit(
+        pointsA: 4,
+        pointsB: 4,
+        gamesA: 0,
+        gamesB: 0,
+        deuceNumber: 3,
+      ), // 4-4 malformato: parità 3 / Star Point
+      _edit(
+        pointsA: 4,
+        pointsB: 2,
+        gamesA: 0,
+        gamesB: 0,
+        deuceNumber: 3,
+      ), // 4-2 malformato: 40-30, fuori dal ciclo Star
+    ],
+  ),
+  _Vector(
     id: 'adv_bo3_set_6_4',
     description: 'Set chiuso 6-4 con game a zero alternati.',
     format: MatchFormat.advantageBo3,
@@ -120,6 +229,43 @@ List<_Vector> _vectors() => [
       ..._games(0, 6), // set 2 a B → parte il super TB
       for (var i = 0; i < 8; i++) ...[_pA(), _pB()], // 8-8
       _pA(), _pA(), // 10-8 → match A
+    ],
+  ),
+  _Vector(
+    id: 'mini_set_4_games',
+    description:
+        'Mini-set FIP: il set si chiude a 4 game con 2 di scarto (4-2).',
+    format: MatchFormat.miniSetBo3,
+    steps: [
+      ..._games(2, 2), // 2-2
+      ..._games(2, 0), // 4-2 → set
+    ],
+  ),
+  _Vector(
+    id: 'match_tie_break_7_decider',
+    description:
+        'Tie-break decisivo FIP a 7 punti al posto dell\'ultimo set (7-5).',
+    format: MatchFormat.matchTieBreak7Bo3,
+    steps: [
+      ..._games(6, 0), // set 1 ad A
+      ..._games(0, 6), // set 2 a B → parte il tie-break decisivo
+      for (var i = 0; i < 5; i++) ...[_pA(), _pB()], // 5-5
+      _pA(), _pA(), // 7-5 → match A
+    ],
+  ),
+  _Vector(
+    id: 'deciding_set_without_tie_break_8_6',
+    description:
+        'Terzo set senza tie-break: sul 6-6 si prosegue fino a due game di '
+        'scarto (8-6).',
+    format: MatchFormat.advantageDecidingSetBo3,
+    // Schema v3: solo gli engine che leggono tieBreakInDecidingSet.
+    platforms: const ['dart', 'kotlin', 'swift'],
+    steps: [
+      ..._games(6, 0), // set 1 ad A
+      ..._games(0, 6), // set 2 a B → set decisivo
+      ..._alternatingGames(6), // 6-6 senza tie-break
+      ..._games(2, 0), // 8-6 → set e match ad A
     ],
   ),
   _Vector(
@@ -243,6 +389,8 @@ Map<String, Object?> _snapshot(PadelScoringEngine engine) {
     'labelA': label(TeamId.a),
     'labelB': label(TeamId.b),
     'advantage': s.points.advantage?.wire,
+    'deuceNumber': s.points.deuceNumber,
+    'isStarPoint': s.points.isStarPoint,
     'inTieBreak': s.inTieBreak,
     'inSuperTieBreak': s.inSuperTieBreak,
     'tieBreakA': s.tieBreakA,
@@ -280,6 +428,15 @@ Map<String, Object?> buildVectorsDocument() {
       switch (step.op) {
         case 'point':
           engine.addPoint(step.team!);
+        case 'edit':
+          final payload = step.payload!;
+          engine.editScore(
+            pointsA: payload['pointsA']!,
+            pointsB: payload['pointsB']!,
+            gamesA: payload['gamesA']!,
+            gamesB: payload['gamesB']!,
+            deuceNumber: payload['deuceNumber'],
+          );
         case 'undo':
           engine.undo(team: step.team);
         case 'pause':
@@ -294,6 +451,7 @@ Map<String, Object?> buildVectorsDocument() {
       steps.add({
         'op': step.op,
         'team': step.team?.wire,
+        if (step.payload != null) 'payload': step.payload,
         'expect': _snapshot(engine),
       });
     }
@@ -308,7 +466,7 @@ Map<String, Object?> buildVectorsDocument() {
   }
 
   return {
-    'version': 1,
+    'version': 2,
     'generator': 'packages/rally_core/tool/generate_scoring_vectors.dart',
     'contract':
         'rally_core PadelScoringEngine è il riferimento: ogni engine watch '

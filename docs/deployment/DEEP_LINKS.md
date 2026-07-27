@@ -1,4 +1,4 @@
-# Padelandia Universal Links e Android App Links
+# Momentum Universal Links e Android App Links
 
 La navigazione interna e lo schema `rallymate://` sono gia attivi. I link HTTPS
 richiedono invece un dominio realmente controllato e i file di associazione
@@ -41,7 +41,7 @@ Solo dopo che il dominio e operativo:
   host `<YOUR_LINK_DOMAIN>` e path prefix `/invite` e `/recap` alla
   `MainActivity`.
 - Flutter: mantenere disabilitato il deep-link handler automatico Flutter,
-  perche il package `app_links` e il router Padelandia gestiscono gia cold start
+  perche il package `app_links` e il router Momentum gestiscono gia cold start
   e link ricevuti a processo attivo.
 
 Build di verifica:
@@ -72,7 +72,7 @@ l'identita dell'invitante e richiede conferma prima di creare relazioni.
 ## Installazione differita
 
 Firebase Dynamic Links non e una dipendenza valida per un nuovo progetto. Il
-flusso Padelandia usa link HTTPS, QR e codice breve: dopo una nuova installazione
+flusso Momentum usa link HTTPS, QR e codice breve: dopo una nuova installazione
 l'utente puo inserire o scansionare lo stesso codice. Un deferred deep-link
 automatico richiederebbe un provider dedicato e una valutazione privacy separata;
 non va dichiarato negli store finche non viene scelto e verificato.

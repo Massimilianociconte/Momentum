@@ -25,8 +25,8 @@ class PdfReportService {
     required List<MatchSummary> summaries,
   }) async {
     final doc = pw.Document(
-      title: 'Padelandia — Report $windowLabel',
-      author: 'Padelandia',
+      title: 'Momentum — Report $windowLabel',
+      author: 'Momentum',
     );
 
     final played = summaries.length;
@@ -69,7 +69,7 @@ class PdfReportService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                'Generato da Padelandia · ${now.day}/${now.month}/${now.year}',
+                'Generato da Momentum · ${now.day}/${now.month}/${now.year}',
                 style: const pw.TextStyle(
                   fontSize: 8,
                   color: PdfColors.grey600,
@@ -219,7 +219,7 @@ class PdfReportService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                'Padelandia',
+                'Momentum',
                 style: pw.TextStyle(
                   color: _lime,
                   fontSize: 20,

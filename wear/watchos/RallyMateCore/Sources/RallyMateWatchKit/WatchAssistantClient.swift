@@ -44,7 +44,7 @@ public enum WatchAssistantError: Error, Equatable, Sendable {
     public var message: String {
         switch self {
         case .notConfigured:
-            "Apri Padelandia su iPhone per attivare Pallino sul Watch."
+            "Apri Momentum su iPhone per attivare Pallino sul Watch."
         case .sessionExpired:
             "Sessione scaduta. Avvicina l’iPhone per rinnovarla."
         case .offline:

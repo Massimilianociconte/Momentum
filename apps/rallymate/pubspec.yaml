@@ -1,5 +1,5 @@
 name: rallymate
-description: "Padelandia — segna i punti dal polso, analizza ogni partita."
+description: "Momentum — segna i punti dal polso, analizza ogni partita."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -46,6 +46,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/logo.png
     - assets/brand/rallymate_app_mark_256.png
     - assets/brand/padelandia_app_mark_256.png
     - assets/brand/rallymate_loading_splash.jpg

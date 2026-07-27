@@ -50,7 +50,7 @@ class AthleteCoachSection extends ConsumerWidget {
             error: (e, _) => const SizedBox.shrink(),
             data: (list) => list.isEmpty
                 ? const Text(
-                    'Hai un coach? Fatti dare il suo codice Padelandia e '
+                    'Hai un coach? Fatti dare il suo codice Momentum e '
                     'ricevi schede e feedback direttamente qui.',
                     style: TextStyle(
                       fontSize: 12.5,

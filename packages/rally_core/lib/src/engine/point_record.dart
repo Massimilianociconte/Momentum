@@ -21,6 +21,7 @@ class PointRecord {
     required this.matchPointFor,
     required this.breakPointFor,
     required this.isDeucePoint,
+    required this.isStarPoint,
     required this.sourceDevice,
     required this.sourceMethod,
     required this.scoreBefore,
@@ -53,6 +54,9 @@ class PointRecord {
   /// 40-40 (deuce or golden point situation).
   final bool isDeucePoint;
 
+  /// Deciding point reached at deuce 3 in the FIP Star Point format.
+  final bool isStarPoint;
+
   final SourceDevice sourceDevice;
   final SourceMethod sourceMethod;
 
@@ -77,6 +81,7 @@ class PointRecord {
     matchPointFor: matchPointFor,
     breakPointFor: breakPointFor,
     isDeucePoint: isDeucePoint,
+    isStarPoint: isStarPoint,
     sourceDevice: sourceDevice,
     sourceMethod: sourceMethod,
     scoreBefore: scoreBefore,
@@ -120,6 +125,7 @@ class PointScoreSnapshot {
     required this.tieBreakB,
     required this.freePlayA,
     required this.freePlayB,
+    required this.deuceNumber,
     required this.completed,
     this.winner,
   });
@@ -137,6 +143,7 @@ class PointScoreSnapshot {
   final int tieBreakB;
   final int freePlayA;
   final int freePlayB;
+  final int deuceNumber;
   final bool completed;
   final TeamId? winner;
 }

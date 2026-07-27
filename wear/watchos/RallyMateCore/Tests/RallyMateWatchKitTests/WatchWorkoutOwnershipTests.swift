@@ -8,7 +8,7 @@ import XCTest
 final class WatchWorkoutOwnershipTests: XCTestCase {
     private final class OfflinePhoneSync: PhoneSyncing {
         var status = PhoneSyncStatus(connected: false, platformLabel: "iPhone")
-        var onStartMatch: ((String, MatchFormat, [MatchEvent], TeamId?, WatchTeamVisual) -> Void)?
+        var onStartMatch: ((String, MatchFormat, [MatchEvent], TeamId?, TeamId, WatchTeamVisual) -> Void)?
         var onTeamImage: ((String, WatchTeamVisual) -> Void)?
         var onAccountContext: ((WatchAccountContext) -> Void)?
         var onAssistantCredentials: ((WatchAssistantCredentials?) -> Void)?

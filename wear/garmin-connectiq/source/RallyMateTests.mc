@@ -440,7 +440,7 @@ function testRecordingNeverAutoRestartsAfterTerminalState(logger) {
 }
 
 (:test)
-function testRecordingUserChoiceKeepsPadelandiaOutOfTheSession(logger) {
+function testRecordingUserChoiceKeepsMomentumOutOfTheSession(logger) {
     return RallyMateRecordingPolicy
             .startDecision(RM_MODE_EXTERNAL, RM_STATE_IDLE, false)
             .equals(RM_START_EXTERNAL)

@@ -50,7 +50,7 @@ class Entitlements {
   /// Plus+: backup cloud e sync multi-device.
   bool get cloudBackup => hasAtLeast(Plan.plus);
 
-  /// Plus+: Padelandia Wrapped illimitato + link pubblici + export PDF.
+  /// Plus+: Momentum Wrapped illimitato + link pubblici + export PDF.
   bool get unlimitedWrapped => hasAtLeast(Plan.plus);
 
   /// Plus+: allenamenti premium.

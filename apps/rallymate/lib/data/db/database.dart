@@ -4,6 +4,7 @@ library;
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:rally_core/rally_core.dart' show TeamId;
 
 part 'database.g.dart';
 
@@ -133,7 +134,7 @@ class HealthDataSources extends Table {
 }
 
 /// Normalized local aggregates. High-frequency samples are not persisted here
-/// unless the user explicitly starts a Padelandia workout.
+/// unless the user explicitly starts a Momentum workout.
 class HealthMetricRecords extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text().withDefault(const Constant('local'))();
@@ -242,6 +243,15 @@ class Matches extends Table {
   TextColumn get id => text()();
   TextColumn get teamId => text().nullable().references(Teams, #id)();
   TextColumn get formatJson => text()();
+
+  /// Team that served the first game (TEAM_A / TEAM_B, FIP Regola 4).
+  ///
+  /// Serve, return, break and hold statistics are all derived from the serving
+  /// rotation, so a match where the opponents served first must persist it:
+  /// replaying with the default would attribute every hold and break to the
+  /// wrong pair.
+  TextColumn get firstServer =>
+      text().withDefault(const Constant('TEAM_A'))();
   TextColumn get status => text().withDefault(const Constant('CREATED'))();
   IntColumn get startTimeMs => integer().nullable()();
   IntColumn get endTimeMs => integer().nullable()();
@@ -374,7 +384,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   static const _performanceIndexes = [
     'CREATE INDEX IF NOT EXISTS idx_players_is_me ON players (is_me)',
@@ -553,6 +563,15 @@ class AppDatabase extends _$AppDatabase {
           add: () => m.addColumn(teams, teams.archived),
         );
       }
+      if (from < 12) {
+        // Existing matches keep TEAM_A: it is what the engine assumed while
+        // they were being scored, so replaying them must not change history.
+        await _addColumnIfMissing(
+          'matches',
+          columnName: 'first_server',
+          add: () => m.addColumn(matches, matches.firstServer),
+        );
+      }
 
       // The index set includes columns and tables introduced after schema 4.
       // Build it only after every structural migration so multi-version
@@ -560,4 +579,14 @@ class AppDatabase extends _$AppDatabase {
       await _createPerformanceIndexes();
     },
   );
+}
+
+extension MatchRowScoring on MatchRow {
+  /// Team that served the first game, as the scoring engine needs it.
+  ///
+  /// Rows written before schema 12 have no stored value and fall back to
+  /// TEAM_A, which is exactly what the engine assumed while they were being
+  /// scored: replaying them keeps the original serve, break and hold stats.
+  TeamId get firstServerTeam =>
+      firstServer == TeamId.b.wire ? TeamId.b : TeamId.a;
 }

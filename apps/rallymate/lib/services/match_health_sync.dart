@@ -238,6 +238,8 @@ class MatchHealthSyncService {
     final preferredSource = summary.sources.any(
       (s) =>
           s.sourceBundleId.toLowerCase().contains('rallymate') ||
+          s.sourceApplication.toLowerCase().contains('momentum') ||
+          // Legacy display name kept for sessions written before the rebrand.
           s.sourceApplication.toLowerCase().contains('padelandia') ||
           s.sourceApplication.toLowerCase().contains('rallymate'),
     );

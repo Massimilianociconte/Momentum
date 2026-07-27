@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Momentum brand tile colour, shared by the adaptive launcher icon. -->
+    <color name="rally_launcher_background">#0E1623</color>
     <!-- Queried by the phone before claiming the companion is installed. -->
     <string-array name="android_wear_capabilities">
         <item>rallymate_scoring</item>
+        <item>rallymate_scoring_v2</item>
+        <!-- Schema v3: understands MatchFormat.tieBreakInDecidingSet. -->
+        <item>rallymate_scoring_v3</item>
     </string-array>
 </resources>

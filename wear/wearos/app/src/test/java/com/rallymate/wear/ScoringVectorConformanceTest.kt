@@ -60,6 +60,8 @@ class ScoringVectorConformanceTest {
             optWire(expect, "advantage"),
             s.advantage?.wire,
         )
+        assertEquals("$context deuceNumber", expect.getInt("deuceNumber"), s.deuceNumber)
+        assertEquals("$context isStarPoint", expect.getBoolean("isStarPoint"), s.starPointActive)
         assertEquals("$context inTieBreak", expect.getBoolean("inTieBreak"), s.inTieBreak)
         assertEquals(
             "$context inSuperTieBreak",
@@ -123,6 +125,16 @@ class ScoringVectorConformanceTest {
                 val team = optWire(step, "team")?.let(TeamId::fromWire)
                 when (val op = step.getString("op")) {
                     "point" -> engine.addPoint(team!!)
+                    "edit" -> engine.loadEvents(
+                        engine.allEvents + MatchEvent(
+                            eventId = "evt_${id}_edit_$i",
+                            matchId = "vec_$id",
+                            timestampMs = 1_760_000_000_000 + i,
+                            type = EventType.SCORE_EDITED,
+                            sourceMethod = "MANUAL_EDIT",
+                            payload = step.getJSONObject("payload"),
+                        ),
+                    )
                     "undo" -> engine.undo(team)
                     "pause" -> engine.pause()
                     "resume" -> engine.resume()

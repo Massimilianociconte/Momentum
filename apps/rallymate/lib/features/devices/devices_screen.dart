@@ -124,7 +124,7 @@ class DevicesScreen extends ConsumerWidget {
             const SectionCard(
               title: 'PRIVACY DISPOSITIVO',
               child: Text(
-                'Padelandia non salva seriali o identificativi pubblicitari. '
+                'Momentum non salva seriali o identificativi pubblicitari. '
                 'Gli identificativi Garmin e BLE restano sul telefono. I '
                 'token OAuth cloud sono cifrati sul server e i dati salute '
                 'vengono importati soltanto dopo consenso esplicito.',
@@ -224,7 +224,7 @@ class _HealthDetectionBanner extends ConsumerWidget {
       title: '$hubName non disponibile',
       body:
           'Su questo dispositivo non è possibile importare automaticamente i '
-          'dati salute. Padelandia continua a registrare le partite in locale.',
+          'dati salute. Momentum continua a registrare le partite in locale.',
       actionLabel: 'Dettagli integrazione',
     );
   }
@@ -471,12 +471,12 @@ class _WorkoutDetectionCard extends ConsumerWidget {
     final explanations = <String>[
       if (platformLabel == 'Wear OS')
         'Wear OS 3+: notifica un esercizio esterno esposto da Health Services, '
-            'senza aprire automaticamente Padelandia.',
+            'senza aprire automaticamente Momentum.',
       if (platformLabel == 'Apple Watch')
         'Apple Watch: le sessioni esterne non sono intercettabili live; Avvio '
-            'rapido e Siri avviano la sessione Salute di Padelandia.',
+            'rapido e Siri avviano la sessione Salute di Momentum.',
       if (registeredProviders.contains('GARMIN_CONNECT_IQ'))
-        'Garmin: nessun trigger esterno pubblico; avviando il match Padelandia '
+        'Garmin: nessun trigger esterno pubblico; avviando il match Momentum '
             'registra una propria attività FIT Padel sui modelli compatibili.',
       if (registeredProviders.contains('FITBIT_OS'))
         'Fitbit OS: avvio manuale dall’app legacy; nessun callback pubblico '
@@ -679,7 +679,7 @@ class _ConnectionSummary extends ConsumerWidget {
           _CompanionCapabilityRow(
             label: 'Companion installata',
             ok: state.companionInstalled,
-            missing: 'Installa Padelandia sul watch',
+            missing: 'Installa Momentum sul watch',
           ),
           _CompanionCapabilityRow(
             label: 'Connessione live',
@@ -737,7 +737,7 @@ class _CompanionCapabilityRow extends StatelessWidget {
 
 String _connectionDetail(WatchSyncState state) {
   if (!state.paired) return 'Associa un Apple Watch o un Wear OS';
-  if (!state.companionInstalled) return 'Apri l’App Store del watch e installa Padelandia';
+  if (!state.companionInstalled) return 'Apri l’App Store del watch e installa Momentum';
   if (!state.reachable) {
     return 'La partita può comunque essere accodata; alza il polso o apri l’app';
   }
@@ -807,7 +807,7 @@ class _DeviceCard extends ConsumerWidget {
                   PopupMenuItem(value: 'setup', child: Text('Ripeti verifica')),
                   PopupMenuItem(
                     value: 'remove',
-                    child: Text('Scollega da Padelandia'),
+                    child: Text('Scollega da Momentum'),
                   ),
                 ],
               ),
@@ -884,10 +884,10 @@ class _DeviceCard extends ConsumerWidget {
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: const Text('Scollegare da Padelandia?'),
+            title: const Text('Scollegare da Momentum?'),
             content: Text(
               revokesCloud
-                  ? 'Revoca prima token e accesso sul server Padelandia, poi '
+                  ? 'Revoca prima token e accesso sul server Momentum, poi '
                         'rimuove la configurazione locale. Il pairing di '
                         'sistema resta invariato.'
                   : 'Rimuove la configurazione locale. Il pairing di sistema '

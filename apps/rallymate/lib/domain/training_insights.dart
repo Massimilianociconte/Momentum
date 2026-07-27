@@ -163,7 +163,7 @@ TrainingFocusPlan recommendFocus(List<MatchSummary> summaries) {
       title: 'Costruisci la prima base dati',
       subtitle:
           'Completa un allenamento breve e registra il prossimo match: '
-          'da lì Padelandia collegherà punti deboli e routine.',
+          'da lì Momentum collegherà punti deboli e routine.',
       focus: 'volée + uscita parete',
       metric: 'dati in arrivo',
       microGoal: '2 sessioni base da 25-30 min',
@@ -229,7 +229,7 @@ TrainingFocusPlan recommendFocus(List<MatchSummary> summaries) {
     return TrainingFocusPlan(
       title: 'Focus: stabilità sotto pressione',
       subtitle:
-          'Padelandia suggerisce controllo di rete e lob difensivo per '
+          'Momentum suggerisce controllo di rete e lob difensivo per '
           'ridurre errori gratuiti e recuperare campo.',
       focus: 'controllo + lob',
       metric: 'win rate ${(winRate * 100).round()}%',

@@ -12,31 +12,178 @@ import UserNotifications
 #endif
 
 public enum WatchSyncPaths {
+    public static let scoringProtocolVersion = 2
+    /// Additive capability tokens. `deciding_set_no_tiebreak_v1` marks a build
+    /// that understands `MatchFormat.tieBreakInDecidingSet` (format schema v3);
+    /// an older peer never advertises it, so the phone gate fails closed.
+    public static let scoringCapabilities = [
+        "star_point_v1", "deciding_set_no_tiebreak_v1",
+    ]
     public static let startMatch = "/rallymate/start_match"
+    public static let startMatchV2 = "/rallymate/v2/start_match"
     public static let events = "/rallymate/events"
+    public static let eventsV2 = "/rallymate/v2/events"
     public static let requestState = "/rallymate/request_state"
+    public static let requestStateV2 = "/rallymate/v2/request_state"
     public static let context = "/rallymate/context"
     public static let workoutDetectionPreferences =
         "/rallymate/workout_detection_preferences"
     /// Latest snapshot of resumable matches (application context / Data Item).
     public static let resumable = "/rallymate/resumable"
+    public static let resumableV2 = "/rallymate/v2/resumable"
     /// Envelope carrying every application-context payload at once. A single
     /// application context slot exists per session, so independent payloads
     /// must travel together instead of overwriting each other.
     public static let contextBundle = "/rallymate/context_bundle"
     /// Durable per-match lifecycle change (transferUserInfo / Data Item).
     public static let lifecycle = "/rallymate/lifecycle"
+    public static let lifecycleV2 = "/rallymate/v2/lifecycle"
     public static let ping = "/rallymate/ping"
     public static let testPoint = "/rallymate/test_point"
+
+    public static func isStartMatch(_ path: String?) -> Bool {
+        path == startMatch || path == startMatchV2
+    }
+
+    public static func isResumable(_ path: String?) -> Bool {
+        path == resumable || path == resumableV2
+    }
+
+    public static func isLifecycle(_ path: String?) -> Bool {
+        path == lifecycle || path == lifecycleV2
+    }
+}
+
+/// Watch-authored scoring traffic is versioned independently from the
+/// phone-authored start/lifecycle snapshots. Star Point cannot be represented
+/// by the schema-v1 `goldenPoint: false` fallback, so it must never travel on a
+/// path that an old iPhone companion could interpret as Advantage.
+enum WatchToPhoneScoringWirePolicy {
+    static func requiresScoringV2(_ format: MatchFormat) -> Bool {
+        format.gameScoringMode == .starPoint
+    }
+
+    static func eventsPath(for format: MatchFormat) -> String {
+        requiresScoringV2(format)
+            ? WatchSyncPaths.eventsV2
+            : WatchSyncPaths.events
+    }
+
+    static func requestStatePath(for format: MatchFormat) -> String {
+        requiresScoringV2(format)
+            ? WatchSyncPaths.requestStateV2
+            : WatchSyncPaths.requestState
+    }
+
+    static func advertisesScoringV2(_ reply: [String: Any]) -> Bool {
+        let version =
+            (reply["scoringProtocolVersion"] as? NSNumber)?.intValue
+            ?? (reply["scoringProtocolVersion"] as? Int)
+            ?? Int(reply["scoringProtocolVersion"] as? String ?? "")
+            ?? 0
+        let capabilities =
+            (reply["capabilities"] as? [String])
+            ?? (reply["scoringCapabilities"] as? [String])
+            ?? []
+        return version >= WatchSyncPaths.scoringProtocolVersion
+            && capabilities.contains("star_point_v1")
+    }
+
+    static func decorateV2(_ payload: [String: Any]) -> [String: Any] {
+        var decorated = payload
+        decorated["scoringProtocolVersion"] =
+            WatchSyncPaths.scoringProtocolVersion
+        decorated["capabilities"] = WatchSyncPaths.scoringCapabilities
+        return decorated
+    }
 }
 
 /// Keys used inside the application-context envelope.
 public enum WatchSyncBundleKeys {
     public static let startMatch = "startMatch"
     public static let resumable = "resumable"
+    public static let resumableV2 = "resumableV2"
     public static let context = "context"
     public static let workoutDetectionPreferences = "workoutDetectionPreferences"
-    public static let all = [startMatch, resumable, context, workoutDetectionPreferences]
+    public static let all = [
+        startMatch,
+        resumable,
+        resumableV2,
+        context,
+        workoutDetectionPreferences,
+    ]
+}
+
+/// Persistent idempotency gate for START_MATCH delivery.
+///
+/// WatchConnectivity may deliver the same dictionary through live messaging,
+/// queued user info and application context, and those channels are not
+/// globally ordered. Versioned starts therefore share one phone-generated
+/// monotonic timestamp. Legacy payloads remain repeatable until the first
+/// versioned start is accepted; afterwards they cannot overwrite newer state.
+final class WatchStartDispatchPolicy: @unchecked Sendable {
+    private struct State: Codable {
+        var matchId: String
+        var dispatchedAtMs: Int64
+    }
+
+    private let defaults: UserDefaults
+    private let key: String
+    private let lock = NSLock()
+
+    init(
+        defaults: UserDefaults = .standard,
+        key: String = "rallymate.watch.start_dispatch_state.v2"
+    ) {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    func shouldAccept(
+        matchId: String,
+        dispatchedAtMs: Int64?
+    ) -> Bool {
+        guard !matchId.isEmpty else { return false }
+        lock.lock()
+        defer { lock.unlock() }
+
+        let persisted: State?
+        if let data = defaults.data(forKey: key) {
+            guard let decoded = try? JSONDecoder().decode(State.self, from: data)
+            else {
+                // Unknown high-water mark: failing closed is safer than
+                // resurrecting an older match after storage corruption.
+                return false
+            }
+            persisted = decoded
+        } else {
+            persisted = nil
+        }
+
+        guard let dispatchedAtMs, dispatchedAtMs > 0 else {
+            // Schema-v1 senders did not include a dispatch clock. Preserve
+            // their historical at-least-once behaviour until a v2 start has
+            // established an ordering boundary.
+            return persisted == nil
+        }
+
+        if let persisted,
+           dispatchedAtMs <= persisted.dispatchedAtMs {
+            // Equal means another channel delivered the same start (or an
+            // impossible timestamp collision); lower means out of order.
+            return false
+        }
+
+        let next = State(
+            matchId: matchId,
+            dispatchedAtMs: dispatchedAtMs
+        )
+        guard let data = try? JSONEncoder().encode(next) else {
+            return false
+        }
+        defaults.set(data, forKey: key)
+        return true
+    }
 }
 
 /// Durable lifecycle change delivered by the phone.
@@ -50,6 +197,9 @@ public struct WatchMatchLifecycle: Equatable, Sendable {
     public var format: MatchFormat?
     public var events: [MatchEvent]
     public var summary: WatchResumableMatch?
+    public var authoritySource: String?
+    public var authorityScope: String?
+    public var authorityVersion: Int64
 
     public init(
         matchId: String,
@@ -60,7 +210,10 @@ public struct WatchMatchLifecycle: Equatable, Sendable {
         timestampMs: Int64,
         format: MatchFormat?,
         events: [MatchEvent],
-        summary: WatchResumableMatch?
+        summary: WatchResumableMatch?,
+        authoritySource: String? = nil,
+        authorityScope: String? = nil,
+        authorityVersion: Int64 = 0
     ) {
         self.matchId = matchId
         self.action = action
@@ -71,6 +224,9 @@ public struct WatchMatchLifecycle: Equatable, Sendable {
         self.format = format
         self.events = events
         self.summary = summary
+        self.authoritySource = authoritySource
+        self.authorityScope = authorityScope
+        self.authorityVersion = authorityVersion
     }
 }
 
@@ -78,7 +234,7 @@ public struct WatchMatchLifecycle: Equatable, Sendable {
 /// contract is unit-testable on the host.
 public enum WatchSyncDecoding {
     public static func snapshot(from payload: [String: Any]) -> WatchResumableSnapshot? {
-        guard payload["path"] as? String == WatchSyncPaths.resumable else {
+        guard WatchSyncPaths.isResumable(payload["path"] as? String) else {
             return nil
         }
         let matchesJson = payload["matches"] as? String ?? "[]"
@@ -87,12 +243,16 @@ public enum WatchSyncDecoding {
             lastUpdatedAtMs: int64Value(payload["lastUpdatedAtMs"]) ?? 0,
             activeMatchId: (payload["activeMatchId"] as? String)
                 .flatMap { $0.isEmpty ? nil : $0 },
-            matches: WatchResumableMatch.listFromJson(matchesJson)
+            matches: WatchResumableMatch.listFromJson(matchesJson),
+            authoritative: payload["authoritative"] as? Bool,
+            authoritySource: payload["authoritySource"] as? String,
+            authorityScope: payload["authorityScope"] as? String,
+            authorityVersion: int64Value(payload["authorityVersion"])
         )
     }
 
     public static func lifecycle(from payload: [String: Any]) -> WatchMatchLifecycle? {
-        guard payload["path"] as? String == WatchSyncPaths.lifecycle,
+        guard WatchSyncPaths.isLifecycle(payload["path"] as? String),
               let matchId = payload["matchId"] as? String,
               !matchId.isEmpty
         else { return nil }
@@ -115,7 +275,10 @@ public enum WatchSyncDecoding {
             timestampMs: int64Value(payload["ts"]) ?? 0,
             format: (payload["format"] as? String).flatMap(MatchFormat.fromJsonString),
             events: MatchEvent.listFromJson(payload["events"] as? String ?? "[]"),
-            summary: summary
+            summary: summary,
+            authoritySource: payload["authoritySource"] as? String,
+            authorityScope: payload["authorityScope"] as? String,
+            authorityVersion: int64Value(payload["authorityVersion"]) ?? 0
         )
     }
 
@@ -174,13 +337,18 @@ public struct PhoneSyncStatus: Equatable, Sendable {
 }
 
 @inline(__always)
-func isCommittedEventReply(_ reply: [String: Any]) -> Bool {
-    reply["ok"] as? Bool == true
+func isCommittedEventReply(
+    _ reply: [String: Any],
+    requiresScoringV2: Bool = false
+) -> Bool {
+    guard reply["ok"] as? Bool == true else { return false }
+    return !requiresScoringV2
+        || WatchToPhoneScoringWirePolicy.advertisesScoringV2(reply)
 }
 
 public protocol PhoneSyncing: AnyObject {
     var status: PhoneSyncStatus { get }
-    var onStartMatch: ((String, MatchFormat, [MatchEvent], TeamId?, WatchTeamVisual) -> Void)? { get set }
+    var onStartMatch: ((String, MatchFormat, [MatchEvent], TeamId?, TeamId, WatchTeamVisual) -> Void)? { get set }
     var onTeamImage: ((String, WatchTeamVisual) -> Void)? { get set }
     var onAccountContext: ((WatchAccountContext) -> Void)? { get set }
     var onAssistantCredentials: ((WatchAssistantCredentials?) -> Void)? { get set }
@@ -197,6 +365,23 @@ public protocol PhoneSyncing: AnyObject {
         events: [MatchEvent]
     ) async -> Bool
     func requestState(matchId: String) async -> [MatchEvent]?
+    func requestState(
+        matchId: String,
+        format: MatchFormat
+    ) async -> [MatchEvent]?
+}
+
+public extension PhoneSyncing {
+    /// Compatibility default for test doubles and alternate transports. The
+    /// concrete WatchConnectivity implementation overrides this requirement
+    /// so Star Point can use `/rallymate/v2/request_state`.
+    func requestState(
+        matchId: String,
+        format: MatchFormat
+    ) async -> [MatchEvent]? {
+        _ = format
+        return await requestState(matchId: matchId)
+    }
 }
 
 #if canImport(WatchConnectivity) && (os(iOS) || os(watchOS))
@@ -205,7 +390,7 @@ public final class PhoneSync: NSObject, PhoneSyncing {
     /// (matchId, format, events, duoTeam): duoTeam è il team assegnato a
     /// questo watch in Duo Mode ("TEAM_A"/"TEAM_B"), nil per lo scoring
     /// classico.
-    public var onStartMatch: ((String, MatchFormat, [MatchEvent], TeamId?, WatchTeamVisual) -> Void)?
+    public var onStartMatch: ((String, MatchFormat, [MatchEvent], TeamId?, TeamId, WatchTeamVisual) -> Void)?
     public var onTeamImage: ((String, WatchTeamVisual) -> Void)?
     public var onAccountContext: ((WatchAccountContext) -> Void)?
     public var onAssistantCredentials: ((WatchAssistantCredentials?) -> Void)?
@@ -215,6 +400,7 @@ public final class PhoneSync: NSObject, PhoneSyncing {
     public var onMatchLifecycle: ((WatchMatchLifecycle) -> Void)?
 
     private var session: WCSession?
+    private let startDispatchPolicy = WatchStartDispatchPolicy()
 
     public override init() {
         super.init()
@@ -237,6 +423,8 @@ public final class PhoneSync: NSObject, PhoneSyncing {
         events: [MatchEvent]
     ) async -> Bool {
         let payload = eventPayload(matchId: matchId, format: format, events: events)
+        let requiresScoringV2 =
+            WatchToPhoneScoringWirePolicy.requiresScoringV2(format)
         guard let session else { return false }
 
         guard session.isReachable else {
@@ -253,8 +441,20 @@ public final class PhoneSync: NSObject, PhoneSyncing {
                 // only after Dart has committed the event batch (or its durable
                 // phone-side queue).  Never discard the watch journal on an
                 // explicit negative/malformed acknowledgement.
-                replyHandler: { reply in
-                    continuation.resume(returning: isCommittedEventReply(reply))
+                replyHandler: { [weak self] reply in
+                    let committed = isCommittedEventReply(
+                        reply,
+                        requiresScoringV2: requiresScoringV2
+                    )
+                    if !committed {
+                        // A v1 iPhone may reject or generically acknowledge an
+                        // unknown v2 path. Keep a durable transport copy and,
+                        // more importantly, return false so LocalMatchStore
+                        // retains the authoritative pending journal.
+                        self?.queue(payload)
+                        self?.updateStatus()
+                    }
+                    continuation.resume(returning: committed)
                 },
                 errorHandler: { [weak self] _ in
                     self?.queue(payload)
@@ -266,16 +466,57 @@ public final class PhoneSync: NSObject, PhoneSyncing {
     }
 
     public func requestState(matchId: String) async -> [MatchEvent]? {
-        guard let session, session.isReachable else { return nil }
-        let payload: [String: Any] = [
-            "path": WatchSyncPaths.requestState,
+        await performRequestState(
+            matchId: matchId,
+            payload: [
+                "path": WatchSyncPaths.requestState,
+                "matchId": matchId,
+            ],
+            requiresScoringV2: false
+        )
+    }
+
+    public func requestState(
+        matchId: String,
+        format: MatchFormat
+    ) async -> [MatchEvent]? {
+        let requiresScoringV2 =
+            WatchToPhoneScoringWirePolicy.requiresScoringV2(format)
+        var payload: [String: Any] = [
+            "path": WatchToPhoneScoringWirePolicy.requestStatePath(for: format),
             "matchId": matchId,
         ]
+        if requiresScoringV2 {
+            payload["format"] = format.toJsonString()
+            payload = WatchToPhoneScoringWirePolicy.decorateV2(payload)
+        }
+        return await performRequestState(
+            matchId: matchId,
+            payload: payload,
+            requiresScoringV2: requiresScoringV2
+        )
+    }
+
+    private func performRequestState(
+        matchId: String,
+        payload: [String: Any],
+        requiresScoringV2: Bool
+    ) async -> [MatchEvent]? {
+        guard let session, session.isReachable else { return nil }
 
         return await withCheckedContinuation { continuation in
             session.sendMessage(
                 payload,
                 replyHandler: { reply in
+                    if requiresScoringV2 {
+                        guard reply["ok"] as? Bool == true,
+                              WatchToPhoneScoringWirePolicy
+                                .advertisesScoringV2(reply)
+                        else {
+                            continuation.resume(returning: nil)
+                            return
+                        }
+                    }
                     let json = reply["events"] as? String ?? "[]"
                     continuation.resume(returning: MatchEvent.listFromJson(json))
                 },
@@ -289,12 +530,16 @@ public final class PhoneSync: NSObject, PhoneSyncing {
         format: MatchFormat,
         events: [MatchEvent]
     ) -> [String: Any] {
-        [
-            "path": WatchSyncPaths.events,
+        var payload: [String: Any] = [
+            "path": WatchToPhoneScoringWirePolicy.eventsPath(for: format),
             "matchId": matchId,
             "format": format.toJsonString(),
             "events": MatchEvent.listToJson(events),
         ]
+        if WatchToPhoneScoringWirePolicy.requiresScoringV2(format) {
+            payload = WatchToPhoneScoringWirePolicy.decorateV2(payload)
+        }
+        return payload
     }
 
     private func queue(_ payload: [String: Any]) {
@@ -327,7 +572,12 @@ public final class PhoneSync: NSObject, PhoneSyncing {
             WKInterfaceDevice.current().play(
                 path == WatchSyncPaths.testPoint ? .success : .click
             )
-            replyHandler?(["ok": true, "nonce": payload["nonce"] as? String ?? ""])
+            replyHandler?([
+                "ok": true,
+                "nonce": payload["nonce"] as? String ?? "",
+                "scoringProtocolVersion": WatchSyncPaths.scoringProtocolVersion,
+                "capabilities": WatchSyncPaths.scoringCapabilities,
+            ])
             return
         }
         #endif
@@ -353,10 +603,22 @@ public final class PhoneSync: NSObject, PhoneSyncing {
             replyHandler?(["ok": true])
             return
         }
-        guard path == WatchSyncPaths.startMatch,
+        guard WatchSyncPaths.isStartMatch(path),
               let matchId = payload["matchId"] as? String
         else {
             replyHandler?(["ok": false])
+            return
+        }
+        guard startDispatchPolicy.shouldAccept(
+            matchId: matchId,
+            dispatchedAtMs: WatchSyncDecoding.int64Value(
+                payload["startDispatchedAtMs"]
+            )
+        ) else {
+            // A duplicate or stale delivery was handled successfully; returning
+            // a negative acknowledgement would cause the phone to report a
+            // transport failure even though the active match is already newer.
+            replyHandler?(["ok": true, "ignored": true])
             return
         }
 
@@ -364,6 +626,10 @@ public final class PhoneSync: NSObject, PhoneSyncing {
         let eventsJson = payload["events"] as? String ?? "[]"
         let duoTeam = (payload["duoTeam"] as? String)
             .flatMap { TeamId(rawValue: $0) }
+        // Serving rotation of the match (FIP Rule 4). Absent on payloads from
+        // an older phone build, whose engine assumed TEAM_A.
+        let firstServer = (payload["firstServer"] as? String)
+            .flatMap { TeamId(rawValue: $0) } ?? .a
         let imageVersion = (payload["teamImageVersion"] as? NSNumber)?.intValue ?? 0
         let imageExpected = payload["teamImageExpected"] as? Bool ?? false
         let visual = WatchTeamVisual(
@@ -386,6 +652,7 @@ public final class PhoneSync: NSObject, PhoneSyncing {
             format,
             MatchEvent.listFromJson(eventsJson),
             duoTeam,
+            firstServer,
             visual
         )
         // When the companion is suspended, surface a local notification so the
@@ -405,7 +672,7 @@ public final class PhoneSync: NSObject, PhoneSyncing {
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
             guard granted else { return }
             let content = UNMutableNotificationContent()
-            content.title = "Partita Padelandia"
+            content.title = "Partita Momentum"
             let label = teamName.trimmingCharacters(in: .whitespacesAndNewlines)
             content.body = label.isEmpty
                 ? "Apri per segnare i punti."
@@ -690,7 +957,7 @@ extension PhoneSync: WCSessionDelegate {
 #else
 public final class PhoneSync: PhoneSyncing {
     public private(set) var status = PhoneSyncStatus()
-    public var onStartMatch: ((String, MatchFormat, [MatchEvent], TeamId?, WatchTeamVisual) -> Void)?
+    public var onStartMatch: ((String, MatchFormat, [MatchEvent], TeamId?, TeamId, WatchTeamVisual) -> Void)?
     public var onTeamImage: ((String, WatchTeamVisual) -> Void)?
     public var onAccountContext: ((WatchAccountContext) -> Void)?
     public var onAssistantCredentials: ((WatchAssistantCredentials?) -> Void)?
@@ -714,6 +981,15 @@ public final class PhoneSync: PhoneSyncing {
 
     public func requestState(matchId: String) async -> [MatchEvent]? {
         _ = matchId
+        return nil
+    }
+
+    public func requestState(
+        matchId: String,
+        format: MatchFormat
+    ) async -> [MatchEvent]? {
+        _ = matchId
+        _ = format
         return nil
     }
 }

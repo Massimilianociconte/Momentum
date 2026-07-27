@@ -171,7 +171,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               _EditorCard(
                 title: 'Stile di gioco',
                 subtitle:
-                    'Ruolo e mano dominante aiutano Padelandia a suggerire esercizi piu utili.',
+                    'Ruolo e mano dominante aiutano Momentum a suggerire esercizi piu utili.',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

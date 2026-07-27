@@ -3,12 +3,12 @@ registerSettingsPage(({ settings }) => (
     <Section
       title={
         <Text bold align="center">
-          Collega Padelandia
+          Collega Momentum
         </Text>
       }
     >
       <Text>
-        Genera un codice in Padelandia: Profilo, Dispositivi e smartwatch,
+        Genera un codice in Momentum: Profilo, Dispositivi e smartwatch,
         Fitbit OS. Il codice scade dopo 10 minuti e non contiene dati personali.
       </Text>
       <TextInput

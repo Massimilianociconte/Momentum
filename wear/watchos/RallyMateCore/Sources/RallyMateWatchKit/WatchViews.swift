@@ -235,7 +235,7 @@ private struct WatchHomeView: View {
                     }
 
                     VStack(alignment: .center, spacing: 1) {
-                        Text("Padelandia")
+                        Text("Momentum")
                             .font(.system(size: 17, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
                             .lineLimit(1)
@@ -895,6 +895,7 @@ private struct ScoreView: View {
                 score: scoreLine,
                 state: state,
                 pointSituation: pointSituation,
+                isStarPoint: isStarPoint,
                 synced: viewModel.synced
             )
         } else {
@@ -909,6 +910,7 @@ private struct ScoreView: View {
                 state: state,
                 pointSituation: pointSituation,
                 pointSituationColor: pointSituationColor,
+                isStarPoint: isStarPoint,
                 metrics: viewModel.workoutMetrics,
                 synced: viewModel.synced,
                 connected: viewModel.syncStatus.connected
@@ -961,7 +963,9 @@ private struct ScoreView: View {
                             currentScore: score(for: duoTeam),
                             color: duoTeam == .a ? WatchPalette.lime : WatchPalette.blue,
                             image: scoringImage,
-                            highlighted: viewModel.lastScoredTeam == duoTeam
+                            highlighted: viewModel.lastScoredTeam == duoTeam,
+                            pointSituation: pointSituation,
+                            isStarPoint: isStarPoint
                         ) {
                             viewModel.point(duoTeam)
                         }
@@ -971,7 +975,9 @@ private struct ScoreView: View {
                             currentScore: score(for: .a),
                             color: WatchPalette.lime,
                             image: scoringImage,
-                            highlighted: viewModel.lastScoredTeam == .a
+                            highlighted: viewModel.lastScoredTeam == .a,
+                            pointSituation: pointSituation,
+                            isStarPoint: isStarPoint
                         ) {
                             viewModel.point(.a)
                         }
@@ -979,7 +985,9 @@ private struct ScoreView: View {
                             label: "LORO",
                             currentScore: score(for: .b),
                             color: WatchPalette.blue,
-                            highlighted: viewModel.lastScoredTeam == .b
+                            highlighted: viewModel.lastScoredTeam == .b,
+                            pointSituation: pointSituation,
+                            isStarPoint: isStarPoint
                         ) {
                             viewModel.point(.b)
                         }
@@ -1016,6 +1024,11 @@ private struct ScoreView: View {
     private var pointSituationColor: Color {
         watchPointSituationColor(viewModel: viewModel, state: state)
     }
+
+    private var isStarPoint: Bool {
+        viewModel.usesStarPoint && state.deuceNumber == 3
+            && state.advantage == nil
+    }
 }
 
 private struct MatchScoreHeader: View {
@@ -1023,6 +1036,7 @@ private struct MatchScoreHeader: View {
     let state: MatchState
     let pointSituation: String?
     let pointSituationColor: Color
+    let isStarPoint: Bool
     let metrics: WatchWorkoutMetrics
     let synced: Bool
     let connected: Bool
@@ -1076,6 +1090,9 @@ private struct MatchScoreHeader: View {
                     .foregroundStyle(pointSituationColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.68)
+                    .accessibilityHint(
+                        isStarPoint ? starPointReceivingAccessibilityHint : ""
+                    )
             } else if state.sideChangePending {
                 Text("CAMBIO CAMPO")
                     .font(.system(size: 9, weight: .black, design: .rounded))
@@ -1295,6 +1312,24 @@ private struct QuickScoringView: View {
                 .foregroundStyle(.white.opacity(0.6))
                 .monospacedDigit()
 
+            if let pointSituation {
+                Text(pointSituation)
+                    .font(.system(size: 8, weight: .black, design: .rounded))
+                    .foregroundStyle(
+                        isStarPoint
+                            ? WatchPalette.coral
+                            : watchPointSituationColor(
+                                viewModel: viewModel,
+                                state: state
+                            )
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.62)
+                    .accessibilityHint(
+                        isStarPoint ? starPointReceivingAccessibilityHint : ""
+                    )
+            }
+
             if state.paused {
                 Spacer()
                 Button {
@@ -1315,7 +1350,9 @@ private struct QuickScoringView: View {
                     label: "NOI",
                     currentScore: teamScoreText(viewModel: viewModel, state: state, team: duoTeam),
                     color: WatchPalette.lime,
-                    highlighted: viewModel.lastScoredTeam == duoTeam
+                    highlighted: viewModel.lastScoredTeam == duoTeam,
+                    pointSituation: pointSituation,
+                    isStarPoint: isStarPoint
                 ) {
                     viewModel.point(duoTeam, blind: true)
                 }
@@ -1325,7 +1362,9 @@ private struct QuickScoringView: View {
                         label: "NOI",
                         currentScore: teamScoreText(viewModel: viewModel, state: state, team: .a),
                         color: WatchPalette.lime,
-                        highlighted: viewModel.lastScoredTeam == .a
+                        highlighted: viewModel.lastScoredTeam == .a,
+                        pointSituation: pointSituation,
+                        isStarPoint: isStarPoint
                     ) {
                         viewModel.point(.a, blind: true)
                     }
@@ -1333,7 +1372,9 @@ private struct QuickScoringView: View {
                         label: "LORO",
                         currentScore: teamScoreText(viewModel: viewModel, state: state, team: .b),
                         color: WatchPalette.blue,
-                        highlighted: viewModel.lastScoredTeam == .b
+                        highlighted: viewModel.lastScoredTeam == .b,
+                        pointSituation: pointSituation,
+                        isStarPoint: isStarPoint
                     ) {
                         viewModel.point(.b, blind: true)
                     }
@@ -1366,6 +1407,15 @@ private struct QuickScoringView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
     }
+
+    private var pointSituation: String? {
+        watchPointSituation(viewModel: viewModel, state: state)
+    }
+
+    private var isStarPoint: Bool {
+        viewModel.usesStarPoint && state.deuceNumber == 3
+            && state.advantage == nil
+    }
 }
 
 private struct QuickPointArea: View {
@@ -1373,6 +1423,8 @@ private struct QuickPointArea: View {
     let currentScore: String
     let color: Color
     let highlighted: Bool
+    let pointSituation: String?
+    let isStarPoint: Bool
     let action: () -> Void
 
     var body: some View {
@@ -1394,7 +1446,16 @@ private struct QuickPointArea: View {
                 .strokeBorder(color.opacity(highlighted ? 1 : 0.68), lineWidth: highlighted ? 3 : 1.5)
         )
         .scaleEffect(highlighted ? 0.975 : 1)
-        .accessibilityLabel("Punto \(label). Punteggio attuale \(currentScore)")
+        .accessibilityLabel(
+            scoringButtonAccessibilityLabel(
+                team: label,
+                currentScore: currentScore,
+                pointSituation: pointSituation
+            )
+        )
+        .accessibilityHint(
+            isStarPoint ? starPointReceivingAccessibilityHint : ""
+        )
     }
 }
 
@@ -1770,6 +1831,7 @@ private struct AlwaysOnScoreView: View {
     let score: String
     let state: MatchState
     let pointSituation: String?
+    let isStarPoint: Bool
     let synced: Bool
 
     var body: some View {
@@ -1790,6 +1852,9 @@ private struct AlwaysOnScoreView: View {
                     .foregroundStyle(.white.opacity(0.43))
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
+                    .accessibilityHint(
+                        isStarPoint ? starPointReceivingAccessibilityHint : ""
+                    )
             }
             Label(
                 state.paused ? "IN PAUSA" : "PARTITA ATTIVA",
@@ -1804,7 +1869,15 @@ private struct AlwaysOnScoreView: View {
         .background(Color.black)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "Punteggio \(score), set \(state.setsA) a \(state.setsB), game \(state.gamesA) a \(state.gamesB)"
+            [
+                "Punteggio \(score), set \(state.setsA) a \(state.setsB), game \(state.gamesA) a \(state.gamesB)",
+                pointSituation,
+            ]
+            .compactMap { $0 }
+            .joined(separator: ". ")
+        )
+        .accessibilityHint(
+            isStarPoint ? starPointReceivingAccessibilityHint : ""
         )
     }
 }
@@ -1905,16 +1978,24 @@ private struct WatchAssistantQuickView: View {
                     text: "Sul 40 pari: AD al punto successivo. Punto avversario: si torna 40 pari."
                 )
                 WatchAssistantCard(
+                    title: "Star Point FIP",
+                    text: "Deuce 1 e AD 1, poi Deuce 2 e AD 2. Al Deuce 3 punto decisivo: chi riceve sceglie il lato, senza scambiarsi. Regola 1 Opzione 2."
+                )
+                WatchAssistantCard(
                     title: "Golden point",
-                    text: "Sul 40-40 si gioca un punto secco. Chi risponde sceglie lato."
+                    text: "Sul 40-40 punto secco, niente vantaggi: chi riceve sceglie il lato, senza scambiarsi. Regola 1 Opzione 3."
                 )
                 WatchAssistantCard(
                     title: "Servizio let",
-                    text: "Rete e campo corretto: ripeti. Se e fuori, e fallo."
+                    text: "Rete e campo corretto: ripeti. Let sul primo servizio: due servizi nuovi. Sul secondo: ripeti solo il secondo."
                 )
                 WatchAssistantCard(
                     title: "Cambio campo",
-                    text: "Cambia ai game dispari e nei tie-break secondo formato."
+                    text: "Ogni game dispari. A fine set solo se il totale game e dispari: dopo un 6-4 si cambia dopo il primo game del set dopo. Tie-break: ogni 6 punti."
+                )
+                WatchAssistantCard(
+                    title: "In torneo",
+                    text: "Nei circuiti FIP 2026 l'orologio in gara va autorizzato dal Supervisor o Referee: averlo installato non basta."
                 )
             }
             .padding(.horizontal, 10)
@@ -1982,6 +2063,8 @@ private struct PointButton: View {
     let color: Color
     var image: CGImage? = nil
     let highlighted: Bool
+    let pointSituation: String?
+    let isStarPoint: Bool
     let action: () -> Void
 
     var body: some View {
@@ -2025,7 +2108,16 @@ private struct PointButton: View {
                 .strokeBorder(color.opacity(highlighted ? 1 : 0.58), lineWidth: highlighted ? 3 : 1.5)
         )
         .scaleEffect(highlighted ? 0.975 : 1)
-        .accessibilityLabel("Punto \(label). Punteggio attuale \(currentScore)")
+        .accessibilityLabel(
+            scoringButtonAccessibilityLabel(
+                team: label,
+                currentScore: currentScore,
+                pointSituation: pointSituation
+            )
+        )
+        .accessibilityHint(
+            isStarPoint ? starPointReceivingAccessibilityHint : ""
+        )
     }
 }
 
@@ -2231,7 +2323,7 @@ private func watchPointSituation(
 ) -> String? {
     guard !viewModel.isFreePlay else { return nil }
     return state.pointSituation(
-        goldenPoint: viewModel.usesGoldenPoint,
+        gameScoringMode: viewModel.gameScoringMode,
         teamALabel: teamLabel(viewModel: viewModel, team: .a),
         teamBLabel: teamLabel(viewModel: viewModel, team: .b)
     )
@@ -2242,11 +2334,32 @@ private func watchPointSituationColor(
     viewModel: WatchMatchViewModel,
     state: MatchState
 ) -> Color {
+    if viewModel.usesStarPoint,
+       state.deuceNumber == 3,
+       state.advantage == nil {
+        return WatchPalette.coral
+    }
     guard let advantage = state.advantage else { return WatchPalette.lime }
     if let duoTeam = viewModel.duoTeam {
         return advantage == duoTeam ? WatchPalette.lime : WatchPalette.blue
     }
     return advantage == .a ? WatchPalette.lime : WatchPalette.blue
+}
+
+private let starPointReceivingAccessibilityHint =
+    "Punto decisivo. La coppia in risposta sceglie il lato senza cambiare posizione."
+
+private func scoringButtonAccessibilityLabel(
+    team: String,
+    currentScore: String,
+    pointSituation: String?
+) -> String {
+    [
+        "Punto \(team). Punteggio attuale \(currentScore)",
+        pointSituation,
+    ]
+    .compactMap { $0 }
+    .joined(separator: ". ")
 }
 
 @MainActor
@@ -2277,6 +2390,7 @@ private extension MatchFormat {
     var shortWatchName: String {
         switch id {
         case "GOLDEN_BO3": "Golden point · 3 set"
+        case "STAR_POINT_BO3": "Star Point FIP · 3 set"
         case "ADV_BO3": "Vantaggi · 3 set"
         case "SUPER_TB_BO3": "Super tie-break"
         case "SINGLE_SET": "Partita secca"

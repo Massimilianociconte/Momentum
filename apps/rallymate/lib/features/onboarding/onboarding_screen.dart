@@ -29,7 +29,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const _tourSlides = [
     _TourSlide(
       image: 'assets/onboarding/onboarding_welcome.jpg',
-      eyebrow: 'PADELANDIA',
+      eyebrow: 'MOMENTUM',
       title: 'Il campo, i dati e il tuo progresso in un unico posto.',
       body:
           'Segna ogni punto, tieni traccia delle partite e costruisci una routine da giocatore più consapevole.',
@@ -56,7 +56,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       eyebrow: 'TRAINING',
       title: 'Trasforma i dati partita in allenamenti mirati.',
       body:
-          'Padelandia suggerisce esercizi, obiettivi settimanali e routine coerenti con il tuo ruolo in campo.',
+          'Momentum suggerisce esercizi, obiettivi settimanali e routine coerenti con il tuo ruolo in campo.',
       cta: 'Continua',
     ),
     _TourSlide(
@@ -841,7 +841,7 @@ class _AccountSetupPage extends StatelessWidget {
             const _ProfileStepTitle(
               title: 'Proteggi il tuo profilo',
               subtitle:
-                  'Crea un account gratuito con email. Padelandia resta '
+                  'Crea un account gratuito con email. Momentum resta '
                   'utilizzabile anche senza login; il backup completo di '
                   'partite e allenamenti rimane una funzione Premium.',
             ),

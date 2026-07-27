@@ -96,7 +96,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         : AppLocations.profile;
     return Scaffold(
       appBar: AppBar(
-        title: Text(auth.signedIn ? 'Il tuo account' : 'Account Padelandia'),
+        title: Text(auth.signedIn ? 'Il tuo account' : 'Account Momentum'),
         leading: SafeBackButton(fallback: fallback),
       ),
       body: !CloudConfig.supabaseConfigured
@@ -1191,7 +1191,7 @@ class _CloudUnavailable extends StatelessWidget {
             const Text(
               'Questa versione può essere usata in locale, ma account, social, '
               'backup e Pallino Assistant non sono disponibili. Installa una '
-              'build Padelandia configurata oppure riprova più tardi.',
+              'build Momentum configurata oppure riprova più tardi.',
               style: TextStyle(
                 fontSize: 12.5,
                 color: Colors.white54,

@@ -2320,6 +2320,18 @@ class $MatchesTable extends Matches with TableInfo<$MatchesTable, MatchRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _firstServerMeta = const VerificationMeta(
+    'firstServer',
+  );
+  @override
+  late final GeneratedColumn<String> firstServer = GeneratedColumn<String>(
+    'first_server',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('TEAM_A'),
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -2530,6 +2542,7 @@ class $MatchesTable extends Matches with TableInfo<$MatchesTable, MatchRow> {
     id,
     teamId,
     formatJson,
+    firstServer,
     status,
     startTimeMs,
     endTimeMs,
@@ -2579,6 +2592,15 @@ class $MatchesTable extends Matches with TableInfo<$MatchesTable, MatchRow> {
       );
     } else if (isInserting) {
       context.missing(_formatJsonMeta);
+    }
+    if (data.containsKey('first_server')) {
+      context.handle(
+        _firstServerMeta,
+        firstServer.isAcceptableOrUnknown(
+          data['first_server']!,
+          _firstServerMeta,
+        ),
+      );
     }
     if (data.containsKey('status')) {
       context.handle(
@@ -2739,6 +2761,10 @@ class $MatchesTable extends Matches with TableInfo<$MatchesTable, MatchRow> {
         DriftSqlType.string,
         data['${effectivePrefix}format_json'],
       )!,
+      firstServer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}first_server'],
+      )!,
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}status'],
@@ -2824,6 +2850,14 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
   final String id;
   final String? teamId;
   final String formatJson;
+
+  /// Team that served the first game (TEAM_A / TEAM_B, FIP Regola 4).
+  ///
+  /// Serve, return, break and hold statistics are all derived from the serving
+  /// rotation, so a match where the opponents served first must persist it:
+  /// replaying with the default would attribute every hold and break to the
+  /// wrong pair.
+  final String firstServer;
   final String status;
   final int? startTimeMs;
   final int? endTimeMs;
@@ -2860,6 +2894,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
     required this.id,
     this.teamId,
     required this.formatJson,
+    required this.firstServer,
     required this.status,
     this.startTimeMs,
     this.endTimeMs,
@@ -2887,6 +2922,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
       map['team_id'] = Variable<String>(teamId);
     }
     map['format_json'] = Variable<String>(formatJson);
+    map['first_server'] = Variable<String>(firstServer);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || startTimeMs != null) {
       map['start_time_ms'] = Variable<int>(startTimeMs);
@@ -2935,6 +2971,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
           ? const Value.absent()
           : Value(teamId),
       formatJson: Value(formatJson),
+      firstServer: Value(firstServer),
       status: Value(status),
       startTimeMs: startTimeMs == null && nullToAbsent
           ? const Value.absent()
@@ -2985,6 +3022,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
       id: serializer.fromJson<String>(json['id']),
       teamId: serializer.fromJson<String?>(json['teamId']),
       formatJson: serializer.fromJson<String>(json['formatJson']),
+      firstServer: serializer.fromJson<String>(json['firstServer']),
       status: serializer.fromJson<String>(json['status']),
       startTimeMs: serializer.fromJson<int?>(json['startTimeMs']),
       endTimeMs: serializer.fromJson<int?>(json['endTimeMs']),
@@ -3012,6 +3050,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
       'id': serializer.toJson<String>(id),
       'teamId': serializer.toJson<String?>(teamId),
       'formatJson': serializer.toJson<String>(formatJson),
+      'firstServer': serializer.toJson<String>(firstServer),
       'status': serializer.toJson<String>(status),
       'startTimeMs': serializer.toJson<int?>(startTimeMs),
       'endTimeMs': serializer.toJson<int?>(endTimeMs),
@@ -3037,6 +3076,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
     String? id,
     Value<String?> teamId = const Value.absent(),
     String? formatJson,
+    String? firstServer,
     String? status,
     Value<int?> startTimeMs = const Value.absent(),
     Value<int?> endTimeMs = const Value.absent(),
@@ -3059,6 +3099,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
     id: id ?? this.id,
     teamId: teamId.present ? teamId.value : this.teamId,
     formatJson: formatJson ?? this.formatJson,
+    firstServer: firstServer ?? this.firstServer,
     status: status ?? this.status,
     startTimeMs: startTimeMs.present ? startTimeMs.value : this.startTimeMs,
     endTimeMs: endTimeMs.present ? endTimeMs.value : this.endTimeMs,
@@ -3091,6 +3132,9 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
       formatJson: data.formatJson.present
           ? data.formatJson.value
           : this.formatJson,
+      firstServer: data.firstServer.present
+          ? data.firstServer.value
+          : this.firstServer,
       status: data.status.present ? data.status.value : this.status,
       startTimeMs: data.startTimeMs.present
           ? data.startTimeMs.value
@@ -3138,6 +3182,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
           ..write('id: $id, ')
           ..write('teamId: $teamId, ')
           ..write('formatJson: $formatJson, ')
+          ..write('firstServer: $firstServer, ')
           ..write('status: $status, ')
           ..write('startTimeMs: $startTimeMs, ')
           ..write('endTimeMs: $endTimeMs, ')
@@ -3165,6 +3210,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
     id,
     teamId,
     formatJson,
+    firstServer,
     status,
     startTimeMs,
     endTimeMs,
@@ -3191,6 +3237,7 @@ class MatchRow extends DataClass implements Insertable<MatchRow> {
           other.id == this.id &&
           other.teamId == this.teamId &&
           other.formatJson == this.formatJson &&
+          other.firstServer == this.firstServer &&
           other.status == this.status &&
           other.startTimeMs == this.startTimeMs &&
           other.endTimeMs == this.endTimeMs &&
@@ -3215,6 +3262,7 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
   final Value<String> id;
   final Value<String?> teamId;
   final Value<String> formatJson;
+  final Value<String> firstServer;
   final Value<String> status;
   final Value<int?> startTimeMs;
   final Value<int?> endTimeMs;
@@ -3238,6 +3286,7 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
     this.id = const Value.absent(),
     this.teamId = const Value.absent(),
     this.formatJson = const Value.absent(),
+    this.firstServer = const Value.absent(),
     this.status = const Value.absent(),
     this.startTimeMs = const Value.absent(),
     this.endTimeMs = const Value.absent(),
@@ -3262,6 +3311,7 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
     required String id,
     this.teamId = const Value.absent(),
     required String formatJson,
+    this.firstServer = const Value.absent(),
     this.status = const Value.absent(),
     this.startTimeMs = const Value.absent(),
     this.endTimeMs = const Value.absent(),
@@ -3287,6 +3337,7 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
     Expression<String>? id,
     Expression<String>? teamId,
     Expression<String>? formatJson,
+    Expression<String>? firstServer,
     Expression<String>? status,
     Expression<int>? startTimeMs,
     Expression<int>? endTimeMs,
@@ -3311,6 +3362,7 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
       if (id != null) 'id': id,
       if (teamId != null) 'team_id': teamId,
       if (formatJson != null) 'format_json': formatJson,
+      if (firstServer != null) 'first_server': firstServer,
       if (status != null) 'status': status,
       if (startTimeMs != null) 'start_time_ms': startTimeMs,
       if (endTimeMs != null) 'end_time_ms': endTimeMs,
@@ -3337,6 +3389,7 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
     Value<String>? id,
     Value<String?>? teamId,
     Value<String>? formatJson,
+    Value<String>? firstServer,
     Value<String>? status,
     Value<int?>? startTimeMs,
     Value<int?>? endTimeMs,
@@ -3361,6 +3414,7 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
       id: id ?? this.id,
       teamId: teamId ?? this.teamId,
       formatJson: formatJson ?? this.formatJson,
+      firstServer: firstServer ?? this.firstServer,
       status: status ?? this.status,
       startTimeMs: startTimeMs ?? this.startTimeMs,
       endTimeMs: endTimeMs ?? this.endTimeMs,
@@ -3394,6 +3448,9 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
     }
     if (formatJson.present) {
       map['format_json'] = Variable<String>(formatJson.value);
+    }
+    if (firstServer.present) {
+      map['first_server'] = Variable<String>(firstServer.value);
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
@@ -3461,6 +3518,7 @@ class MatchesCompanion extends UpdateCompanion<MatchRow> {
           ..write('id: $id, ')
           ..write('teamId: $teamId, ')
           ..write('formatJson: $formatJson, ')
+          ..write('firstServer: $firstServer, ')
           ..write('status: $status, ')
           ..write('startTimeMs: $startTimeMs, ')
           ..write('endTimeMs: $endTimeMs, ')
@@ -12750,6 +12808,7 @@ typedef $$MatchesTableCreateCompanionBuilder =
       required String id,
       Value<String?> teamId,
       required String formatJson,
+      Value<String> firstServer,
       Value<String> status,
       Value<int?> startTimeMs,
       Value<int?> endTimeMs,
@@ -12775,6 +12834,7 @@ typedef $$MatchesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String?> teamId,
       Value<String> formatJson,
+      Value<String> firstServer,
       Value<String> status,
       Value<int?> startTimeMs,
       Value<int?> endTimeMs,
@@ -12881,6 +12941,11 @@ class $$MatchesTableFilterComposer
 
   ColumnFilters<String> get formatJson => $composableBuilder(
     column: $table.formatJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get firstServer => $composableBuilder(
+    column: $table.firstServer,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13067,6 +13132,11 @@ class $$MatchesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get firstServer => $composableBuilder(
+    column: $table.firstServer,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
@@ -13195,6 +13265,11 @@ class $$MatchesTableAnnotationComposer
 
   GeneratedColumn<String> get formatJson => $composableBuilder(
     column: $table.formatJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get firstServer => $composableBuilder(
+    column: $table.firstServer,
     builder: (column) => column,
   );
 
@@ -13382,6 +13457,7 @@ class $$MatchesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String?> teamId = const Value.absent(),
                 Value<String> formatJson = const Value.absent(),
+                Value<String> firstServer = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int?> startTimeMs = const Value.absent(),
                 Value<int?> endTimeMs = const Value.absent(),
@@ -13405,6 +13481,7 @@ class $$MatchesTableTableManager
                 id: id,
                 teamId: teamId,
                 formatJson: formatJson,
+                firstServer: firstServer,
                 status: status,
                 startTimeMs: startTimeMs,
                 endTimeMs: endTimeMs,
@@ -13430,6 +13507,7 @@ class $$MatchesTableTableManager
                 required String id,
                 Value<String?> teamId = const Value.absent(),
                 required String formatJson,
+                Value<String> firstServer = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int?> startTimeMs = const Value.absent(),
                 Value<int?> endTimeMs = const Value.absent(),
@@ -13453,6 +13531,7 @@ class $$MatchesTableTableManager
                 id: id,
                 teamId: teamId,
                 formatJson: formatJson,
+                firstServer: firstServer,
                 status: status,
                 startTimeMs: startTimeMs,
                 endTimeMs: endTimeMs,

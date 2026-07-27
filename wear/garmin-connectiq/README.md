@@ -1,4 +1,4 @@
-# Padelandia Garmin Connect IQ
+# Momentum Garmin Connect IQ
 
 Native Connect IQ watch app, built with Monkey C and isolated from Flutter,
 watchOS and Wear OS. The implementation follows the shared event contract in
@@ -14,21 +14,21 @@ watchOS and Wear OS. The implementation follows the shared event contract in
 - Persistent pending queue. Transport completion never deletes an event; only a
   phone/backend ACK does.
 - Touch and hardware-button controls, high-contrast score UI and haptic feedback.
-- Responsive Padelandia visual system for round AMOLED, rectangular and compact
+- Responsive Momentum visual system for round AMOLED, rectangular and compact
   MIP/Instinct displays, with one geometry source shared by rendering and hit
   testing.
 - English and Italian UI resources, visible score actions, advantage state,
   team-scoped undo and non-invasive local/sync status.
 - Native Connect IQ action menu for watch-first format selection, pause/resume,
   explicit sync and manual match completion with a separate confirmation.
-- A match started in Padelandia owns a native FIT recording. It uses Tennis with
+- A match started in Momentum owns a native FIT recording. It uses Tennis with
   Padel sub-sport on Connect IQ API 4.1.6+ and a generic sub-sport fallback on
   older declared products.
 - Existing Garmin activities are never adopted, stopped or replaced. When the
-  system timer is already active, Padelandia stays in scoring-only mode and
+  system timer is already active, Momentum stays in scoring-only mode and
   shows a short local notice.
 - FIT-session ownership is persisted by match ID and activity start time, so a
-  restart can recover only the session Padelandia can prove it created.
+  restart can recover only the session Momentum can prove it created.
 - A Garmin system suspension (`onStop` with `:suspend`) preserves that owned
   session for resume; a real app exit stops and saves it once, leaving the match
   resumable without keeping the activity/app alive or silently restarting it.
@@ -47,10 +47,10 @@ unavailable or another activity is active. Garmin firmware and user settings
 control low-power/always-on behavior; a Connect IQ app must not promise to
 force the display permanently on.
 
-Connect IQ does not expose a background **activity started** event. Padelandia
+Connect IQ does not expose a background **activity started** event. Momentum
 therefore cannot prompt at the instant another Garmin app starts an activity;
 the documented background event is activity completion. The supported flow is
-to open Padelandia and use Quick Start, which starts scoring and its own FIT
+to open Momentum and use Quick Start, which starts scoring and its own FIT
 session together.
 
 ## Build And Test
@@ -83,7 +83,7 @@ Current local validation:
 - Final visual acceptance of the current UI must still be repeated in the
   interactive simulator and on physical AMOLED, MIP and rectangular hardware.
 - Android Mobile SDK 2.4.0 reaches the simulator through ADB, reports
-  `CONNECTED`, registers the Padelandia Connect IQ app and accepts phone-to-watch
+  `CONNECTED`, registers the Momentum Connect IQ app and accepts phone-to-watch
   transport with `SUCCESS`.
 
 ## Mobile SDK
@@ -92,7 +92,7 @@ Current local validation:
 - iOS: Garmin Swift Package `connectiq-companion-app-sdk-ios`, exact 1.8.0.
 - iOS callback URLs are accepted only from Garmin Connect's bundle identifier.
 - Garmin native device IDs stay on the phone. Cloud ingestion uses a revocable,
-  hashed Padelandia device credential and server-side plan verification.
+  hashed Momentum device credential and server-side plan verification.
 
 For an Android simulator bridge, install a debug APK and run:
 

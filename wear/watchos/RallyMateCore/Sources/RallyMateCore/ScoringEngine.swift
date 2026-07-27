@@ -32,14 +32,33 @@ public enum EventType: String, Codable, Sendable {
     case teamConfirmed = "TEAM_CONFIRMED"
 }
 
+/// Scoring rule used once a game reaches 40-all.
+///
+/// The raw values are part of the JSON sync contract shared with mobile and
+/// Wear OS. `goldenPoint` is still encoded by `MatchFormat` for legacy clients,
+/// but this enum is authoritative for schema-v2 payloads.
+public enum GameScoringMode: String, Codable, CaseIterable, Sendable {
+    case advantage = "ADVANTAGE"
+    case starPoint = "STAR_POINT"
+    case goldenPoint = "GOLDEN_POINT"
+}
+
 public struct MatchFormat: Codable, Equatable, Sendable {
+    /// v3 adds `tieBreakInDecidingSet`.
+    public static let currentSchemaVersion = 3
+
     public var id: String
     public var name: String
     public var setsToWin: Int
     public var gamesPerSet: Int
-    public var goldenPoint: Bool
+    public var gameScoringMode: GameScoringMode
+    /// Legacy compatibility field. New code must use `gameScoringMode`.
+    public var goldenPoint: Bool { gameScoringMode == .goldenPoint }
     public var tieBreakAtGamesAll: Bool
     public var tieBreakPoints: Int
+    /// FIP Rule 1, Option 1.4: when false the deciding set is played to two
+    /// games of margin instead of a tie-break.
+    public var tieBreakInDecidingSet: Bool
     public var superTieBreakDecider: Bool
     public var superTieBreakPoints: Int
     public var freePlay: Bool
@@ -50,8 +69,10 @@ public struct MatchFormat: Codable, Equatable, Sendable {
         setsToWin: Int = 2,
         gamesPerSet: Int = 6,
         goldenPoint: Bool = true,
+        gameScoringMode: GameScoringMode? = nil,
         tieBreakAtGamesAll: Bool = true,
         tieBreakPoints: Int = 7,
+        tieBreakInDecidingSet: Bool = true,
         superTieBreakDecider: Bool = false,
         superTieBreakPoints: Int = 10,
         freePlay: Bool = false
@@ -60,34 +81,76 @@ public struct MatchFormat: Codable, Equatable, Sendable {
         self.name = name
         self.setsToWin = setsToWin
         self.gamesPerSet = gamesPerSet
-        self.goldenPoint = goldenPoint
+        self.gameScoringMode = gameScoringMode
+            ?? (goldenPoint ? .goldenPoint : .advantage)
         self.tieBreakAtGamesAll = tieBreakAtGamesAll
         self.tieBreakPoints = tieBreakPoints
+        self.tieBreakInDecidingSet = tieBreakInDecidingSet
         self.superTieBreakDecider = superTieBreakDecider
         self.superTieBreakPoints = superTieBreakPoints
         self.freePlay = freePlay
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, setsToWin, gamesPerSet, goldenPoint
-        case tieBreakAtGamesAll, tieBreakPoints
+        case formatSchemaVersion, schemaVersion, id, name, setsToWin, gamesPerSet
+        case gameScoringMode, goldenPoint
+        case tieBreakAtGamesAll, tieBreakPoints, tieBreakInDecidingSet
         case superTieBreakDecider, superTieBreakPoints, freePlay
     }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        // Decode both during the schema-v2 rollout. The version is currently
+        // informational because the remaining fields are decoded defensively,
+        // but accepting the old alias keeps early v2 persisted payloads valid.
+        _ = try c.decodeIfPresent(Int.self, forKey: .formatSchemaVersion)
+            ?? c.decodeIfPresent(Int.self, forKey: .schemaVersion)
+        let legacyGoldenPoint = try c.decodeIfPresent(
+            Bool.self,
+            forKey: .goldenPoint
+        ) ?? true
+        // Decode the raw string deliberately: an app from the future may add a
+        // mode this binary does not know. Falling back to the legacy Bool keeps
+        // the whole format readable instead of losing the persisted match.
+        let mode = try c.decodeIfPresent(
+            String.self,
+            forKey: .gameScoringMode
+        ).flatMap(GameScoringMode.init(rawValue:))
+            ?? (legacyGoldenPoint ? .goldenPoint : .advantage)
         self.init(
             id: try c.decodeIfPresent(String.self, forKey: .id) ?? "GOLDEN_BO3",
             name: try c.decodeIfPresent(String.self, forKey: .name) ?? "Custom",
             setsToWin: try c.decodeIfPresent(Int.self, forKey: .setsToWin) ?? 2,
             gamesPerSet: try c.decodeIfPresent(Int.self, forKey: .gamesPerSet) ?? 6,
-            goldenPoint: try c.decodeIfPresent(Bool.self, forKey: .goldenPoint) ?? true,
+            goldenPoint: legacyGoldenPoint,
+            gameScoringMode: mode,
             tieBreakAtGamesAll: try c.decodeIfPresent(Bool.self, forKey: .tieBreakAtGamesAll) ?? true,
             tieBreakPoints: try c.decodeIfPresent(Int.self, forKey: .tieBreakPoints) ?? 7,
+            // Absent in v1/v2 payloads: those always had a deciding tie-break.
+            tieBreakInDecidingSet: try c.decodeIfPresent(Bool.self, forKey: .tieBreakInDecidingSet) ?? true,
             superTieBreakDecider: try c.decodeIfPresent(Bool.self, forKey: .superTieBreakDecider) ?? false,
             superTieBreakPoints: try c.decodeIfPresent(Int.self, forKey: .superTieBreakPoints) ?? 10,
             freePlay: try c.decodeIfPresent(Bool.self, forKey: .freePlay) ?? false
         )
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(Self.currentSchemaVersion, forKey: .formatSchemaVersion)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(setsToWin, forKey: .setsToWin)
+        try c.encode(gamesPerSet, forKey: .gamesPerSet)
+        try c.encode(gameScoringMode.rawValue, forKey: .gameScoringMode)
+        // Old clients understand only this Bool. Star Point deliberately
+        // degrades to advantage scoring rather than ending at the first deuce.
+        try c.encode(goldenPoint, forKey: .goldenPoint)
+        try c.encode(tieBreakAtGamesAll, forKey: .tieBreakAtGamesAll)
+        try c.encode(tieBreakPoints, forKey: .tieBreakPoints)
+        try c.encode(tieBreakInDecidingSet, forKey: .tieBreakInDecidingSet)
+        try c.encode(superTieBreakDecider, forKey: .superTieBreakDecider)
+        try c.encode(superTieBreakPoints, forKey: .superTieBreakPoints)
+        try c.encode(freePlay, forKey: .freePlay)
     }
 
     public func toJsonString() -> String {
@@ -115,10 +178,37 @@ public struct MatchFormat: Codable, Equatable, Sendable {
         goldenPoint: false
     )
 
+    public static let starPointBo3 = MatchFormat(
+        id: "STAR_POINT_BO3",
+        name: "Star Point FIP - meglio di 3",
+        goldenPoint: false,
+        gameScoringMode: .starPoint
+    )
+
     public static let superTieBreakBo3 = MatchFormat(
         id: "SUPER_TB_BO3",
         name: "Super tie-break al terzo",
         superTieBreakDecider: true
+    )
+
+    public static let matchTieBreak7Bo3 = MatchFormat(
+        id: "MATCH_TB7_BO3",
+        name: "Tie-break decisivo a 7",
+        superTieBreakDecider: true,
+        superTieBreakPoints: 7
+    )
+
+    public static let miniSetBo3 = MatchFormat(
+        id: "MINI_SET_BO3",
+        name: "Mini-set a 4 game",
+        gamesPerSet: 4
+    )
+
+    public static let advantageDecidingSetBo3 = MatchFormat(
+        id: "ADV_NO_TB_THIRD_BO3",
+        name: "Terzo set senza tie-break",
+        goldenPoint: false,
+        tieBreakInDecidingSet: false
     )
 
     public static let singleSet = MatchFormat(
@@ -136,8 +226,16 @@ public struct MatchFormat: Codable, Equatable, Sendable {
 
     public static let presets: [MatchFormat] = [
         goldenPointBo3,
+        starPointBo3,
         advantageBo3,
         superTieBreakBo3,
+        matchTieBreak7Bo3,
+        miniSetBo3,
+        // advantageDecidingSetBo3 is deliberately absent: a watch-authored
+        // match travels to the phone without a capability handshake, and a
+        // phone on the previous build would replay the deciding set with a
+        // tie-break. The format is selectable on the phone, which gates the
+        // dispatch on `deciding_set_no_tiebreak_v1`.
         singleSet,
         training,
     ]
@@ -305,6 +403,9 @@ public struct MatchState: Equatable, Sendable {
     public var pointsA: Int
     public var pointsB: Int
     public var advantage: TeamId?
+    /// Star Point phase: 1/2 for the two advantage cycles, 3 for the
+    /// deciding Star Point. Zero for every other situation and scoring mode.
+    public var deuceNumber: Int
     public var gamesA: Int
     public var gamesB: Int
     public var setsA: Int
@@ -320,6 +421,17 @@ public struct MatchState: Equatable, Sendable {
     public var sideChangePending: Bool
     public var winner: TeamId?
 
+    /// True only while the normal game is at the third deuce, when the next
+    /// rally is the deciding Star Point.
+    public var isStarPoint: Bool {
+        advantage == nil
+            && pointsA >= 3
+            && pointsB >= 3
+            && deuceNumber >= 3
+            && !inTieBreak
+            && !inSuperTieBreak
+    }
+
     public func pointsLabel(_ team: TeamId) -> String {
         let labels = ["0", "15", "30", "40"]
         if let adv = advantage { return adv == team ? "AD" : "40" }
@@ -328,19 +440,43 @@ public struct MatchState: Equatable, Sendable {
     }
 
     public func pointSituation(
-        goldenPoint: Bool,
+        gameScoringMode: GameScoringMode,
         teamALabel: String = "NOI",
         teamBLabel: String = "LORO"
     ) -> String? {
         guard !inTieBreak, !inSuperTieBreak else { return nil }
         if let advantage {
             let label = advantage == .a ? teamALabel : teamBLabel
+            if gameScoringMode == .starPoint {
+                return "AD \(min(max(deuceNumber, 1), 2)) \(label) · GAME POINT"
+            }
             return "VANTAGGIO \(label) · GAME POINT"
         }
         guard pointsA >= 3, pointsB >= 3 else { return nil }
-        return goldenPoint
-            ? "40 PARI · PUNTO DECISIVO"
-            : "40 PARI · VANTAGGI"
+        switch gameScoringMode {
+        case .goldenPoint:
+            return "40 PARI · PUNTO DECISIVO"
+        case .advantage:
+            return "40 PARI · VANTAGGI"
+        case .starPoint:
+            let round = min(max(deuceNumber, 1), 3)
+            return round == 3
+                ? "DEUCE 3 · STAR POINT"
+                : "40 PARI · DEUCE \(round)"
+        }
+    }
+
+    /// Source-compatible helper for older Swift callers.
+    public func pointSituation(
+        goldenPoint: Bool,
+        teamALabel: String = "NOI",
+        teamBLabel: String = "LORO"
+    ) -> String? {
+        pointSituation(
+            gameScoringMode: goldenPoint ? .goldenPoint : .advantage,
+            teamALabel: teamALabel,
+            teamBLabel: teamBLabel
+        )
     }
 }
 
@@ -645,6 +781,7 @@ public final class ScoringEngine {
         var paused = false
         var completed = false
         var pA = 0, pB = 0
+        var deuceNumber = 0
         var gA = 0, gB = 0
         var sA = 0, sB = 0
         var sets: [SetResult] = []
@@ -688,11 +825,56 @@ public final class ScoringEngine {
             return (inTb || inStb) ? tieBreakPoint(team) : gamePoint(team)
         }
 
+        /// The set in play is the last one the match can have.
+        private var inDecidingSet: Bool {
+            sA == f.setsToWin - 1 && sB == f.setsToWin - 1
+        }
+
+        /// Whether gamesPerSet-all opens a tie-break in the set being played.
+        /// FIP Rule 1, Option 1.4 allows the deciding set to be played out.
+        private var tieBreakAvailable: Bool {
+            f.tieBreakAtGamesAll && (f.tieBreakInDecidingSet || !inDecidingSet)
+        }
+
         private mutating func gamePoint(_ team: TeamId) -> [Transition] {
             var gameWon = false
-            if f.goldenPoint {
+            if f.gameScoringMode == .goldenPoint {
                 if team == .a { pA += 1 } else { pB += 1 }
                 gameWon = pA >= 4 || pB >= 4
+            } else if f.gameScoringMode == .starPoint {
+                if pA == 4 && pB == 3 {
+                    if team == .a {
+                        gameWon = true
+                    } else {
+                        pA = 3
+                        pB = 3
+                        deuceNumber = min(max(deuceNumber, 1) + 1, 3)
+                    }
+                } else if pB == 4 && pA == 3 {
+                    if team == .b {
+                        gameWon = true
+                    } else {
+                        pA = 3
+                        pB = 3
+                        deuceNumber = min(max(deuceNumber, 1) + 1, 3)
+                    }
+                } else if pA == 3 && pB == 3 {
+                    deuceNumber = max(deuceNumber, 1)
+                    if deuceNumber >= 3 {
+                        gameWon = true
+                    } else if team == .a {
+                        pA = 4
+                    } else {
+                        pB = 4
+                    }
+                } else {
+                    if team == .a { pA += 1 } else { pB += 1 }
+                    gameWon = (pA >= 4 && pA - pB >= 2)
+                        || (pB >= 4 && pB - pA >= 2)
+                    if !gameWon && pA == 3 && pB == 3 {
+                        deuceNumber = 1
+                    }
+                }
             } else if pA == 4 && pB == 3 {
                 if team == .a { gameWon = true } else { pA = 3; pB = 3 }
             } else if pB == 4 && pA == 3 {
@@ -706,21 +888,28 @@ public final class ScoringEngine {
             }
             if !gameWon { return [.point] }
 
-            let gWinner: TeamId = pA > pB ? .a : .b
-            pA = 0; pB = 0
+            let gWinner = team
+            pA = 0
+            pB = 0
+            deuceNumber = 0
             if gWinner == .a { gA += 1 } else { gB += 1 }
             serving = serving.opponent
 
             var out: [Transition] = [.point, .gameWon]
-            if (gA + gB) % 2 == 1 { sidePending = true; out.append(.sideChange) }
 
+            // Set won outright? completeSet owns the end-of-set change of
+            // ends, which follows the same odd-total rule applied below to
+            // mid-set games.
             let lg = gWinner == .a ? gA : gB
             let og = gWinner == .a ? gB : gA
             if lg >= f.gamesPerSet && lg - og >= 2 {
                 out.append(contentsOf: completeSet(gWinner, tb: false))
                 return out
             }
-            if f.tieBreakAtGamesAll && gA == f.gamesPerSet && gB == f.gamesPerSet {
+
+            if (gA + gB) % 2 == 1 { sidePending = true; out.append(.sideChange) }
+            // No tie-break in a deciding set played to two games of margin.
+            if tieBreakAvailable && gA == f.gamesPerSet && gB == f.gamesPerSet {
                 inTb = true; tbA = 0; tbB = 0; tbFirstServer = serving
             }
             return out
@@ -761,16 +950,35 @@ public final class ScoringEngine {
                 sets.append(SetResult(gamesA: gA, gamesB: gB))
             }
             if setWinner == .a { sA += 1 } else { sB += 1 }
-            gA = 0; gB = 0; pA = 0; pB = 0
+            // Captured before the reset below: the games actually played in
+            // the set that just finished.
+            let setTotalGames = tb ? (f.gamesPerSet * 2 + 1) : (gA + gB)
+            gA = 0
+            gB = 0
+            pA = 0
+            pB = 0
+            deuceNumber = 0
             if inTb { serving = tbFirstServer.opponent }
             inTb = false; tbA = 0; tbB = 0
-            sidePending = true
 
-            var out: [Transition] = [.setWon, .sideChange]
+            // FIP Rules of Padel (Rule 11 — Change of ends): teams change ends
+            // at the end of every odd game, and at the end of a set only when
+            // the set's total number of games is odd. After an even set (6-0,
+            // 6-2, 6-4) the change is deferred to the end of the first game of
+            // the next set, which the per-game odd rule in gamePoint already
+            // produces. A set won on a tie-break is 7-6 = 13 games, so it
+            // always changes ends.
+            let changeEnds = setTotalGames % 2 == 1
+            sidePending = changeEnds
+
+            var out: [Transition] = [.setWon]
+            if changeEnds { out.append(.sideChange) }
             let winSets = setWinner == .a ? sA : sB
             if winSets >= f.setsToWin {
                 completed = true
                 winner = setWinner
+                // The match is over: there is no next game to change ends for.
+                sidePending = false
                 out.append(.matchWon)
                 return out
             }
@@ -797,8 +1005,45 @@ public final class ScoringEngine {
         mutating func applyEdit(_ p: [String: Int]) {
             if let v = p["pointsA"] { pA = min(max(v, 0), 4) }
             if let v = p["pointsB"] { pB = min(max(v, 0), 4) }
-            if let v = p["gamesA"] { gA = min(max(v, 0), f.gamesPerSet + 1) }
-            if let v = p["gamesB"] { gB = min(max(v, 0), f.gamesPerSet + 1) }
+            // A deciding set without tie-break has no gamesPerSet+1 ceiling
+            // (8-6, 9-7, ...), so the bound follows the set in play.
+            let maxGames = tieBreakAvailable
+                ? f.gamesPerSet + 1
+                : f.gamesPerSet * 4
+            if let v = p["gamesA"] { gA = min(max(v, 0), maxGames) }
+            if let v = p["gamesB"] { gB = min(max(v, 0), maxGames) }
+
+            if f.freePlay || inTb || inStb
+                || f.gameScoringMode == .goldenPoint {
+                pA = min(max(pA, 0), 3)
+                pB = min(max(pB, 0), 3)
+                deuceNumber = 0
+            } else {
+                // AD is valid only as 4-3 or 3-4. Normalize corrupted/legacy
+                // absolute edits before replaying subsequent points.
+                if pA == 4 && pB == 4 {
+                    pA = 3
+                    pB = 3
+                } else {
+                    if pA == 4 && pB != 3 { pA = 3 }
+                    if pB == 4 && pA != 3 { pB = 3 }
+                }
+
+                let inDeucePhase = (pA == 3 && pB == 3)
+                    || (pA == 4 && pB == 3)
+                    || (pB == 4 && pA == 3)
+                if f.gameScoringMode == .starPoint && inDeucePhase {
+                    // Legacy SCORE_EDITED carried no phase: always restart
+                    // from deuce 1 rather than inheriting replay state.
+                    let requested = min(max(p["deuceNumber"] ?? 1, 1), 3)
+                    // Deuce 3 is already the deciding point and has no AD.
+                    deuceNumber = (pA == 4 || pB == 4) && requested == 3
+                        ? 2
+                        : requested
+                } else {
+                    deuceNumber = 0
+                }
+            }
             if inTb || inStb {
                 if let v = p["tieBreakA"] { tbA = v }
                 if let v = p["tieBreakB"] { tbB = v }
@@ -807,7 +1052,7 @@ public final class ScoringEngine {
 
         func snapshot() -> MatchState {
             var adv: TeamId?
-            if !f.goldenPoint {
+            if f.gameScoringMode != .goldenPoint {
                 if pA == 4 && pB == 3 { adv = .a }
                 if pB == 4 && pA == 3 { adv = .b }
             }
@@ -817,6 +1062,7 @@ public final class ScoringEngine {
                 pointsA: min(max(pA, 0), 3),
                 pointsB: min(max(pB, 0), 3),
                 advantage: adv,
+                deuceNumber: deuceNumber,
                 gamesA: gA, gamesB: gB,
                 setsA: sA, setsB: sB,
                 completedSets: sets,

@@ -1,11 +1,11 @@
-# Informativa sulla privacy di Padelandia
+# Informativa sulla privacy di Momentum
 
 **Ultimo aggiornamento: 21 luglio 2026 · Versione 1.5**
 
 La presente informativa è resa ai sensi degli artt. 13-14 del Regolamento (UE)
 2016/679 ("**GDPR**"), del D.lgs. 196/2003 come modificato dal D.lgs. 101/2018
 ("Codice Privacy") e delle policy di Google Play e Apple App Store, per gli
-utenti dell'applicazione **Padelandia** (l'"App").
+utenti dell'applicazione **Momentum** (l'"App").
 
 ## 1. Titolare del trattamento
 
@@ -17,7 +17,7 @@ Contatto privacy: **webnovis.info@gmail.com**
 
 ## 2. Principio fondante: local-first
 
-Padelandia è progettata secondo i principi di **privacy by design e by default**
+Momentum è progettata secondo i principi di **privacy by design e by default**
 (art. 25 GDPR): l'App funziona al 100% senza account. Partite, punteggi,
 statistiche, allenamenti e i dati letti direttamente da HealthKit/Health
 Connect **restano sul tuo dispositivo**. Fanno eccezione soltanto le funzioni
@@ -34,11 +34,11 @@ Pro sceglie esplicitamente di importare da un provider cloud abilitato.
 | Analytics sportive derivate (pressione, fasi persistenti, turning point, trend) | Calcolo locale post-partita dalla timeline degli eventi | Indicatori descrittivi con campione e incertezza; nessun dato salute, AI esterna o profilazione pubblicitaria |
 | Log allenamenti (incl. sforzo percepito RPE e minuti) | Inserimento utente | Locali; entrano nel backup soltanto se un utente Premium attiva tale funzione |
 | **Dati salute e fitness locali** (passi, calorie attive, minuti esercizio, frequenza cardiaca durante la partita, workout della partita) | Apple Salute/HealthKit, Apple Watch, Android Health Connect, Wear OS Health Services, solo con consenso | Vedi sez. 6 — restano locali, mai usati per pubblicità |
-| Comandi vocali di punteggio | Microfono + riconoscimento vocale del sistema operativo, attivato solo al tocco | Non registrati né inviati ai server Padelandia; il sistema operativo può elaborarli sul dispositivo o tramite il proprio servizio secondo le impostazioni della piattaforma |
+| Comandi vocali di punteggio | Microfono + riconoscimento vocale del sistema operativo, attivato solo al tocco | Non registrati né inviati ai server Momentum; il sistema operativo può elaborarli sul dispositivo o tramite il proprio servizio secondo le impostazioni della piattaforma |
 | Preferenze e impostazioni | Inserimento utente | Locali; il backup Premium include soltanto le preferenze trasferibili espressamente indicate, mai token, permessi o identificativi dispositivo |
 
 I dati elencati sono memorizzati localmente e puoi eliminarli disinstallando
-l'App. Per i comandi vocali Padelandia riceve il testo restituito dal servizio
+l'App. Per i comandi vocali Momentum riceve il testo restituito dal servizio
 di sistema solo per il tempo necessario a eseguire il comando, senza conservare
 audio o trascrizione. L'eventuale elaborazione del servizio vocale di
 piattaforma segue impostazioni e informativa del relativo provider.
@@ -84,7 +84,7 @@ non riceve dati salute e non effettua chiamate a modelli AI o servizi esterni.
 Le notifiche remote sono opzionali e vengono registrate soltanto dopo il
 consenso del sistema e l'accesso a un account. Su Android l'inizializzazione
 automatica di Firebase Cloud Messaging resta disattivata fino a tale scelta;
-su iOS il token APNs viene richiesto solo dopo l'autorizzazione. Padelandia non
+su iOS il token APNs viene richiesto solo dopo l'autorizzazione. Momentum non
 abilita Firebase Analytics né l'esportazione BigQuery delle metriche FCM. I
 token e gli identificativi di registrazione/installazione servono esclusivamente al recapito
 e alla deduplicazione delle notifiche, non a pubblicità, analytics cross-app o
@@ -131,24 +131,24 @@ Se attivi l'integrazione fitness o registri una partita da smartwatch:
   leggono sul telefono solo i tipi autorizzati e mantengono i dati nel
   dispositivo.
 - Su Apple Watch, durante una partita attiva e solo con il tuo consenso,
-  Padelandia può avviare una sessione workout tramite HealthKit e salvarla in
+  Momentum può avviare una sessione workout tramite HealthKit e salvarla in
   Apple Salute come allenamento generico, insieme alle metriche raccolte dal
   sistema durante la sessione (ad esempio durata, calorie attive e frequenza
   cardiaca se autorizzata).
 - Su Wear OS / Galaxy Watch, durante una partita attiva e solo con i permessi
-  concessi, Padelandia usa Health Services per gestire la sessione workout e
+  concessi, Momentum usa Health Services per gestire la sessione workout e
   mostrare/registrare metriche locali come durata, calorie e frequenza
   cardiaca se disponibile.
 - Se attivi "Rilevamento allenamento" su Wear OS, il Watch verifica localmente
   soltanto se Health Services segnala un esercizio attivo e la relativa
   categoria. Questo dato serve a mostrare una notifica facoltativa, non viene
   inviato al cloud e non usa posizione o frequenza cardiaca per decidere il
-  prompt. Padelandia non apre automaticamente l'app e non interrompe sessioni
+  prompt. Momentum non apre automaticamente l'app e non interrompe sessioni
   avviate da altre app.
-- Sui Garmin compatibili, quando avvii esplicitamente una partita da Padelandia,
+- Sui Garmin compatibili, quando avvii esplicitamente una partita da Momentum,
   l'app può creare una registrazione FIT Padel/Tennis tramite il sistema
   Garmin. Il file resta nell'ecosistema del dispositivo/Garmin Connect;
-  Padelandia sincronizza sul proprio backend gli eventi di punteggio, non il
+  Momentum sincronizza sul proprio backend gli eventi di punteggio, non il
   file FIT né le metriche salute Garmin. Una sessione Garmin già attiva non
   viene adottata, modificata o terminata.
 - Se un utente Pro collega separatamente **Google Health API**, il backend
@@ -158,16 +158,16 @@ Se attivi l'integrazione fitness o registri una partita da smartwatch:
   server-side con AES-GCM; gli aggregati sono conservati per massimo 30 giorni
   e non entrano nel backup generale.
 - Disconnettere Google Health revoca il token quando possibile e cancella
-  immediatamente token e aggregati Padelandia. I dati Google non vengono
+  immediatamente token e aggregati Momentum. I dati Google non vengono
   inviati al fornitore AI né condivisi per finalità pubblicitarie.
 - Le integrazioni dirette Oura e WHOOP restano disattivate finché non sono
   presenti approvazione, credenziali e verifica contrattuale. Se attivate per
   un utente Pro, richiedono soltanto gli scope mostrati nel consenso, salvano
   token cifrati AES-GCM e soli aggregati bounded (mai serie cardiache grezze o
   payload webhook completi). La disconnessione tenta la revoca presso il
-  provider e cancella token, metriche, job e riepiloghi derivati di Padelandia.
+  provider e cancella token, metriche, job e riepiloghi derivati di Momentum.
 - Oura e WHOOP non sono sensori live per lo scoring. I dati possono arrivare
-  dopo la sincronizzazione dell'app del produttore; Padelandia indica sempre
+  dopo la sincronizzazione dell'app del produttore; Momentum indica sempre
   provider e origine diretta o indiretta e non somma due copie della stessa
   sessione.
 - **Mai** usati per pubblicità, marketing, profilazione, valutazione
@@ -177,12 +177,12 @@ Se attivi l'integrazione fitness o registri una partita da smartwatch:
   Impostazioni → Salute → Accesso ai dati; Apple Watch → impostazioni Salute
   e Privacy; Android → app Health Connect / impostazioni permessi; Wear OS →
   impostazioni permessi dell'app sull'orologio.
-- Padelandia **non scrive dati su Health Connect**. Su Apple Watch può invece
+- Momentum **non scrive dati su Health Connect**. Su Apple Watch può invece
   scrivere la sessione workout in Apple Salute se autorizzi HealthKit; sui
   Garmin supportati può chiedere al sistema di salvare la sessione FIT avviata
   esplicitamente dall'utente.
 
-L'uso da parte di Padelandia delle informazioni ricevute da Google Health,
+L'uso da parte di Momentum delle informazioni ricevute da Google Health,
 Oura o WHOOP è limitato alle funzioni fitness visibili richieste dall'utente e
 alle rispettive condizioni del provider. Nessuno di questi dati entra nel
 Pallino Assistant.
@@ -261,3 +261,9 @@ sanzioni o altri effetti giuridici o analogamente significativi.
 Le modifiche sostanziali saranno comunicate nell'App con almeno 15 giorni di
 anticipo. La versione vigente è sempre disponibile a questo indirizzo e nella
 sezione Privacy dell'App.
+
+## 13. Sito web
+
+Questa informativa riguarda l'App. Il trattamento dei dati dei visitatori del
+sito **https://playmomentum.it** (log tecnici di hosting, assenza di cookie)
+è descritto nella [privacy e cookie policy del sito](/cookie/).

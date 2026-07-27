@@ -26,6 +26,57 @@ import '../rules/rules_assistant_screen.dart';
 import '../social/invite_share_sheet.dart';
 import 'live_match_controller.dart';
 
+enum _StarPointEditPhase {
+  deuceOne(1),
+  advantageOneA(1, TeamId.a),
+  advantageOneB(1, TeamId.b),
+  deuceTwo(2),
+  advantageTwoA(2, TeamId.a),
+  advantageTwoB(2, TeamId.b),
+  starPoint(3);
+
+  const _StarPointEditPhase(this.deuceNumber, [this.advantage]);
+
+  final int deuceNumber;
+  final TeamId? advantage;
+
+  static _StarPointEditPhase fromPoints(GamePoints points) {
+    if (points.advantage == TeamId.a) {
+      return points.deuceNumber <= 1 ? advantageOneA : advantageTwoA;
+    }
+    if (points.advantage == TeamId.b) {
+      return points.deuceNumber <= 1 ? advantageOneB : advantageTwoB;
+    }
+    if (points.deuceNumber >= 3) return starPoint;
+    if (points.deuceNumber == 2) return deuceTwo;
+    return deuceOne;
+  }
+}
+
+bool _isStarPointPhaseScore(int pointsA, int pointsB) =>
+    (pointsA == 3 && pointsB == 3) ||
+    (pointsA == 4 && pointsB == 3) ||
+    (pointsA == 3 && pointsB == 4);
+
+_StarPointEditPhase _phaseForEditedPoints(
+  int pointsA,
+  int pointsB,
+  _StarPointEditPhase current,
+) {
+  final secondCycle = current.deuceNumber >= 2;
+  if (pointsA == 4 && pointsB == 3) {
+    return secondCycle
+        ? _StarPointEditPhase.advantageTwoA
+        : _StarPointEditPhase.advantageOneA;
+  }
+  if (pointsA == 3 && pointsB == 4) {
+    return secondCycle
+        ? _StarPointEditPhase.advantageTwoB
+        : _StarPointEditPhase.advantageOneB;
+  }
+  return current;
+}
+
 class LiveScoringScreen extends ConsumerStatefulWidget {
   const LiveScoringScreen({
     super.key,
@@ -79,7 +130,8 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
   }
 
   Future<void> _syncWakelock(LiveMatchState? live) async {
-    final want = _appInForeground &&
+    final want =
+        _appInForeground &&
         live != null &&
         !_matchWinInterstitial &&
         canAcceptLocalPoint(live.score.status);
@@ -211,13 +263,13 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
             ..showSnackBar(SnackBar(content: Text(message)));
         });
       }
-      final becameComplete = s.score.isCompleted &&
+      final becameComplete =
+          s.score.isCompleted &&
           s.row.status == MatchStatus.completed.wire &&
           prev?.valueOrNull?.score.isCompleted != true;
       if (becameComplete && mounted) {
         // Auto match-win: undo window. Manual finish navigates itself.
-        final autoWin =
-            s.lastTransitions.contains(ScoreTransition.matchWon);
+        final autoWin = s.lastTransitions.contains(ScoreTransition.matchWon);
         if (autoWin && ModalRoute.of(context)?.isCurrent == true) {
           _startMatchWinWindow();
         }
@@ -274,6 +326,14 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
     return team == duoTeam ? RallyColors.teamUs : RallyColors.teamThem;
   }
 
+  String _starPointPhaseLabel(_StarPointEditPhase phase, TeamId? duoTeam) {
+    if (phase == _StarPointEditPhase.starPoint) return 'Star Point';
+    final advantage = phase.advantage;
+    if (advantage == null) return 'Parità ${phase.deuceNumber}';
+    return 'Vantaggio ${phase.deuceNumber} '
+        '${_teamLabel(advantage, duoTeam)}';
+  }
+
   // ------------------------------------------------------------- normale
 
   Widget _normal(LiveMatchState live) {
@@ -301,296 +361,296 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
         if (!didPop) unawaited(_confirmExit(ctrl));
       },
       child: Scaffold(
-      appBar: AppBar(
-        title: _MatchClock(
-          events: live.events,
-          fallbackStartTimeMs: live.row.startTimeMs,
-          fallbackEndTimeMs: live.row.endTimeMs,
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => _confirmExit(ctrl),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Comando vocale',
-            icon: Icon(
-              _listening ? Icons.mic : Icons.mic_none,
-              color: _listening ? RallyColors.lime : null,
-            ),
-            onPressed: _listening ? null : _voiceCommand,
+        appBar: AppBar(
+          title: _MatchClock(
+            events: live.events,
+            fallbackStartTimeMs: live.row.startTimeMs,
+            fallbackEndTimeMs: live.row.endTimeMs,
           ),
-          IconButton(
-            tooltip: 'Pallino e regole',
-            icon: const Icon(
-              Icons.auto_awesome_rounded,
-              color: RallyColors.lime,
-            ),
-            onPressed: _quickRules,
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => _confirmExit(ctrl),
           ),
-          PopupMenuButton<String>(
-            tooltip: 'Altre azioni partita',
-            onSelected: (value) {
-              switch (value) {
-                case 'blind':
-                  setState(() => _blindMode = true);
-                  return;
-                case 'invite':
-                  showInviteShareSheet(
-                    context,
-                    ref,
-                    kind: 'MATCH',
-                    matchId: widget.matchId,
-                  );
-                  return;
-                case 'duo':
-                  context.push('/match/${widget.matchId}/duo');
-                  return;
-                case 'to_watch':
-                  unawaited(_sendToWatch(live));
-                  return;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'blind',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.visibility_off_outlined),
-                  title: Text('Blind Mode'),
-                ),
+          actions: [
+            IconButton(
+              tooltip: 'Comando vocale',
+              icon: Icon(
+                _listening ? Icons.mic : Icons.mic_none,
+                color: _listening ? RallyColors.lime : null,
               ),
-              const PopupMenuItem(
-                value: 'to_watch',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.watch_outlined),
-                  title: Text('Invia al watch'),
-                ),
+              onPressed: _listening ? null : _voiceCommand,
+            ),
+            IconButton(
+              tooltip: 'Pallino e regole',
+              icon: const Icon(
+                Icons.auto_awesome_rounded,
+                color: RallyColors.lime,
               ),
-              PopupMenuItem(
-                value: live.isDuo ? 'duo' : 'invite',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    live.isDuo ? Icons.qr_code_2 : Icons.person_add_alt_1,
-                  ),
-                  title: Text(
-                    live.isDuo ? 'Duo, invito e watch' : 'Invita alla partita',
+              onPressed: _quickRules,
+            ),
+            PopupMenuButton<String>(
+              tooltip: 'Altre azioni partita',
+              onSelected: (value) {
+                switch (value) {
+                  case 'blind':
+                    setState(() => _blindMode = true);
+                    return;
+                  case 'invite':
+                    showInviteShareSheet(
+                      context,
+                      ref,
+                      kind: 'MATCH',
+                      matchId: widget.matchId,
+                    );
+                    return;
+                  case 'duo':
+                    context.push('/match/${widget.matchId}/duo');
+                    return;
+                  case 'to_watch':
+                    unawaited(_sendToWatch(live));
+                    return;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'blind',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.visibility_off_outlined),
+                    title: Text('Blind Mode'),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (live.persistenceMessage != null)
-              FutureBuilder<bool>(
-                future: ref
-                    .read(matchScoringLockProvider)
-                    .isPhoneScoringBlocked(widget.matchId),
-                builder: (context, snap) {
-                  final blocked = snap.data == true;
-                  final msg = live.persistenceMessage!;
-                  return Container(
-                    margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                    decoration: BoxDecoration(
-                      color: RallyColors.lime.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: RallyColors.lime.withValues(alpha: 0.4),
-                      ),
+                const PopupMenuItem(
+                  value: 'to_watch',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.watch_outlined),
+                    title: Text('Invia al watch'),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: live.isDuo ? 'duo' : 'invite',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      live.isDuo ? Icons.qr_code_2 : Icons.person_add_alt_1,
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          blocked
-                              ? Icons.watch
-                              : Icons.info_outline_rounded,
-                          color: RallyColors.lime,
-                          size: 20,
+                    title: Text(
+                      live.isDuo
+                          ? 'Duo, invito e watch'
+                          : 'Invita alla partita',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              if (live.persistenceMessage != null)
+                FutureBuilder<bool>(
+                  future: ref
+                      .read(matchScoringLockProvider)
+                      .isPhoneScoringBlocked(widget.matchId),
+                  builder: (context, snap) {
+                    final blocked = snap.data == true;
+                    final msg = live.persistenceMessage!;
+                    return Container(
+                      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                      decoration: BoxDecoration(
+                        color: RallyColors.lime.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: RallyColors.lime.withValues(alpha: 0.4),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            msg,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            blocked ? Icons.watch : Icons.info_outline_rounded,
+                            color: RallyColors.lime,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              msg,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
-                        ),
-                        if (blocked)
-                          TextButton(
-                            onPressed: () => ctrl.reclaimPhoneScoring(),
-                            child: const Text('Telefono'),
-                          ),
-                      ],
+                          if (blocked)
+                            TextButton(
+                              onPressed: () => ctrl.reclaimPhoneScoring(),
+                              child: const Text('Telefono'),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              if (paused)
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                  decoration: BoxDecoration(
+                    color: RallyColors.teamGold.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: RallyColors.teamGold.withValues(alpha: 0.45),
                     ),
-                  );
-                },
-              ),
-            if (paused)
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                decoration: BoxDecoration(
-                  color: RallyColors.teamGold.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: RallyColors.teamGold.withValues(alpha: 0.45),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.pause_circle_outline,
+                        color: RallyColors.teamGold,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Partita sospesa: riprendila prima di segnare.',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: ctrl.resume,
+                        child: const Text('Riprendi'),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.pause_circle_outline,
-                      color: RallyColors.teamGold,
+              if (live.isDuo)
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: RallyColors.lime.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: RallyColors.lime.withValues(alpha: 0.35),
                     ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'Partita sospesa: riprendila prima di segnare.',
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('⌚⌚ ', style: TextStyle(fontSize: 13)),
+                      Flexible(
+                        child: Text(
+                          'Duo Mode · questo dispositivo segna solo i punti '
+                          'di ${duoTeam == null ? 'NOI' : _teamLabel(duoTeam, duoTeam)} '
+                          '· partita sincronizzata',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: RallyColors.lime,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              _scoreHeader(s, live.format, freePlay, duoTeam),
+              if (s.sideChangePending)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: RallyColors.court,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.swap_horiz, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Cambio campo',
                         style: TextStyle(fontWeight: FontWeight.w700),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: ctrl.resume,
-                      child: const Text('Riprendi'),
-                    ),
-                  ],
-                ),
-              ),
-            if (live.isDuo)
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: RallyColors.lime.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: RallyColors.lime.withValues(alpha: 0.35),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('⌚⌚ ', style: TextStyle(fontSize: 13)),
-                    Flexible(
-                      child: Text(
-                        'Duo Mode · questo dispositivo segna solo i punti '
-                        'di ${duoTeam == null ? 'NOI' : _teamLabel(duoTeam, duoTeam)} '
-                        '· partita sincronizzata',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: RallyColors.lime,
+              const SizedBox(height: 8),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _pointButton(
+                          _teamLabel(TeamId.a, duoTeam),
+                          _teamColor(TeamId.a, duoTeam),
+                          !paused && (duoTeam == null || duoTeam == TeamId.a)
+                              ? visualTeam
+                              : null,
+                          paused || (duoTeam != null && duoTeam != TeamId.a)
+                              ? null
+                              : () => ctrl.point(TeamId.a),
+                          allowManualEdit: !paused && !live.isDuo,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _pointButton(
+                          _teamLabel(TeamId.b, duoTeam),
+                          _teamColor(TeamId.b, duoTeam),
+                          !paused && duoTeam == TeamId.b ? visualTeam : null,
+                          paused || (duoTeam != null && duoTeam != TeamId.b)
+                              ? null
+                              : () => ctrl.point(TeamId.b),
+                          allowManualEdit: !paused && !live.isDuo,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            _scoreHeader(s, live.format, freePlay, duoTeam),
-            if (s.sideChangePending)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: RallyColors.court,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.swap_horiz, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Cambio campo',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Row(
                   children: [
                     Expanded(
-                      child: _pointButton(
-                        _teamLabel(TeamId.a, duoTeam),
-                        _teamColor(TeamId.a, duoTeam),
-                        !paused && (duoTeam == null || duoTeam == TeamId.a)
-                            ? visualTeam
-                            : null,
-                        paused || (duoTeam != null && duoTeam != TeamId.a)
-                            ? null
-                            : () => ctrl.point(TeamId.a),
-                        allowManualEdit: !paused && !live.isDuo,
+                      child: OutlinedButton.icon(
+                        onPressed: !paused && live.canUndo ? ctrl.undo : null,
+                        icon: const Icon(Icons.undo),
+                        label: const Text('Annulla'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          foregroundColor: Colors.white,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _pointButton(
-                        _teamLabel(TeamId.b, duoTeam),
-                        _teamColor(TeamId.b, duoTeam),
-                        !paused && duoTeam == TeamId.b ? visualTeam : null,
-                        paused || (duoTeam != null && duoTeam != TeamId.b)
-                            ? null
-                            : () => ctrl.point(TeamId.b),
-                        allowManualEdit: !paused && !live.isDuo,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _confirmExit(ctrl),
+                        icon: const Icon(Icons.flag_outlined),
+                        label: const Text('Termina'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          foregroundColor: Colors.white70,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: !paused && live.canUndo ? ctrl.undo : null,
-                      icon: const Icon(Icons.undo),
-                      label: const Text('Annulla'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _confirmExit(ctrl),
-                      icon: const Icon(Icons.flag_outlined),
-                      label: const Text('Termina'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        foregroundColor: Colors.white70,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -605,11 +665,19 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
     final pointSituation = freePlay || s.inTieBreak || s.inSuperTieBreak
         ? null
         : s.points.situationLabel(
-            goldenPoint: format.goldenPoint,
+            gameScoringMode: format.gameScoringMode,
             teamALabel: _teamLabel(TeamId.a, duoTeam),
             teamBLabel: _teamLabel(TeamId.b, duoTeam),
           );
-    final situationColor = s.points.advantage == null
+    final isStarPoint =
+        format.gameScoringMode == GameScoringMode.starPoint &&
+        s.points.isStarPoint;
+    const starPointInstruction =
+        'Chi risponde sceglie il lato · nei misti riceve chi ha lo stesso '
+        'sesso del battitore';
+    final situationColor = isStarPoint
+        ? RallyColors.teamGold
+        : s.points.advantage == null
         ? RallyColors.lime
         : _teamColor(s.points.advantage!, duoTeam);
     return Container(
@@ -679,7 +747,9 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
               padding: const EdgeInsets.only(top: 12),
               child: Semantics(
                 liveRegion: true,
-                label: pointSituation,
+                label: isStarPoint
+                    ? '$pointSituation. $starPointInstruction'
+                    : pointSituation,
                 excludeSemantics: true,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 180),
@@ -696,14 +766,32 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
                         color: situationColor.withValues(alpha: 0.42),
                       ),
                     ),
-                    child: Text(
-                      pointSituation,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: situationColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          pointSituation,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: situationColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (isStarPoint) ...[
+                          const SizedBox(height: 4),
+                          const Text(
+                            starPointInstruction,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: RallyColors.teamGold,
+                              fontSize: 10,
+                              height: 1.25,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -892,9 +980,9 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
                         onTap: duoTeam != null
                             ? null
                             : () => ctrl.point(
-                                  them,
-                                  method: SourceMethod.blindTap,
-                                ),
+                                them,
+                                method: SourceMethod.blindTap,
+                              ),
                         child: Container(
                           color: RallyColors.teamThem.withValues(alpha: 0.05),
                           alignment: Alignment.center,
@@ -986,6 +1074,7 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
     final freePlay = live.format.freePlay;
     var pa = s.points.a, pb = s.points.b, ga = s.gamesA, gb = s.gamesB;
     var fpa = s.freePlayA, fpb = s.freePlayB;
+    var starPointPhase = _StarPointEditPhase.fromPoints(s.points);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1014,16 +1103,74 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
                   'Punti NOI',
                   pa,
                   GamePoints.labels,
-                  (v) => setLocal(() => pa = v),
+                  (v) => setLocal(() {
+                    pa = v;
+                    starPointPhase = _phaseForEditedPoints(
+                      pa,
+                      pb,
+                      starPointPhase,
+                    );
+                  }),
                 ),
                 _stepper(
                   'Punti LORO',
                   pb,
                   GamePoints.labels,
-                  (v) => setLocal(() => pb = v),
+                  (v) => setLocal(() {
+                    pb = v;
+                    starPointPhase = _phaseForEditedPoints(
+                      pa,
+                      pb,
+                      starPointPhase,
+                    );
+                  }),
                 ),
                 _stepper('Game NOI', ga, null, (v) => setLocal(() => ga = v)),
                 _stepper('Game LORO', gb, null, (v) => setLocal(() => gb = v)),
+                if (live.format.gameScoringMode == GameScoringMode.starPoint &&
+                    _isStarPointPhaseScore(pa, pb)) ...[
+                  const SizedBox(height: 12),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Fase Star Point',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white60,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Semantics(
+                    label:
+                        'Fase Star Point corrente: '
+                        '${_starPointPhaseLabel(starPointPhase, live.duoTeam)}',
+                    child: DropdownButtonFormField<_StarPointEditPhase>(
+                      key: ValueKey(starPointPhase),
+                      initialValue: starPointPhase,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Fase sul 40 pari',
+                        isDense: true,
+                      ),
+                      items: [
+                        for (final phase in _StarPointEditPhase.values)
+                          DropdownMenuItem(
+                            value: phase,
+                            child: Text(
+                              _starPointPhaseLabel(phase, live.duoTeam),
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setLocal(() => starPointPhase = value);
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ],
             ],
           ),
@@ -1052,7 +1199,19 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
           freePlayB: fpb,
         );
       } else {
-        await ctrl.edit(pointsA: pa, pointsB: pb, gamesA: ga, gamesB: gb);
+        final isStarPointPhase =
+            live.format.gameScoringMode == GameScoringMode.starPoint &&
+            _isStarPointPhaseScore(pa, pb);
+        final advantage = isStarPointPhase ? starPointPhase.advantage : null;
+        await ctrl.edit(
+          pointsA: isStarPointPhase ? (advantage == TeamId.a ? 4 : 3) : pa,
+          pointsB: isStarPointPhase ? (advantage == TeamId.b ? 4 : 3) : pb,
+          gamesA: ga,
+          gamesB: gb,
+          deuceNumber: live.format.gameScoringMode == GameScoringMode.starPoint
+              ? (isStarPointPhase ? starPointPhase.deuceNumber : 0)
+              : null,
+        );
       }
     }
   }
@@ -1100,9 +1259,9 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
           assignedTeam: live.duoTeam,
         );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(delivery.message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(delivery.message)));
   }
 
   Future<void> _confirmExit(LiveMatchController ctrl) async {
@@ -1174,7 +1333,10 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
     try {
       final cmd = await _voice.listenOnce();
       if (!mounted) return;
-      final duoTeam = ref.read(liveMatchProvider(widget.matchId)).valueOrNull?.duoTeam;
+      final duoTeam = ref
+          .read(liveMatchProvider(widget.matchId))
+          .valueOrNull
+          ?.duoTeam;
       final us = duoTeam ?? TeamId.a;
       final them = us == TeamId.a ? TeamId.b : TeamId.a;
       switch (cmd) {
@@ -1186,9 +1348,7 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen>
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    'In Duo Mode segna solo i punti del tuo team.',
-                  ),
+                  content: Text('In Duo Mode segna solo i punti del tuo team.'),
                 ),
               );
             }

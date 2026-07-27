@@ -321,7 +321,7 @@ object WorkoutDetectionNotification {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_rally_ongoing)
             .setContentTitle("${candidate.displayName} rilevato")
-            .setContentText("Vuoi iniziare una partita su Padelandia?")
+            .setContentText("Vuoi iniziare una partita su Momentum?")
             .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
@@ -350,7 +350,7 @@ object WorkoutDetectionNotification {
             "Allenamenti rilevati",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Prompt opzionali per avviare una partita Padelandia."
+            description = "Prompt opzionali per avviare una partita Momentum."
             setShowBadge(false)
         }
         context.getSystemService(NotificationManager::class.java)

@@ -175,7 +175,7 @@ class _HealthProviderSetupScreenState
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Apri manualmente Impostazioni → Padelandia → Bluetooth.',
+                            'Apri manualmente Impostazioni → Momentum → Bluetooth.',
                           ),
                         ),
                       );
@@ -238,7 +238,7 @@ class _HealthProviderSetupScreenState
     final steps = indirect
         ? const [
             'Apri l’app del dispositivo e abilita l’esportazione salute.',
-            'Concedi a Padelandia soltanto le categorie che vuoi importare.',
+            'Concedi a Momentum soltanto le categorie che vuoi importare.',
             'Torna qui e verifica l’origine dei dati.',
           ]
         : system
@@ -250,7 +250,7 @@ class _HealthProviderSetupScreenState
         : const [
             'Accedi sul sito ufficiale del provider.',
             'Conferma solo gli ambiti mostrati nella schermata di consenso.',
-            'Torna in Padelandia e avvia la prima sincronizzazione.',
+            'Torna in Momentum e avvia la prima sincronizzazione.',
           ];
     return SectionCard(
       title: 'CONFIGURAZIONE GUIDATA',
@@ -337,7 +337,7 @@ class _HealthProviderSetupScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Indossa e attiva il sensore. Padelandia cerca solo dispositivi '
+            'Indossa e attiva il sensore. Momentum cerca solo dispositivi '
             'che pubblicano il servizio cardiaco Bluetooth standard.',
             style: TextStyle(color: Colors.white70, height: 1.4),
           ),
@@ -587,7 +587,7 @@ class _HealthProviderSetupScreenState
       builder: (dialogContext) => AlertDialog(
         title: Text('Scollegare ${descriptor.displayName}?'),
         content: const Text(
-          'Padelandia revocherà il collegamento e cancellerà gli aggregati '
+          'Momentum revocherà il collegamento e cancellerà gli aggregati '
           'importati da questo provider. I dati originali restano nel '
           'servizio del produttore.',
         ),
@@ -619,7 +619,7 @@ class _HealthProviderSetupScreenState
       builder: (dialogContext) => AlertDialog(
         title: const Text('Rimuovere i dati importati?'),
         content: const Text(
-          'Padelandia eliminerà dal telefono i riepiloghi e l’attribuzione '
+          'Momentum eliminerà dal telefono i riepiloghi e l’attribuzione '
           'della fonte. I dati originali restano nell’hub salute.',
         ),
         actions: [
@@ -1307,7 +1307,7 @@ String _privacyCopy(
   HealthProviderDescriptor descriptor,
 ) => switch (descriptor.category) {
   HealthProviderCategory.systemHub || HealthProviderCategory.indirectSource =>
-    'Lettura e deduplica avvengono sul telefono. Padelandia conserva '
+    'Lettura e deduplica avvengono sul telefono. Momentum conserva '
         'localmente solo riepiloghi e attribuzione della fonte. Nessun dato '
         'salute viene inviato al cloud senza una funzione Pro esplicita.',
   HealthProviderCategory.liveSensor =>
@@ -1316,7 +1316,7 @@ String _privacyCopy(
         'su Supabase e la scansione termina automaticamente.',
   _ =>
     'OAuth e refresh token restano cifrati nelle Edge Functions. Nel cloud '
-        'Padelandia salva solo aggregati autorizzati; scollegando il provider '
+        'Momentum salva solo aggregati autorizzati; scollegando il provider '
         'revoca il token e cancella i dati importati.',
 };
 

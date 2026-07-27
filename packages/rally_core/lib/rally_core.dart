@@ -1,4 +1,4 @@
-/// Padelandia core library: scoring engine, analytics, rules, wrapped.
+/// Momentum core library: scoring engine, analytics, rules, wrapped.
 library;
 
 export 'src/analytics/aggregate_stats.dart';

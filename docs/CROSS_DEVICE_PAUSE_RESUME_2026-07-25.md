@@ -1,4 +1,4 @@
-# Padelandia — Pausa e ripresa cross-device · Report tecnico
+# Momentum — Pausa e ripresa cross-device · Report tecnico
 
 **Data:** 2026-07-25
 **Ambito:** iPhone (Flutter + bridge nativo), Apple Watch, Wear OS
@@ -181,7 +181,7 @@ Regole deterministiche, identiche su watchOS e Wear OS, verificate dai test:
 ## 6. Gestione dei segmenti salute
 
 Alla ripresa il Watch **richiede di nuovo** il proprietario della
-registrazione, con tre opzioni (Padelandia / app esterna / nessuna). Ogni
+registrazione, con tre opzioni (Momentum / app esterna / nessuna). Ogni
 sessione apre un segmento distinto: la ripresa passa `userInitiated: true` alla
 state machine, che è l'unico modo di uscire da uno stato terminale.
 
@@ -204,18 +204,18 @@ configuration.activityType = .tennis        // nessun tipo padel negli SDK
 configuration.locationType  = .unknown
 
 try? await builder.addMetadata([
-    HKMetadataKeyWorkoutBrandName: "Padelandia",
+    HKMetadataKeyWorkoutBrandName: "Momentum",
 ])
 ```
 
 - **`.tennis`**: nessun tipo padel esiste in `HKWorkoutActivityType`
   (verificato sugli header del watchOS 26.5 SDK). `.other` non è più usato.
-- **`HKMetadataKeyWorkoutBrandName = "Padelandia"`**: il tipo atteso è
+- **`HKMetadataKeyWorkoutBrandName = "Momentum"`**: il tipo atteso è
   `NSString`, ed è aggiunto al builder prima della finalizzazione.
 - **`HKMetadataKeyIndoorWorkout`: non impostato.** I campi da padel sono
   indoor o outdoor a seconda del club e l'app non lo sa: dichiararlo sarebbe
   un'informazione inventata. Va aggiunto solo se in futuro l'utente lo indica.
-- **`CFBundleDisplayName`**: già `Padelandia` sia su
+- **`CFBundleDisplayName`**: già `Momentum` sia su
   `wear/watchos/RallyMateWatchApp/Info.plist` sia su `ios/Runner/Info.plist`
   (verificato, nessuna modifica necessaria). HealthKit associa la sorgente al
   nome localizzato dell'app.
@@ -234,7 +234,7 @@ rappresentativo. Serve una verifica manuale su hardware, da fare così:
 3. annotare **come** il sistema presenta tipo, brand e sorgente.
 
 Il risultato realistico, come indicato nel prompt, è una riga tipo
-`Tennis` con `Sorgente: Padelandia`, oppure una presentazione che usa il
+`Tennis` con `Sorgente: Momentum`, oppure una presentazione che usa il
 workout brand. **L'app non può forzare il titolo**: la resa finale è decisa
 dal sistema. Nessuna promessa diversa è stata scritta nella UI.
 
@@ -266,7 +266,7 @@ Copertura della matrice richiesta:
 | Ripresa in una giornata successiva | `testResumeInALaterSessionOpensANewHealthSegment` |
 | Nuova sessione HealthKit sullo stesso match | idem (2 segmenti, id distinti, provider valorizzato) |
 | Workout salvato come `.tennis` | configurazione verificata sugli header SDK; **da confermare su hardware** |
-| Metadato brand `"Padelandia"` | `addMetadata` presente e compilato; **da confermare su hardware** |
+| Metadato brand `"Momentum"` | `addMetadata` presente e compilato; **da confermare su hardware** |
 | Visualizzazione reale nell'app Fitness | **non eseguibile qui** (vedi §8) |
 | Funzionamento equivalente su Wear OS | `ResumableMatchTest` (8 test) + UI e listener allineati |
 

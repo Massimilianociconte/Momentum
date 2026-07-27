@@ -364,7 +364,7 @@ class FriendGroupDetailScreen extends ConsumerWidget {
               onPressed: () => SharePlus.instance.share(
                 ShareParams(
                   text:
-                      'Unisciti al mio gruppo "${group.name}" su Padelandia! '
+                      'Unisciti al mio gruppo "${group.name}" su Momentum! '
                       'Codice invito: ${group.inviteCode}',
                 ),
               ),

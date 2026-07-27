@@ -1,4 +1,4 @@
-# Padelandia — Audit backend Supabase · 2026-07-25
+# Momentum — Audit backend Supabase · 2026-07-25
 
 Progetto collegato via CLI: **`bbxomuvfczdkqcwsjfdm` (RallyMate)**.
 Strumenti usati: `supabase db advisors --linked`, `supabase db lint --linked`,
@@ -17,8 +17,8 @@ verifiche sono passate dalla CLI collegata.)
 | `20260721010000` | flussi invito social completi (push personalizzati, deep link, inviti team mirati) |
 | `20260721120000` | grant di esecuzione su `has_active_entitlement`, `has_cloud_media_access`, `has_duo_access`, `has_pro_access` |
 | `20260721130000` | quota assistant: ignora claim non finalizzati + cleanup |
-| `20260721140000` | rebrand copy push/inviti → Padelandia |
-| `20260721150000` | rebrand knowledge base / FAQ → Padelandia |
+| `20260721140000` | rebrand copy push/inviti → Momentum |
+| `20260721150000` | rebrand knowledge base / FAQ → Momentum |
 
 Effetto pratico: le notifiche push e le copy degli inviti in produzione
 dicevano ancora "RallyMate".

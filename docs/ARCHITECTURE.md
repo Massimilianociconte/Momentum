@@ -1,4 +1,4 @@
-# Architettura Padelandia
+# Architettura Momentum
 
 ## Vista d'insieme
 
@@ -6,7 +6,7 @@
 ┌────────────────┐   WatchConnectivity   ┌─────────────────┐
 │  Apple Watch   │◄─────────────────────►│                 │
 │  SwiftUI       │                       │   App Flutter    │      Supabase
-│  PadelandiaCore │                       │   iOS + Android  │◄────► (solo premium:
+│  RallyMateCore │                       │   iOS + Android  │◄────► (solo premium:
 └────────────────┘                       │                 │       backup, recap,
 ┌────────────────┐    Data Layer API     │  rally_core     │       assistant, coach)
 │  Galaxy/WearOS │◄─────────────────────►│  Drift (SQLite) │
@@ -37,20 +37,22 @@ connessione").
 
 **Tre port, un contratto**: Dart (`packages/rally_core`), Kotlin
 (`wear/wearos/.../ScoringEngine.kt`), Swift
-(`wear/watchos/PadelandiaCore`). Stessa semantica, stesso JSON, stessa
-suite di test (golden point, vantaggi, TB 7-6 con 2 di scarto, super TB,
+(`wear/watchos/RallyMateCore`). Stessa semantica, stesso JSON, stessa
+suite di test (Star Point FIP 2026, golden point, vantaggi, TB 7-6 con 2 di scarto, super TB,
 rotazione servizio 1-2-2 nel TB, cambio campo ogni 6 punti nel TB e nei
 game dispari, free play, undo, round-trip JSON). Qualunque modifica alle
 regole va replicata nei tre engine **e nei tre test**.
 
 ## 2. Regole padel implementate
 
-- Punteggio 0/15/30/40; sul 40-40 **golden point** (default FIP) o
-  vantaggi secondo formato.
+- Punteggio 0/15/30/40; sul 40-40 il formato seleziona **Star Point FIP
+  2026**, golden point oppure vantaggi. Nello Star Point il terzo deuce,
+  raggiunto dopo due vantaggi annullati, introduce il punto decisivo.
 - Set a 6 game con 2 di scarto; 6-6 → tie-break a 7 (2 di scarto),
   registrato 7-6 con punteggio TB conservato.
-- Formati: golden BO3, vantaggi BO3, super tie-break a 10 al posto del 3°
-  set, set secco, allenamento libero (solo conteggio punti), custom.
+- Formati: Star Point BO3, golden BO3, vantaggi BO3, super tie-break a 10 al
+  posto del 3° set, set secco, allenamento libero (solo conteggio punti),
+  custom.
 - Servizio: alternanza per game; nel TB 1-2-2-2 con derivazione del
   battitore corrente; il set successivo riparte dal team che non ha
   servito per primo nel TB.
@@ -111,7 +113,7 @@ telefono e sincronizzare dopo.
   Monkey C. Il contratto eventi comune vive in
   `wear/shared/watch_module_protocol.md`; la sync usa i Connect IQ Mobile SDK
   ufficiali iOS/Android, poi il gateway autenticato e idempotente. Un match
-  avviato da Padelandia possiede una sessione FIT Padel/Tennis; attività Garmin
+  avviato da Momentum possiede una sessione FIT Padel/Tennis; attività Garmin
   esterne restano intatte e forzano il solo scoring.
 - **Fitbit OS**: modulo nativo `wear/fitbit-os`, con binari distinti OS 4/5,
   scoring offline, companion, pairing monouso e comandi server durevoli. È un
@@ -159,6 +161,10 @@ team. Principi:
   premium è la RLS (`has_duo_access`: piano Plus+, `premium_override`
   tester o admin). Chi entra col codice può essere anche Free: paga chi
   crea la sessione.
+- **Version negotiation**: Star Point richiede format schema 2 su entrambi i
+  telefoni. Le RPC Duo correnti non espongono ancora l'handshake; di conseguenza
+  l'app e un trigger server rifiutano Star Point prima della creazione/mutazione
+  della sessione. Golden point e vantaggi conservano il flusso esistente.
 - **Prospettiva storico**: timeline canonica A/B; il guest è TEAM_B e il
   suo summary locale viene specchiato ("noi/loro" corretto per entrambi).
 

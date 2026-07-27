@@ -1,4 +1,4 @@
-/// Padelandia design system — dark premium, palette "campo da padel di notte".
+/// Momentum design system — dark premium, palette "campo da padel di notte".
 ///
 /// Principi: superfici profonde con bordi luce, accento lime (palla) usato
 /// con parsimonia, gradienti campo-blu per i momenti hero, glow morbidi al

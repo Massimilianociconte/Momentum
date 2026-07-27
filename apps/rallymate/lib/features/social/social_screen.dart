@@ -270,7 +270,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                 message: auth.signedIn
                     ? 'Prova filtri diversi oppure rendi visibile il profilo '
                           'per partecipare al matchmaking.'
-                    : 'Accedi gratis per cercare profili reali. Padelandia non '
+                    : 'Accedi gratis per cercare profili reali. Momentum non '
                           'mostra giocatori simulati.',
                 primaryLabel: 'Reset filtri',
                 primaryIcon: Icons.refresh,
@@ -302,7 +302,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                         .read(socialServiceProvider)
                         .proposeMatch(
                           entry.player.userId,
-                          message: 'Ti va una partita? (via Padelandia)',
+                          message: 'Ti va una partita? (via Momentum)',
                           levelHint: badgeForScore(myScore),
                         ),
                     okMessage:
@@ -370,7 +370,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                 .read(socialServiceProvider)
                 .proposeMatch(
                   player.userId,
-                  message: 'Ti va una partita? (via Padelandia)',
+                  message: 'Ti va una partita? (via Momentum)',
                 ),
             okMessage: 'Proposta partita inviata.',
           );

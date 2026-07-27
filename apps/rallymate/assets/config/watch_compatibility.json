@@ -26,7 +26,7 @@
       "models": ["Series 4 and later", "Apple Watch SE", "Apple Watch Ultra"],
       "companionApp": "Apple Watch",
       "features": ["scoring", "duo", "offline", "haptics", "voice", "workout", "alwaysOn"],
-      "limitations": ["Requires the Padelandia watch app installed from the paired iPhone"],
+      "limitations": ["Requires the Momentum watch app installed from the paired iPhone"],
       "source": "https://support.apple.com/en-gb/118490"
     },
     {
@@ -159,7 +159,7 @@
       "models": ["Venu 3", "vívoactive 5", "Forerunner 965", "epix (Gen 2)", "fēnix 7", "fēnix 8 47 mm"],
       "companionApp": "Garmin Connect",
       "features": ["scoring", "offline", "haptics", "buttons", "touch", "duo"],
-      "limitations": ["The Padelandia Connect IQ listing must be approved before one-tap store installation is available", "Exact support is limited to products exported and tested with the Connect IQ SDK"],
+      "limitations": ["The Momentum Connect IQ listing must be approved before one-tap store installation is available", "Exact support is limited to products exported and tested with the Connect IQ SDK"],
       "source": "https://developer.garmin.com/connect-iq/core-topics/mobile-sdk-for-ios/"
     },
     {
@@ -201,7 +201,7 @@
       "models": ["Fitbit Air", "Fitbit and Pixel devices exposed by Google Health API"],
       "companionApp": "Fitbit",
       "features": ["healthSync", "dailySummary"],
-      "limitations": ["Fitbit Air has no display, so it cannot host Padelandia scoring UI", "Health access is read-only, opt-in and available only to Pro users"],
+      "limitations": ["Fitbit Air has no display, so it cannot host Momentum scoring UI", "Health access is read-only, opt-in and available only to Pro users"],
       "source": "https://developers.google.com/health"
     },
     {
@@ -220,7 +220,7 @@
       "models": ["Galaxy Watch", "Galaxy Watch Active", "Galaxy Watch Active2", "Galaxy Watch3", "Gear S3", "Gear Sport"],
       "companionApp": "Galaxy Wearable",
       "features": [],
-      "limitations": ["Samsung no longer accepts new or updated Tizen watch apps", "Padelandia cannot lawfully publish a new Tizen companion; use a Wear OS Galaxy Watch for native scoring"],
+      "limitations": ["Samsung no longer accepts new or updated Tizen watch apps", "Momentum cannot lawfully publish a new Tizen companion; use a Wear OS Galaxy Watch for native scoring"],
       "source": "https://developer.samsung.com/galaxy-watch-tizen/notice.html"
     }
   ]

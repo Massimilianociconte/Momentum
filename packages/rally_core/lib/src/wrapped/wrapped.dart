@@ -5,6 +5,57 @@ library;
 import '../analytics/aggregate_stats.dart';
 import '../analytics/match_stats.dart';
 import '../model/enums.dart';
+import '../model/score_state.dart';
+
+/// One set as it must appear on a shareable scoreboard, already oriented to
+/// the sharer's team.
+class WrappedSetScore {
+  const WrappedSetScore({
+    required this.us,
+    required this.them,
+    this.tieBreakUs,
+    this.tieBreakThem,
+    this.isSuperTieBreak = false,
+  });
+
+  final int us;
+  final int them;
+
+  /// Tie-break detail, shown as a superscript next to the games.
+  final int? tieBreakUs;
+  final int? tieBreakThem;
+  final bool isSuperTieBreak;
+
+  bool get wonByUs => us > them;
+
+  /// Losing side's tie-break points: the number a scoreboard prints small,
+  /// e.g. 7-6⁵.
+  int? get tieBreakLoserPoints {
+    final a = tieBreakUs;
+    final b = tieBreakThem;
+    if (a == null || b == null) return null;
+    return a < b ? a : b;
+  }
+}
+
+/// A statistic the card is allowed to print.
+///
+/// Only built when the metric has a real sample, so a card never shows a
+/// fabricated `0%` for something that was never played (no break point faced,
+/// no tie-break, a match scored without serve tracking…).
+class WrappedStat {
+  const WrappedStat({
+    required this.label,
+    required this.value,
+    this.detail,
+  });
+
+  final String label;
+  final String value;
+
+  /// Sample behind the value, e.g. "3/5". Null when the value is self-evident.
+  final String? detail;
+}
 
 class MatchWrappedData {
   const MatchWrappedData({
@@ -19,6 +70,15 @@ class MatchWrappedData {
     required this.rolePlayed,
     required this.statisticalMvp,
     required this.headline,
+    this.won = false,
+    this.sets = const [],
+    this.pointsWon = 0,
+    this.pointsLost = 0,
+    this.momentum = const [],
+    this.stats = const [],
+    this.formatLabel,
+    this.playedAt,
+    this.freePlay = false,
   });
 
   final String resultLine;
@@ -37,6 +97,31 @@ class MatchWrappedData {
   /// Frase dinamica, e.g. "Hai vinto una battaglia da 143 punti."
   final String headline;
 
+  final bool won;
+
+  /// Set giocati, già orientati sulla prospettiva di chi condivide.
+  final List<WrappedSetScore> sets;
+
+  final int pointsWon;
+  final int pointsLost;
+
+  /// Differenziale punti cumulato dalla nostra prospettiva, punto per punto.
+  /// È la serie reale usata per disegnare la curva di momentum.
+  final List<int> momentum;
+
+  /// Metriche con campione reale, già pronte da stampare.
+  final List<WrappedStat> stats;
+
+  final String? formatLabel;
+  final DateTime? playedAt;
+  final bool freePlay;
+
+  /// Quota di punti vinti sul totale, 0–1. Null se non ci sono punti.
+  double? get pointShare {
+    final total = pointsWon + pointsLost;
+    return total == 0 ? null : pointsWon / total;
+  }
+
   static MatchWrappedData build({
     required MatchStats stats,
     required TeamId ourTeam,
@@ -45,8 +130,13 @@ class MatchWrappedData {
     required String teamLabel,
     required OpponentDifficulty difficulty,
     required PadelRole role,
+    List<SetResult> completedSets = const [],
+    String? formatLabel,
+    DateTime? playedAt,
+    bool freePlay = false,
   }) {
     final us = stats.forTeam(ourTeam);
+    final mirror = ourTeam == TeamId.b;
     final headline = _headline(
       won: won,
       totalPoints: stats.totalPoints,
@@ -67,7 +157,85 @@ class MatchWrappedData {
       rolePlayed: role,
       statisticalMvp: _mvpMetric(us),
       headline: headline,
+      won: won,
+      sets: [
+        for (final set in completedSets)
+          WrappedSetScore(
+            us: mirror ? set.gamesB : set.gamesA,
+            them: mirror ? set.gamesA : set.gamesB,
+            tieBreakUs: mirror ? set.tieBreakB : set.tieBreakA,
+            tieBreakThem: mirror ? set.tieBreakA : set.tieBreakB,
+            isSuperTieBreak: set.isSuperTieBreak,
+          ),
+      ],
+      pointsWon: us.pointsWon,
+      pointsLost: us.pointsLost,
+      // MomentumPoint.diff is always A-minus-B: flip it for team B so the
+      // curve rises when the sharer is ahead.
+      momentum: [
+        for (final point in stats.momentum) mirror ? -point.diff : point.diff,
+      ],
+      stats: _realStats(us),
+      formatLabel: formatLabel,
+      playedAt: playedAt,
+      freePlay: freePlay,
     );
+  }
+
+  /// Metrics with an actual sample behind them, strongest first.
+  ///
+  /// A metric with zero trials is omitted rather than printed as `0%`: the
+  /// card must never suggest a failure that never had the chance to happen.
+  static List<WrappedStat> _realStats(TeamMatchStats us) {
+    String pct(double rate) => '${(rate * 100).round()}%';
+    final entries = <(WrappedStat, double)>[
+      if (us.breakPointsPlayed > 0)
+        (
+          WrappedStat(
+            label: 'Break point',
+            value: pct(us.breakPointsConverted / us.breakPointsPlayed),
+            detail: '${us.breakPointsConverted}/${us.breakPointsPlayed}',
+          ),
+          us.breakPointsConverted / us.breakPointsPlayed,
+        ),
+      if (us.pointsPlayedOnServe > 0)
+        (
+          WrappedStat(
+            label: 'Al servizio',
+            value: pct(us.serveHoldRate),
+            detail: '${us.pointsWonOnServe}/${us.pointsPlayedOnServe}',
+          ),
+          us.serveHoldRate,
+        ),
+      if (us.decisivePointsPlayed > 0)
+        (
+          WrappedStat(
+            label: 'Punti decisivi',
+            value: pct(us.decisiveRate),
+            detail: '${us.decisivePointsWon}/${us.decisivePointsPlayed}',
+          ),
+          us.decisiveRate,
+        ),
+      if (us.tieBreakPointsPlayed > 0)
+        (
+          WrappedStat(
+            label: 'Tie-break',
+            value: pct(us.tieBreakRate),
+            detail: '${us.tieBreakPointsWon}/${us.tieBreakPointsPlayed}',
+          ),
+          us.tieBreakRate,
+        ),
+      if (us.gamePointsSaved > 0)
+        (
+          WrappedStat(
+            label: 'Game point annullati',
+            value: '${us.gamePointsSaved}',
+          ),
+          1,
+        ),
+    ];
+    entries.sort((a, b) => b.$2.compareTo(a.$2));
+    return [for (final entry in entries) entry.$1];
   }
 
   static String _mvpMetric(TeamMatchStats us) {

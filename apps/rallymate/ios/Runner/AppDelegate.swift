@@ -107,7 +107,7 @@ private final class RallyMateNotificationBridge: NSObject, UNUserNotificationCen
   private func configureCategories() {
     let openAction = UNNotificationAction(
       identifier: Self.openActionIdentifier,
-      title: "Apri Padelandia",
+      title: "Apri Momentum",
       options: [.foreground]
     )
     center.setNotificationCategories(Set(

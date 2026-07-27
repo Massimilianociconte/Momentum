@@ -312,6 +312,12 @@ void main() {
       expect(r.first.score, greaterThan(RulesSearch.minConfidence));
     });
 
+    test('finds official Star Point rule', () {
+      final r = search.search('come funziona lo Star Point alla parità 3?');
+      expect(r.first.entry.id, 'star_point');
+      expect(r.first.score, greaterThan(RulesSearch.minConfidence));
+    });
+
     test('finds let rule', () {
       final r = search.search('quando è let?');
       expect(r.map((x) => x.entry.id), contains('serve_let'));

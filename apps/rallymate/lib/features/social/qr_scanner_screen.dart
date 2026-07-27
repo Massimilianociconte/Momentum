@@ -71,7 +71,7 @@ class _InviteQrScannerScreenState extends State<InviteQrScannerScreen>
     if (secret == null || secret.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('QR Padelandia non valido.')));
+      ).showSnackBar(const SnackBar(content: Text('QR Momentum non valido.')));
       return;
     }
     _handled = true;
@@ -137,7 +137,7 @@ class _InviteQrScannerScreenState extends State<InviteQrScannerScreen>
                   right: 24,
                   bottom: 26,
                   child: Text(
-                    'Inquadra un QR Padelandia. Nessuna immagine viene salvata.',
+                    'Inquadra un QR Momentum. Nessuna immagine viene salvata.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,

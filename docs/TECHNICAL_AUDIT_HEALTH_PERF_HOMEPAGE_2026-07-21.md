@@ -1,4 +1,4 @@
-# Padelandia — Audit tecnico completo (salute, batteria, Android jank, homepage)
+# Momentum — Audit tecnico completo (salute, batteria, Android jank, homepage)
 
 **Data:** 2026-07-21  
 **Ambito:** HealthKit / Health Connect / companion watch, privacy store, batteria, frame lag Android, redesign homepage  
@@ -31,14 +31,14 @@
 Scoring companion (Watch / Wear / Garmin)
         │  (match timeline locale, event-sourced)
         ▼
-Phone Padelandia (Drift SQLite, local-first)
+Phone Momentum (Drift SQLite, local-first)
         │
         ├─ HealthKit / Health Connect  ──► read aggregates (no workout write)
         ├─ BLE HRS                      ──► live HR, fingerprint only
         └─ Cloud OAuth (Premium, opt-in) ──► bounded aggregates, AES-GCM tokens
 
 Post-match: MatchHealthSyncService → association policy → match_health_summaries
-Dedup policy: HealthDeduplicationPolicy (unit-tested; preferred Padelandia > hub mirror)
+Dedup policy: HealthDeduplicationPolicy (unit-tested; preferred Momentum > hub mirror)
 ```
 
 Documentazione preesistente ancora valida:
@@ -51,7 +51,7 @@ Documentazione preesistente ancora valida:
 
 | Tipo sessione | Come si distingue | Comportamento |
 |---|---|---|
-| **App-started** | Padelandia apre `HKWorkoutSession` / ExerciseClient | Metriche live proprie; fine chiude solo la propria sessione |
+| **App-started** | Momentum apre `HKWorkoutSession` / ExerciseClient | Metriche live proprie; fine chiude solo la propria sessione |
 | **Rilevata in corso (esterna)** | watchOS: sample esterni + `HKError.errorAnotherWorkoutSessionStarted`; Wear: `OTHER_APP_IN_PROGRESS` | **Osservazione passiva** / non-end exercise — **non interrompe** |
 | **Crash recovery** | `recoverActiveWorkoutSession` (watch) / owned exercise reattach (Wear) | Riaggancio senza doppio start |
 | **Import post-match** | Phone `readSummary` + association policy | HIGH solo con evidenza reale; soft metrics → MEDIUM `window_metrics_only` |
@@ -167,7 +167,7 @@ Residuo: picchi cold-start; non zero su ogni transizione di schermata non profil
 | `match_health_sync.dart` | **Rimosso** candidate sintetico padel preferred; HIGH solo automatic policy; soft metrics → `MEDIUM` / `window_metrics_only` |
 | `health_repository.dart` | Delete provider **azzera** colonne biometriche match summary (`CLEARED`) |
 | `HealthKitBridge.swift` | Status `not_determined` se mai richiesto; commenti onesti su revoke |
-| `WorkoutSessionManager.swift` | Try/catch `errorAnotherWorkoutSessionStarted`; detection multi-sample non-Padelandia; energy su finestra sessione; background delivery **hourly** + **disable** on stop |
+| `WorkoutSessionManager.swift` | Try/catch `errorAnotherWorkoutSessionStarted`; detection multi-sample non-Momentum; energy su finestra sessione; background delivery **hourly** + **disable** on stop |
 | `test/match_health_association_test.dart` | Regression: empty workouts non auto-HIGH |
 
 ### 5.3 Batteria
@@ -187,7 +187,7 @@ Residuo: picchi cold-start; non zero su ogni transizione di schermata non profil
 - Collegamento e request permessi platform-specific.  
 - Phone **non scrive** workout → non ruba sessioni OS.  
 - Finestra giornaliera = mezzanotte civile locale (test).  
-- Dedup Padelandia > mirror hub (test).  
+- Dedup Momentum > mirror hub (test).  
 - Association ID forte / temporal / reject (test).  
 - Wear OS non termina exercise di altre app.  
 - Watch hybrid: recovery + passive + owned.  
@@ -211,7 +211,7 @@ Residuo: picchi cold-start; non zero su ogni transizione di schermata non profil
 | P1 | iOS `granted` sticky dopo request (limite Apple read API) | Empty read = denial operativo |
 | P2 | Ownership enum non centralizzato nel dominio Dart | Branch per piattaforma |
 | P2 | Confirm UI per `askUser` association | MEDIUM silente se confidence ≥ 0.75 |
-| — | E2E hardware Fitness+Padelandia Watch non rieseguito qui | Richiede device watch fisico |
+| — | E2E hardware Fitness+Momentum Watch non rieseguito qui | Richiede device watch fisico |
 
 ---
 

@@ -112,7 +112,7 @@ class WearAssistantClient(
     ): WearAssistantReply = withContext(Dispatchers.IO) {
         val credential = credentials.load()
             ?: return@withContext WearAssistantReply(
-                error = "Apri Padelandia sul telefono per attivare Pallino.",
+                error = "Apri Momentum sul telefono per attivare Pallino.",
             )
         val trimmed = question.trim().take(800)
         if (trimmed.isEmpty()) return@withContext WearAssistantReply(error = "Domanda vuota.")

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Padelandia</string>
+	<string>Momentum</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -21,9 +21,9 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Padelandia legge battito e calorie durante la partita per mostrarti metriche live sul polso.</string>
+	<string>Momentum legge battito e calorie durante la partita per mostrarti metriche live sul polso.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Padelandia salva la sessione della partita in Apple Salute solo con il tuo consenso.</string>
+	<string>Momentum salva la sessione della partita in Apple Salute solo con il tuo consenso.</string>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKBackgroundModes</key>

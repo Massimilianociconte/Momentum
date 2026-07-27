@@ -202,12 +202,15 @@ void main() {
         names.where((name) => name == 'duo_last_sync_at_ms'),
         hasLength(1),
       );
+      // Schema 12 adds first_server through the same idempotent path, so a
+      // device that already has the column is not a duplicate-column error.
+      expect(names.where((name) => name == 'first_server'), hasLength(1));
       expect(
         await db
             .customSelect('PRAGMA user_version')
             .getSingle()
             .then((row) => row.read<int>('user_version')),
-        11,
+        12,
       );
     },
   );

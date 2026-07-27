@@ -18,7 +18,7 @@
 
     <application
         android:icon="@drawable/ic_rally_launcher"
-        android:label="Padelandia"
+        android:label="Momentum"
         android:roundIcon="@drawable/ic_rally_launcher"
         android:theme="@android:style/Theme.DeviceDefault">
 
@@ -63,7 +63,7 @@
 
         <!-- Health Services binds explicitly after the user opts in. The
              service receives low-frequency user-activity transitions; it does
-             not poll sensors or keep Padelandia alive continuously. -->
+             not poll sensors or keep Momentum alive continuously. -->
         <service
             android:name=".RacketWorkoutDetectionService"
             android:exported="true"

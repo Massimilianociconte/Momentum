@@ -1,10 +1,10 @@
-# Padelandia Wearable Implementation Report
+# Momentum Wearable Implementation Report
 
 Date: 12 July 2026
 
 ## Executive Result
 
-Padelandia now has separate, native and testable implementations for Apple
+Momentum now has separate, native and testable implementations for Apple
 Watch, Wear OS, Garmin Connect IQ and Fitbit OS, plus a server-side Google
 Health integration for Fitbit Air and other screenless health sources.
 
@@ -49,7 +49,7 @@ Verified:
   session was locked. The previous UI had been inspected, but that receipt is
   deliberately not reused for the redesigned screen.
 - Pixel 10 Pro ADB bridge: SDK ready in TETHERED mode, simulator CONNECTED,
-  Padelandia app registered and PING accepted with transport status SUCCESS.
+  Momentum app registered and PING accepted with transport status SUCCESS.
 - Final Android debug APK installed successfully on the USB-connected Pixel 10
   Pro. Garmin Connect and Connect IQ were present and authenticated; no physical
   Garmin watch was paired, so hardware PING/PONG acceptance remains pending.
@@ -160,7 +160,7 @@ The app provides a real onboarding state with:
 Verified on 12 July 2026:
 
 - Signed iPhone device bundle passed strict nested code-signature validation.
-- `Runner.app` embeds `PadelandiaWatchApp.app` in its `Watch` directory.
+- `Runner.app` embeds `RallyMateWatchApp.app` in its `Watch` directory.
 - The phone bundle is `com.rallymate.rallymate`; the watch bundle is
   `com.rallymate.rallymate.watchkitapp`; `WKCompanionAppBundleIdentifier`
   correctly points back to the phone bundle.
@@ -250,7 +250,7 @@ Remote state was verified on 12 July 2026:
 - wearable token encryption and rate-limit secrets are configured;
 - `delete-account` GET returns HTTP 200, while the shared Supabase domain
   intentionally forces HTML to `text/plain`. Publish the legal/deletion pages
-  on the Padelandia site or a Supabase custom domain.
+  on the Momentum site or a Supabase custom domain.
 - `assistant` version 12 uses the official `deepseek-v4-flash` model name and
   its privacy knowledge now matches the implemented local HealthKit/Health
   Connect and optional 30-day Google Health aggregate flows.

@@ -86,6 +86,6 @@ void main() {
     expect(service, isNot(contains('override fun onNewToken')));
     expect(bridge, contains('.addAction('));
     expect(iosDelegate, contains('center.setNotificationCategories'));
-    expect(iosDelegate, contains('title: "Apri Padelandia"'));
+    expect(iosDelegate, contains('title: "Apri Momentum"'));
   });
 }

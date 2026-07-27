@@ -59,6 +59,7 @@ class _RulesAssistantSheetState extends ConsumerState<RulesAssistantSheet> {
   static const _suggestions = [
     'Quando è let?',
     'Quando si cambia campo?',
+    'Come funziona lo Star Point?',
     'Come funziona il golden point?',
     'Posso colpire oltre la rete?',
     'La palla può toccare la griglia?',
@@ -206,7 +207,10 @@ class _RulesAssistantSheetState extends ConsumerState<RulesAssistantSheet> {
           Card(
             color: RallyColors.court.withValues(alpha: 0.30),
             child: ListTile(
-              leading: const Icon(Icons.cloud_off_outlined, color: Colors.white54),
+              leading: const Icon(
+                Icons.cloud_off_outlined,
+                color: Colors.white54,
+              ),
               title: Text(
                 '${AppBrand.assistantName} offline',
                 style: const TextStyle(fontWeight: FontWeight.w700),
@@ -237,8 +241,10 @@ class _RulesAssistantSheetState extends ConsumerState<RulesAssistantSheet> {
           ),
         const SizedBox(height: 8),
         const Text(
-          'Le risposte gratuite provengono da un database locale basato '
-          'sulle FIP Rules of Padel. Nessuna risposta è inventata.',
+          'Le risposte gratuite provengono da un database locale curato a '
+          'mano sul $padelRulesEdition: ogni voce cita fonte e numero di '
+          'regola. Non sono generate da un modello, ma non sostituiscono il '
+          'regolamento ufficiale né la decisione del giudice di gara.',
           style: TextStyle(fontSize: 11.5, color: Colors.white38),
         ),
       ],
@@ -294,7 +300,7 @@ class _RulesAssistantSheetState extends ConsumerState<RulesAssistantSheet> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Fonte: ${e.source}',
+                    'Fonte: ${e.citation}',
                     style: const TextStyle(
                       fontSize: 11.5,
                       color: Colors.white38,

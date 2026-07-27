@@ -49,6 +49,7 @@ import 'services/cloud/push_registration_service.dart';
 import 'services/cloud/social_service.dart';
 import 'services/cloud/team_cloud_service.dart';
 import 'services/watch_sync.dart';
+import 'services/health_connect.dart';
 import 'services/profile_image_service.dart';
 import 'services/match_health_sync.dart';
 import 'services/notifications.dart';
@@ -294,6 +295,7 @@ class _RallyMateAppState extends ConsumerState<RallyMateApp>
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
   StreamSubscription<Uri>? _notificationLinkSubscription;
+  StreamSubscription<void>? _healthRationaleSubscription;
   StreamSubscription<RemotePushToken>? _remotePushTokenSubscription;
   StreamSubscription<MethodCall>? _providerEventSubscription;
   Timer? _wearableSyncTimer;
@@ -328,6 +330,7 @@ class _RallyMateAppState extends ConsumerState<RallyMateApp>
   void dispose() {
     _linkSubscription?.cancel();
     _notificationLinkSubscription?.cancel();
+    _healthRationaleSubscription?.cancel();
     _remotePushTokenSubscription?.cancel();
     _providerEventSubscription?.cancel();
     _wearableSyncTimer?.cancel();
@@ -554,6 +557,15 @@ class _RallyMateAppState extends ConsumerState<RallyMateApp>
     if (initialNotification != null && mounted) {
       _handleIncomingLink(initialNotification);
     }
+    // Health Connect rationale (foglio permessi → "privacy policy"): mostra
+    // la schermata Privacy e dati sia a freddo sia ad app già aperta.
+    final healthConnect = ref.read(healthConnectServiceProvider);
+    _healthRationaleSubscription ??= healthConnect.rationaleRequests.listen(
+      (_) => unawaited(_navigateRespectingOnboarding('/privacy')),
+    );
+    if (await healthConnect.consumeRationaleRequest() && mounted) {
+      unawaited(_navigateRespectingOnboarding('/privacy'));
+    }
     unawaited(ref.read(pushRegistrationServiceProvider).sync(force: true));
     final wearableProviders = ref.read(wearableProviderServiceProvider);
     _providerEventSubscription ??= wearableProviders.nativeEvents.listen((
@@ -707,7 +719,7 @@ class _RallyMateAppState extends ConsumerState<RallyMateApp>
       }
     });
     return MaterialApp.router(
-      title: 'Padelandia',
+      title: 'Momentum',
       debugShowCheckedModeBanner: false,
       theme: _theme,
       routerConfig: ref.watch(routerProvider),

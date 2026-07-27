@@ -3,6 +3,17 @@
 /// source (FIP Rules of Padel / Regolamento FIP-CONI).
 library;
 
+/// Edition of the rulebook the local dataset is aligned to.
+///
+/// Bump this whenever [padelRules] is re-checked against a new FIP release:
+/// it is shown next to every answer, seeded into the cloud knowledge base and
+/// used as the assistant cache version.
+const String padelRulesVersion = '2026.1';
+
+/// Human-readable label for [padelRulesVersion].
+const String padelRulesEdition =
+    'FIP Rules of Padel — revisione di applicazione 01.01.2026';
+
 class RuleEntry {
   const RuleEntry({
     required this.id,
@@ -10,6 +21,7 @@ class RuleEntry {
     required this.answer,
     required this.keywords,
     required this.source,
+    this.ruleRef,
     this.example,
   });
 
@@ -20,7 +32,19 @@ class RuleEntry {
 
   /// Official source citation, e.g. "FIP Rules of Padel — Regola 12".
   final String source;
+
+  /// Exact rule reference inside [source], e.g. 'Regola 14.1(b)'. Null only
+  /// for entries that describe practice rather than a codified rule.
+  final String? ruleRef;
   final String? example;
+
+  /// Citation shown under an answer: source, rule reference and edition.
+  String get citation {
+    final ref = ruleRef;
+    return ref == null
+        ? '$source ($padelRulesEdition)'
+        : '$source, $ref ($padelRulesEdition)';
+  }
 }
 
 class RuleSearchResult {

@@ -1,7 +1,8 @@
-/// Padelandia Wrapped (PRD Modulo G): card partita condivisibile come immagine.
-/// Free: card base con watermark. Plus: illimitato + link pubblico.
+/// Momentum Wrapped (PRD Modulo G): card partita condivisibile come immagine.
+/// Free: card con firma discreta. Plus: illimitato + link pubblico.
 library;
 
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -13,11 +14,17 @@ import 'package:rally_core/rally_core.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/providers.dart';
+import '../../data/db/database.dart';
 import '../../core/theme.dart';
 import '../../domain/entitlements.dart';
 import '../../services/cloud/cloud_config.dart';
 import '../../services/cloud/cloud_service.dart';
 import '../match_detail/match_detail_screen.dart';
+import 'wrapped_poster.dart';
+
+/// Larghezza in pixel dell'immagine esportata: 1080 è la larghezza nativa di
+/// un post Instagram, quindi 1080x1350 (feed) e 1080x1920 (story).
+const _exportWidthPx = 1080.0;
 
 class WrappedScreen extends ConsumerStatefulWidget {
   const WrappedScreen({super.key, required this.matchId});
@@ -30,6 +37,15 @@ class WrappedScreen extends ConsumerStatefulWidget {
 class _WrappedScreenState extends ConsumerState<WrappedScreen> {
   final _cardKey = GlobalKey();
   bool _sharing = false;
+  WrappedPosterFormat _format = WrappedPosterFormat.post;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Il logo è un asset: se non è ancora decodificato quando si cattura il
+    // RepaintBoundary, l'immagine condivisa esce senza marchio.
+    unawaited(precacheImage(const AssetImage(wrappedLogoAsset), context));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,61 +53,63 @@ class _WrappedScreenState extends ConsumerState<WrappedScreen> {
     final ents = ref.watch(entitlementsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Padelandia Wrapped')),
+      appBar: AppBar(title: const Text('Momentum Wrapped')),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Errore: $e')),
         data: (d) {
-          final s = d.engine.state;
-          // Duo Mode: la timeline è canonica (A/B), la card è sempre nella
-          // prospettiva del team assegnato a questo device.
-          final myTeam = d.row.duoMode && d.row.duoTeam != null
-              ? TeamId.fromWire(d.row.duoTeam!)
-              : TeamId.a;
-          final mirror = myTeam == TeamId.b;
-          final won = s.winner == myTeam;
-          final resultLine = s.completedSets.isEmpty
-              ? (mirror
-                    ? '${s.freePlayB}-${s.freePlayA}'
-                    : '${s.freePlayA}-${s.freePlayB}')
-              : s.completedSets
-                    .map(
-                      (x) => x.isSuperTieBreak
-                          ? (mirror
-                                ? '${x.tieBreakB}-${x.tieBreakA}'
-                                : '${x.tieBreakA}-${x.tieBreakB}')
-                          : (mirror
-                                ? '${x.gamesB}-${x.gamesA}'
-                                : '${x.gamesA}-${x.gamesB}'),
-                    )
-                    .join(' ');
-          final card = MatchWrappedData.build(
-            stats: d.stats,
-            ourTeam: myTeam,
-            won: won,
-            resultLine: resultLine,
-            teamLabel: d.row.opponentLabel.isEmpty
-                ? 'Padelandia match'
-                : 'vs ${d.row.opponentLabel}',
-            difficulty: OpponentDifficulty.fromScore(d.row.opponentDifficulty),
-            role: PadelRole.fromWire(d.row.myRole),
-          );
+          final card = _buildCard(d);
+          final media = MediaQuery.of(context);
+          // La story è alta: si limita l'altezza dell'anteprima così resta
+          // tutta visibile senza scroll dentro la card.
+          final previewMaxHeight = media.size.height * 0.62;
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              RepaintBoundary(
-                key: _cardKey,
-                child: _WrappedCard(card: card, won: won),
+              _FormatSwitcher(
+                value: _format,
+                onChanged: _sharing
+                    ? null
+                    : (value) => setState(() => _format = value),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: previewMaxHeight),
+                  child: RepaintBoundary(
+                    key: _cardKey,
+                    child: WrappedPoster(
+                      card: card,
+                      format: _format,
+                      showWatermark: !ents.unlimitedWrapped,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
               FilledButton.icon(
                 onPressed: _sharing ? null : () => _share(card),
                 icon: const Icon(Icons.ios_share),
-                label: Text(_sharing ? 'Preparo…' : 'Condividi immagine'),
+                label: Text(
+                  _sharing ? 'Preparo…' : 'Condividi ${_format.label}',
+                ),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                ),
               ),
               const SizedBox(height: 8),
-              if (ents.unlimitedWrapped && CloudConfig.supabaseConfigured)
+              OutlinedButton.icon(
+                onPressed: _sharing ? null : () => _copyCaption(card),
+                icon: const Icon(Icons.short_text),
+                label: const Text('Copia didascalia'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              if (ents.unlimitedWrapped && CloudConfig.supabaseConfigured) ...[
+                const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _sharing ? null : () => _publishLink(card),
                   icon: const Icon(Icons.link),
@@ -101,14 +119,19 @@ class _WrappedScreenState extends ConsumerState<WrappedScreen> {
                     foregroundColor: Colors.white,
                   ),
                 ),
-              const SizedBox(height: 8),
-              if (!ents.unlimitedWrapped)
-                const Text(
-                  'Piano Free: card con watermark. Con Plus ottieni card '
-                  'illimitate e link pubblici.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.white38),
-                ),
+              ],
+              const SizedBox(height: 14),
+              Text(
+                ents.unlimitedWrapped
+                    ? 'Immagine esportata a ${_exportWidthPx.toInt()} px di '
+                          'larghezza: nessuna compressione visibile su '
+                          'Instagram.'
+                    : 'Piano Free: una card a settimana, con firma Momentum. '
+                          'Con Plus card illimitate, senza firma, e link '
+                          'pubblico.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: Colors.white38),
+              ),
             ],
           );
         },
@@ -116,7 +139,79 @@ class _WrappedScreenState extends ConsumerState<WrappedScreen> {
     );
   }
 
-  /// Link pubblico Padelandia Wrapped (PRD G5): pagina /recap + deep link.
+  MatchWrappedData _buildCard(
+    ({
+      MatchRow row,
+      PadelScoringEngine engine,
+      MatchStats stats,
+      AdvancedMatchAnalysis advanced,
+    })
+    d,
+  ) {
+    final s = d.engine.state;
+    // Duo Mode: la timeline è canonica (A/B), la card è sempre nella
+    // prospettiva del team assegnato a questo device.
+    final myTeam = d.row.duoMode && d.row.duoTeam != null
+        ? TeamId.fromWire(d.row.duoTeam!)
+        : TeamId.a;
+    final mirror = myTeam == TeamId.b;
+    final won = s.winner == myTeam;
+    final resultLine = s.completedSets.isEmpty
+        ? (mirror
+              ? '${s.freePlayB}-${s.freePlayA}'
+              : '${s.freePlayA}-${s.freePlayB}')
+        : s.completedSets
+              .map(
+                (x) => x.isSuperTieBreak
+                    ? (mirror
+                          ? '${x.tieBreakB}-${x.tieBreakA}'
+                          : '${x.tieBreakA}-${x.tieBreakB}')
+                    : (mirror
+                          ? '${x.gamesB}-${x.gamesA}'
+                          : '${x.gamesA}-${x.gamesB}'),
+              )
+              .join(' ');
+
+    return MatchWrappedData.build(
+      stats: d.stats,
+      ourTeam: myTeam,
+      won: won,
+      resultLine: resultLine,
+      teamLabel: d.row.opponentLabel.isEmpty
+          ? 'Partita di padel'
+          : 'vs ${d.row.opponentLabel}',
+      difficulty: OpponentDifficulty.fromScore(d.row.opponentDifficulty),
+      role: PadelRole.fromWire(d.row.myRole),
+      completedSets: s.completedSets,
+      formatLabel: d.engine.format.name,
+      playedAt: d.row.startTimeMs == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(d.row.startTimeMs!),
+      freePlay: d.engine.format.freePlay,
+    );
+  }
+
+  /// Didascalia pronta da incollare: risultato vero, niente claim inventati.
+  String _caption(MatchWrappedData card) {
+    final parts = <String>[
+      card.headline,
+      if (!card.freePlay) 'Risultato: ${card.resultLine}',
+      if (card.keyMoment != null) card.keyMoment!,
+      '${card.totalPoints} punti giocati · clutch ${card.clutchScore}/100',
+      '#padel #padeltime #Momentum',
+    ];
+    return parts.join('\n');
+  }
+
+  Future<void> _copyCaption(MatchWrappedData card) async {
+    await Clipboard.setData(ClipboardData(text: _caption(card)));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Didascalia copiata ✍️')),
+    );
+  }
+
+  /// Link pubblico Momentum Wrapped (PRD G5): pagina /recap + deep link.
   Future<void> _publishLink(MatchWrappedData card) async {
     setState(() => _sharing = true);
     try {
@@ -141,9 +236,7 @@ class _WrappedScreenState extends ConsumerState<WrappedScreen> {
           );
         }
         await SharePlus.instance.share(
-          ShareParams(
-            text: '${card.headline}\n${result.url} #padel #Padelandia',
-          ),
+          ShareParams(text: '${card.headline}\n${result.url} #padel #Momentum'),
         );
       } else {
         ScaffoldMessenger.of(
@@ -174,22 +267,33 @@ class _WrappedScreenState extends ConsumerState<WrappedScreen> {
     }
     setState(() => _sharing = true);
     try {
+      // Seconda garanzia: la condivisione può partire prima che il precache
+      // di didChangeDependencies sia arrivato in fondo.
+      if (mounted) {
+        await precacheImage(const AssetImage(wrappedLogoAsset), context);
+      }
       final boundary =
           _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
-      final image = await boundary.toImage(pixelRatio: 3);
+      // L'anteprima è larga quanto lo schermo lo consente: si esporta sempre
+      // a 1080 px indipendentemente dal device, così la qualità non dipende
+      // dal telefono di chi condivide.
+      final pixelRatio = (_exportWidthPx / boundary.size.width).clamp(1.0, 6.0);
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
       if (bytes == null) return;
+      final suffix = _format == WrappedPosterFormat.story ? 'story' : 'post';
       await SharePlus.instance.share(
         ShareParams(
           files: [
             XFile.fromData(
               Uint8List.view(bytes.buffer),
               mimeType: 'image/png',
-              name: 'rallymate_wrapped.png',
+              name: 'momentum_wrapped_$suffix.png',
             ),
           ],
-          text: '${card.headline} #padel #Padelandia',
+          text: _caption(card),
         ),
       );
     } finally {
@@ -199,7 +303,8 @@ class _WrappedScreenState extends ConsumerState<WrappedScreen> {
 
   Future<bool> _consumeFreeWrappedShare() async {
     final now = DateTime.now();
-    final week = '${now.year}-W${((now.difference(DateTime(now.year)).inDays) / 7).floor() + 1}';
+    final week =
+        '${now.year}-W${((now.difference(DateTime(now.year)).inDays) / 7).floor() + 1}';
     final key = 'wrapped_share_count_$week';
     final kv = ref.read(keyValueRepoProvider);
     final count = int.tryParse(await kv.get(key) ?? '0') ?? 0;
@@ -209,125 +314,37 @@ class _WrappedScreenState extends ConsumerState<WrappedScreen> {
   }
 }
 
-class _WrappedCard extends ConsumerWidget {
-  const _WrappedCard({required this.card, required this.won});
-  final MatchWrappedData card;
-  final bool won;
+class _FormatSwitcher extends StatelessWidget {
+  const _FormatSwitcher({required this.value, required this.onChanged});
+
+  final WrappedPosterFormat value;
+  final ValueChanged<WrappedPosterFormat>? onChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ents = ref.watch(entitlementsProvider);
-    return AspectRatio(
-      aspectRatio: 4 / 5, // Instagram-friendly
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: won
-                ? [const Color(0xFF0E5AA7), const Color(0xFF0C1220)]
-                : [const Color(0xFF37246B), const Color(0xFF0C1220)],
+  Widget build(BuildContext context) {
+    return SegmentedButton<WrappedPosterFormat>(
+      segments: [
+        for (final format in WrappedPosterFormat.values)
+          ButtonSegment(
+            value: format,
+            label: Text(format.label),
+            icon: Icon(
+              format == WrappedPosterFormat.story
+                  ? Icons.smartphone
+                  : Icons.crop_portrait,
+              size: 18,
+            ),
           ),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Text('🎾', style: TextStyle(fontSize: 24)),
-                const SizedBox(width: 8),
-                const Text(
-                  'Padelandia',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                ),
-                const Spacer(),
-                Text(
-                  won ? 'VITTORIA' : 'BATTAGLIA',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: won ? RallyColors.lime : Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              card.resultLine,
-              style: const TextStyle(
-                fontSize: 52,
-                fontWeight: FontWeight.w900,
-                height: 1,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              card.teamLabel,
-              style: const TextStyle(fontSize: 15, color: Colors.white70),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              card.headline,
-              style: const TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-                height: 1.25,
-              ),
-            ),
-            if (card.keyMoment != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                '🔥 ${card.keyMoment}',
-                style: const TextStyle(fontSize: 13.5, color: Colors.white70),
-              ),
-            ],
-            const Spacer(),
-            Row(
-              children: [
-                _chip('${card.totalPoints} punti'),
-                const SizedBox(width: 8),
-                _chip('Streak ${card.bestStreak}'),
-                const SizedBox(width: 8),
-                _chip('Clutch ${card.clutchScore}'),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                _chip(card.statisticalMvp, accent: true),
-                const Spacer(),
-                if (!ents.unlimitedWrapped)
-                  const Text(
-                    'Padelandia',
-                    style: TextStyle(fontSize: 11, color: Colors.white38),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _chip(String text, {bool accent = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: accent
-            ? RallyColors.lime.withValues(alpha: 0.2)
-            : Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: accent ? RallyColors.lime : Colors.white,
-        ),
+      ],
+      selected: {value},
+      showSelectedIcon: false,
+      onSelectionChanged: onChanged == null
+          ? null
+          : (selection) => onChanged!(selection.first),
+      style: SegmentedButton.styleFrom(
+        selectedBackgroundColor: RallyColors.lime.withValues(alpha: 0.2),
+        selectedForegroundColor: RallyColors.lime,
+        foregroundColor: Colors.white70,
       ),
     );
   }

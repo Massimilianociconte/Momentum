@@ -147,13 +147,13 @@ public protocol WatchWorkoutRecording: AnyObject {
 /// Messages shown on the watch when the recording owner changes.
 enum WatchWorkoutNotice {
     static let preempted =
-        "Allenamento preso da un'altra app. Padelandia continua a segnare i punti; i dati salute della partita sono parziali."
+        "Allenamento preso da un'altra app. Momentum continua a segnare i punti; i dati salute della partita sono parziali."
     static let authorizationDenied =
         "Permessi Salute non concessi. La partita continua senza dati salute."
     static let unavailable =
         "HealthKit non disponibile. La partita continua senza dati salute."
     static let backgroundBlocked =
-        "Apri Padelandia sul Watch per avviare l'allenamento."
+        "Apri Momentum sul Watch per avviare l'allenamento."
 }
 
 #if os(watchOS) && canImport(HealthKit)
@@ -176,7 +176,7 @@ public final class WatchWorkoutSessionManager: NSObject, ObservableObject, Watch
     }
 
     /// Brand shown in Salute/Fitness for workouts created by this app.
-    static let workoutBrandName = "Padelandia"
+    static let workoutBrandName = "Momentum"
 
     private let healthStore = HKHealthStore()
     private var session: HKWorkoutSession?
@@ -328,7 +328,7 @@ public final class WatchWorkoutSessionManager: NSObject, ObservableObject, Watch
         created.startActivity(with: startDate)
         apply(.startAccepted, at: startDate, notice: nil)
 
-        // Brand the workout so Salute/Fitness can attribute it to Padelandia.
+        // Brand the workout so Salute/Fitness can attribute it to Momentum.
         // The source name still comes from the app's localized display name;
         // the system decides how it renders both.
         try? await liveBuilder.addMetadata([

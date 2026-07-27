@@ -75,6 +75,7 @@ private val Blue = Color(0xFF5AB0FF)
 private val Night = Color(0xFF0C1220)
 private val Amber = Color(0xFFFFB83D)
 private val Coral = Color(0xFFFF665F)
+private val StarGold = Color(0xFFFFD84D)
 
 private enum class WearSurface { MAIN, SETUP, MENU, FINISH, ABANDON, ASSISTANT }
 
@@ -361,7 +362,7 @@ fun WearHomeScreen(
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        "Padelandia",
+                        "Momentum",
                         color = Color.White,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
@@ -507,6 +508,20 @@ fun NewMatchScreen(
                 selected = formatIndex == index,
             ) { formatIndex = index }
         }
+        Text(
+            formats[formatIndex].wearDescription(),
+            color = if (formats[formatIndex].gameScoringMode == GameScoringMode.STAR_POINT) {
+                StarGold
+            } else {
+                Color(0x88FFFFFF)
+            },
+            fontSize = 9.sp,
+            modifier = Modifier
+                .padding(horizontal = 6.dp)
+                .semantics {
+                    contentDescription = formats[formatIndex].wearDescription()
+                },
+        )
         Text("RUOLO", color = Color(0x77FFFFFF), fontSize = 8.sp,
             fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp))
         roles.forEachIndexed { index, role ->
@@ -782,11 +797,36 @@ private fun WearActionCard(
 
 private fun MatchFormat.shortWearName(): String = when (id) {
     "GOLDEN_BO3" -> "Golden point · 3 set"
+    "STAR_POINT_BO3" -> "Star Point FIP 2026 · 3 set"
     "ADV_BO3" -> "Vantaggi · 3 set"
     "SUPER_TB_BO3" -> "Super tie-break"
+    "MATCH_TB7_BO3" -> "Tie-break decisivo a 7"
+    "MINI_SET_BO3" -> "Mini-set a 4 game"
+    "ADV_NO_TB_THIRD_BO3" -> "Terzo set senza TB"
     "SINGLE_SET" -> "Partita secca"
     "TRAINING" -> "Allenamento libero"
     else -> name
+}
+
+private fun MatchFormat.wearDescription(): String {
+    val game = when (gameScoringMode) {
+        GameScoringMode.GOLDEN_POINT ->
+            "Sul 40 pari punto secco, niente vantaggi. La risposta sceglie il lato."
+        GameScoringMode.ADVANTAGE ->
+            "Vantaggi tradizionali: servono due punti di scarto."
+        GameScoringMode.STAR_POINT ->
+            "Due cicli di vantaggio; al terzo deuce è Star Point. La risposta sceglie il lato."
+    }
+    val sets = when {
+        freePlay -> null
+        gamesPerSet != 6 -> "Set a $gamesPerSet game, tie-break sul $gamesPerSet-$gamesPerSet."
+        superTieBreakDecider ->
+            "Ultimo set sostituito da un tie-break a $superTieBreakPoints punti."
+        !tieBreakInDecidingSet ->
+            "Set decisivo senza tie-break: si va a due game di scarto."
+        else -> null
+    }
+    return if (sets == null) game else "$game $sets"
 }
 
 /** PRD D1 — schermata principale: punteggio + due pulsanti grandi. */
@@ -825,6 +865,7 @@ fun ScoreScreen(
         WearAmbientScore(vm = vm, state = s)
         return
     }
+    val scoringContext = pointSituationAccessibility(vm, s)
 
     Column(
         modifier = Modifier
@@ -869,6 +910,21 @@ fun ScoreScreen(
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1,
+                modifier = Modifier.semantics {
+                    contentDescription = scoringContext ?: situation
+                },
+            )
+        }
+        pointSituationHint(s)?.let { hint ->
+            Text(
+                text = hint,
+                color = StarGold.copy(alpha = 0.88f),
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                modifier = Modifier.semantics {
+                    contentDescription = hint
+                },
             )
         }
         if (s.sideChangePending) {
@@ -922,6 +978,7 @@ fun ScoreScreen(
                     color = if (duoTeam == TeamId.A) Lime else Blue,
                     ambientMode = false,
                     imagePath = scoringImagePath,
+                    scoringContext = scoringContext,
                     modifier = Modifier.weight(1f),
                     onTap = { recordPoint(duoTeam) },
                 )
@@ -932,6 +989,7 @@ fun ScoreScreen(
                     color = Lime,
                     ambientMode = false,
                     imagePath = scoringImagePath,
+                    scoringContext = scoringContext,
                     modifier = Modifier.weight(1f),
                     onTap = { recordPoint(TeamId.A) },
                 )
@@ -940,6 +998,7 @@ fun ScoreScreen(
                     currentScore = teamScore(vm, s, TeamId.B),
                     color = Blue,
                     ambientMode = false,
+                    scoringContext = scoringContext,
                     modifier = Modifier.weight(1f),
                     onTap = { recordPoint(TeamId.B) },
                 )
@@ -994,10 +1053,17 @@ private fun WearAmbientScore(vm: MatchViewModel, state: MatchState) {
             Spacer(Modifier.height(5.dp))
             Text(
                 it,
-                color = Color(0x68FFFFFF),
+                color = if (state.starPointActive) {
+                    StarGold.copy(alpha = 0.58f)
+                } else {
+                    Color(0x68FFFFFF)
+                },
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
+                modifier = Modifier.semantics {
+                    contentDescription = pointSituationAccessibility(vm, state) ?: it
+                },
             )
         }
     }
@@ -1172,16 +1238,33 @@ fun AssistantQuickScreen(vm: MatchViewModel, onClose: () -> Unit) {
             Text("Pallino richiede il piano Pro.", color = Amber, fontSize = 9.sp)
         }
         AssistantFaqCard(
+            title = "Vantaggi",
+            body = "Sul 40 pari: AD al punto successivo. Punto avversario: si torna a 40 pari.",
+        )
+        AssistantFaqCard(
+            title = "Star Point FIP",
+            body = "Deuce 1 e AD 1, poi Deuce 2 e AD 2. Al Deuce 3 punto decisivo: " +
+                "chi riceve sceglie il lato, senza scambiarsi. Regola 1 Opzione 2.",
+        )
+        AssistantFaqCard(
             title = "Golden point",
-            body = "Sul 40-40 si gioca un punto secco. Chi risponde sceglie lato.",
+            body = "Sul 40-40 punto secco, niente vantaggi: chi riceve sceglie il lato, " +
+                "senza scambiarsi. Regola 1 Opzione 3.",
         )
         AssistantFaqCard(
             title = "Servizio let",
-            body = "Se tocca rete e cade nel campo corretto si ripete. Se è fuori, è fallo.",
+            body = "Se tocca rete e cade nel campo corretto si ripete. Let sul primo " +
+                "servizio: due servizi nuovi. Sul secondo: ripeti solo il secondo.",
         )
         AssistantFaqCard(
             title = "Cambio campo",
-            body = "Cambia ai game dispari e nei tie-break secondo formato partita.",
+            body = "Ogni game dispari. A fine set solo se il totale game è dispari: " +
+                "dopo un 6-4 si cambia dopo il primo game del set dopo. Tie-break: ogni 6 punti.",
+        )
+        AssistantFaqCard(
+            title = "In torneo",
+            body = "Nei circuiti FIP 2026 l'orologio in gara va autorizzato dal Supervisor " +
+                "o Referee: averlo installato non basta.",
         )
         AssistantFaqCard(
             title = "Training rapido",
@@ -1219,14 +1302,30 @@ private fun pointSituation(vm: MatchViewModel, s: MatchState): String? {
         if (duoTeam != null) return if (team == duoTeam) "NOI" else "LORO"
         return if (team == TeamId.A) "NOI" else "LORO"
     }
-    return s.pointSituation(
-        goldenPoint = vm.usesGoldenPoint,
+    val situation = s.pointSituation(
+        teamALabel = label(TeamId.A),
+        teamBLabel = label(TeamId.B),
+    )
+    return if (s.starPointActive && situation != null) "★ $situation" else situation
+}
+
+private fun pointSituationHint(s: MatchState): String? = s.pointSituationHint()
+
+private fun pointSituationAccessibility(vm: MatchViewModel, s: MatchState): String? {
+    if (vm.isFreePlay) return null
+    fun label(team: TeamId): String {
+        val duoTeam = vm.duoTeam
+        if (duoTeam != null) return if (team == duoTeam) "NOI" else "LORO"
+        return if (team == TeamId.A) "NOI" else "LORO"
+    }
+    return s.pointSituationAccessibility(
         teamALabel = label(TeamId.A),
         teamBLabel = label(TeamId.B),
     )
 }
 
 private fun pointSituationColor(vm: MatchViewModel, s: MatchState): Color {
+    if (s.starPointActive) return StarGold
     val holder = s.advantage ?: return Lime
     val ownTeam = vm.duoTeam ?: TeamId.A
     return if (holder == ownTeam) Lime else Blue
@@ -1250,6 +1349,7 @@ fun BigButton(
     modifier: Modifier = Modifier,
     ambientMode: Boolean = false,
     imagePath: String? = null,
+    scoringContext: String? = null,
     onTap: () -> Unit,
 ) {
     val image = remember(imagePath) { imagePath?.let(::decodeWatchImage) }
@@ -1272,7 +1372,10 @@ fun BigButton(
                 shape = RoundedCornerShape(20.dp),
             )
             .semantics {
-                contentDescription = "Punto $label. Punteggio attuale $currentScore"
+                contentDescription = buildString {
+                    append("Punto $label. Punteggio attuale $currentScore.")
+                    scoringContext?.let { append(" $it") }
+                }
             }
             .combinedClickable(enabled = !ambientMode, onClick = onTap),
         contentAlignment = Alignment.Center,
@@ -1351,6 +1454,7 @@ fun BlindScreen(
     onMenu: () -> Unit,
     onFinish: () -> Unit,
 ) {
+    val scoringContext = pointSituationAccessibility(vm, s)
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 7.dp, vertical = 19.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1375,6 +1479,27 @@ fun BlindScreen(
             color = Color(0x99FFFFFF),
             fontSize = 9.sp,
         )
+        pointSituation(vm, s)?.let { situation ->
+            Text(
+                situation,
+                color = pointSituationColor(vm, s),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                modifier = Modifier.semantics {
+                    contentDescription = scoringContext ?: situation
+                },
+            )
+        }
+        pointSituationHint(s)?.let { hint ->
+            Text(
+                hint,
+                color = StarGold.copy(alpha = 0.88f),
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+        }
         if (s.paused) {
             Box(
                 modifier = Modifier
@@ -1398,6 +1523,7 @@ fun BlindScreen(
                         label = "NOI",
                         currentScore = teamScore(vm, s, duoTeam),
                         color = Lime,
+                        scoringContext = scoringContext,
                         modifier = Modifier.weight(1f),
                     ) { vm.point(duoTeam, blind = true) }
                 } else {
@@ -1405,12 +1531,14 @@ fun BlindScreen(
                         label = "NOI",
                         currentScore = teamScore(vm, s, TeamId.A),
                         color = Lime,
+                        scoringContext = scoringContext,
                         modifier = Modifier.weight(1f),
                     ) { vm.point(TeamId.A, blind = true) }
                     QuickArea(
                         label = "LORO",
                         currentScore = teamScore(vm, s, TeamId.B),
                         color = Blue,
+                        scoringContext = scoringContext,
                         modifier = Modifier.weight(1f),
                     ) { vm.point(TeamId.B, blind = true) }
                 }
@@ -1431,6 +1559,7 @@ private fun QuickArea(
     label: String,
     currentScore: String,
     color: Color,
+    scoringContext: String? = null,
     modifier: Modifier,
     onTap: () -> Unit,
 ) {
@@ -1442,7 +1571,10 @@ private fun QuickArea(
             .border(2.dp, color.copy(alpha = 0.75f), RoundedCornerShape(18.dp))
             .combinedClickable(onClick = onTap)
             .semantics {
-                contentDescription = "Punto $label. Punteggio attuale $currentScore"
+                contentDescription = buildString {
+                    append("Punto $label. Punteggio attuale $currentScore.")
+                    scoringContext?.let { append(" $it") }
+                }
             },
         contentAlignment = Alignment.Center,
     ) {

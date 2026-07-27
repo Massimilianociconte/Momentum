@@ -19,11 +19,15 @@ class ResumableMatchTest {
         status: WearMatchStatus,
         version: Int = 0,
         updatedAt: Long = 0,
+        format: MatchFormat = MatchFormat.ADVANTAGE_BO3,
+        sourceDevice: String = "PHONE",
     ) = WearResumableMatch(
         matchId = id,
         status = status,
         stateVersion = version,
         updatedAtMs = updatedAt,
+        format = format,
+        sourceDevice = sourceDevice,
     )
 
     @Test
@@ -107,6 +111,232 @@ class ResumableMatchTest {
     }
 
     @Test
+    fun `authoritative star clear removes stale phone entry but preserves pending tail`() {
+        val stored = WearResumableSnapshot(
+            matches = listOf(
+                entry(
+                    "stale-star",
+                    WearMatchStatus.PAUSED,
+                    format = MatchFormat.STAR_POINT_BO3,
+                ),
+                entry(
+                    "pending-star",
+                    WearMatchStatus.PAUSED,
+                    format = MatchFormat.STAR_POINT_BO3,
+                ),
+                entry("classic", WearMatchStatus.PAUSED),
+            ),
+        )
+        val cleared = stored.merging(
+            WearResumableSnapshot(
+                authoritative = true,
+                authoritySource = "PHONE",
+                authorityScope = WearSnapshotAuthorityScope.STAR_POINT.wire,
+                authorityVersion = 20,
+            ),
+            protectedMatchIds = setOf("pending-star"),
+        )
+
+        assertNull(cleared.match("stale-star"))
+        assertNotNull(cleared.match("pending-star"))
+        assertNotNull(cleared.match("classic"))
+        assertEquals(
+            20L,
+            cleared.authorityVersions[WearSnapshotAuthorityScope.STAR_POINT.wire],
+        )
+    }
+
+    @Test
+    fun `older reconnect snapshot cannot resurrect star after newer clear`() {
+        val initial = WearResumableSnapshot(
+            matches = listOf(
+                entry(
+                    "star",
+                    WearMatchStatus.PAUSED,
+                    format = MatchFormat.STAR_POINT_BO3,
+                ),
+            ),
+        )
+        val cleared = initial.merging(
+            WearResumableSnapshot(
+                authoritative = true,
+                authoritySource = "PHONE",
+                authorityScope = WearSnapshotAuthorityScope.STAR_POINT.wire,
+                authorityVersion = 30,
+            ),
+        )
+        val staleReconnect = cleared.merging(
+            WearResumableSnapshot(
+                matches = listOf(
+                    entry(
+                        "star",
+                        WearMatchStatus.PAUSED,
+                        format = MatchFormat.STAR_POINT_BO3,
+                    ),
+                ),
+                authoritative = true,
+                authoritySource = "PHONE",
+                authorityScope = WearSnapshotAuthorityScope.STAR_POINT.wire,
+                authorityVersion = 29,
+            ),
+        )
+
+        assertNull(staleReconnect.match("star"))
+    }
+
+    @Test
+    fun `lifecycle and snapshot clear converge in either delivery order`() {
+        val star = entry(
+            "star-lifecycle",
+            WearMatchStatus.PAUSED,
+            format = MatchFormat.STAR_POINT_BO3,
+        )
+        val clear = WearResumableSnapshot(
+            authoritative = true,
+            authoritySource = "PHONE",
+            authorityScope = WearSnapshotAuthorityScope.STAR_POINT.wire,
+            authorityVersion = 20,
+        )
+
+        val clearFirst = WearResumableSnapshot(matches = listOf(star)).merging(clear)
+        assertNull(
+            clearFirst.acceptingLifecycleAuthority(
+                source = "PHONE",
+                scope = WearSnapshotAuthorityScope.STAR_POINT,
+                version = 19,
+            ),
+        )
+        assertNull(
+            clearFirst.acceptingLifecycleAuthority(
+                source = null,
+                scope = WearSnapshotAuthorityScope.STAR_POINT,
+                version = 0,
+            ),
+        )
+        assertNull(clearFirst.match(star.matchId))
+
+        val lifecycleFirst = WearResumableSnapshot.EMPTY
+            .acceptingLifecycleAuthority(
+                source = "PHONE",
+                scope = WearSnapshotAuthorityScope.STAR_POINT,
+                version = 19,
+            )!!
+            .applying(star)
+        assertNotNull(lifecycleFirst.match(star.matchId))
+        assertNull(lifecycleFirst.merging(clear).match(star.matchId))
+    }
+
+    @Test
+    fun `lifecycle newer than clear may reintroduce current phone state`() {
+        val clear = WearResumableSnapshot(
+            authoritative = true,
+            authoritySource = "PHONE",
+            authorityScope = WearSnapshotAuthorityScope.STAR_POINT.wire,
+            authorityVersion = 20,
+        )
+        val cleared = WearResumableSnapshot.EMPTY.merging(clear)
+        val accepted = cleared.acceptingLifecycleAuthority(
+            source = "PHONE",
+            scope = WearSnapshotAuthorityScope.STAR_POINT,
+            version = 21,
+        )
+        assertNotNull(accepted)
+        val updated = accepted!!.applying(
+            entry(
+                "new-star",
+                WearMatchStatus.PAUSED,
+                format = MatchFormat.STAR_POINT_BO3,
+            )
+        )
+        assertNotNull(updated.match("new-star"))
+    }
+
+    @Test
+    fun `scoped snapshots converge independently in either delivery order`() {
+        val classic = entry("classic", WearMatchStatus.PAUSED)
+        val star = entry(
+            "star",
+            WearMatchStatus.PAUSED,
+            format = MatchFormat.STAR_POINT_BO3,
+        )
+        val legacy = WearResumableSnapshot(
+            matches = listOf(classic),
+            authoritative = true,
+            authoritySource = "PHONE",
+            authorityScope = WearSnapshotAuthorityScope.NON_STAR_POINT.wire,
+            authorityVersion = 40,
+        )
+        val v2 = WearResumableSnapshot(
+            matches = listOf(classic, star),
+            authoritative = true,
+            authoritySource = "PHONE",
+            authorityScope = WearSnapshotAuthorityScope.STAR_POINT.wire,
+            authorityVersion = 40,
+        )
+
+        val legacyThenV2 = WearResumableSnapshot.EMPTY.merging(legacy).merging(v2)
+        val v2ThenLegacy = WearResumableSnapshot.EMPTY.merging(v2).merging(legacy)
+        assertEquals(
+            setOf("classic", "star"),
+            legacyThenV2.matches.mapTo(mutableSetOf()) { it.matchId },
+        )
+        assertEquals(
+            setOf("classic", "star"),
+            v2ThenLegacy.matches.mapTo(mutableSetOf()) { it.matchId },
+        )
+
+        val roundTrip = WearResumableSnapshot.fromJson(v2ThenLegacy.toJson())
+        assertEquals(
+            40L,
+            roundTrip.authorityVersions[
+                WearSnapshotAuthorityScope.NON_STAR_POINT.wire
+            ],
+        )
+        assertEquals(
+            40L,
+            roundTrip.authorityVersions[
+                WearSnapshotAuthorityScope.STAR_POINT.wire
+            ],
+        )
+    }
+
+    @Test
+    fun `v2 full payload cannot resurrect row owned by non star scope`() {
+        val classic = entry("deleted-classic", WearMatchStatus.PAUSED)
+        val star = entry(
+            "current-star",
+            WearMatchStatus.PAUSED,
+            format = MatchFormat.STAR_POINT_BO3,
+        )
+        val nonStarClear = WearResumableSnapshot(
+            authoritative = true,
+            authoritySource = "PHONE",
+            authorityScope = WearSnapshotAuthorityScope.NON_STAR_POINT.wire,
+            authorityVersion = 50,
+        )
+        val v2Full = WearResumableSnapshot(
+            activeMatchId = classic.matchId,
+            matches = listOf(classic, star),
+            authoritative = true,
+            authoritySource = "PHONE",
+            authorityScope = WearSnapshotAuthorityScope.STAR_POINT.wire,
+            authorityVersion = 50,
+        )
+
+        val clearThenV2 = WearResumableSnapshot.EMPTY
+            .merging(nonStarClear)
+            .merging(v2Full)
+        val v2ThenClear = WearResumableSnapshot.EMPTY
+            .merging(v2Full)
+            .merging(nonStarClear)
+
+        assertEquals(setOf(star.matchId), clearThenV2.matches.map { it.matchId }.toSet())
+        assertEquals(setOf(star.matchId), v2ThenClear.matches.map { it.matchId }.toSet())
+        assertNull(clearThenV2.activeMatchId)
+        assertNull(v2ThenClear.activeMatchId)
+    }
+
+    @Test
     fun `a lifecycle payload without a key still dedups deterministically`() {
         val payload = JSONObject()
             .put("matchId", "m1")
@@ -142,6 +372,49 @@ class ResumableMatchTest {
         replayed.loadEvents(lifecycle.events)
         assertEquals(1, replayed.state.gamesA)
         assertFalse(replayed.state.completed)
+    }
+
+    @Test
+    fun `star point survives lifecycle journal replay and offline resume`() {
+        val format = MatchFormat.STAR_POINT_BO3
+        val engine = ScoringEngine(matchId = "star-resume", format = format)
+        engine.start()
+        repeat(3) {
+            engine.addPoint(TeamId.A)
+            engine.addPoint(TeamId.B)
+        }
+        engine.addPoint(TeamId.A)
+        engine.addPoint(TeamId.B)
+        engine.addPoint(TeamId.B)
+        engine.addPoint(TeamId.A)
+        assertTrue(engine.state.starPointActive)
+        engine.pause()
+
+        val journal = engine.allEvents
+        val payload = JSONObject()
+            .put("matchId", "star-resume")
+            .put("action", "PAUSED")
+            .put("stateVersion", journal.size)
+            .put("format", format.toJson().toString())
+            .put("events", MatchEvent.listToJson(journal))
+        val lifecycle = WearMatchLifecycle.fromPayload(payload)
+
+        assertNotNull(lifecycle)
+        assertEquals(GameScoringMode.STAR_POINT, lifecycle!!.format?.gameScoringMode)
+        val replayed = ScoringEngine(
+            matchId = lifecycle.matchId,
+            format = lifecycle.format!!,
+        )
+        replayed.loadEvents(lifecycle.events)
+        assertTrue(replayed.state.paused)
+        assertEquals(3, replayed.state.deuceNumber)
+        assertTrue(replayed.state.starPointActive)
+
+        replayed.resume()
+        assertFalse(replayed.state.paused)
+        assertTrue(replayed.state.starPointActive)
+        replayed.addPoint(TeamId.B)
+        assertEquals(1, replayed.state.gamesB)
     }
 
     @Test

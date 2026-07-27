@@ -221,6 +221,18 @@ public final class LocalMatchStore {
     }
 
     /// Duo Mode: team assegnato a questo watch per la partita (o nil).
+    /// Serving rotation of the match (FIP Rule 4), pushed by the phone.
+    /// Stored per match so a resume after a relaunch keeps attributing holds
+    /// and breaks to the right pair.
+    public func saveFirstServer(_ matchId: String, team: TeamId) {
+        defaults.set(team.rawValue, forKey: Keys.firstServer(matchId))
+    }
+
+    public func loadFirstServer(_ matchId: String) -> TeamId {
+        defaults.string(forKey: Keys.firstServer(matchId))
+            .flatMap { TeamId(rawValue: $0) } ?? .a
+    }
+
     public func saveDuoTeam(_ matchId: String, team: TeamId?) {
         if let team {
             defaults.set(team.rawValue, forKey: Keys.duoTeam(matchId))
@@ -309,9 +321,35 @@ public final class LocalMatchStore {
     public func mergeResumableSnapshot(
         _ incoming: WatchResumableSnapshot
     ) -> WatchResumableSnapshot {
-        let merged = loadResumableSnapshot().merging(incoming)
+        let merged = loadResumableSnapshot().merging(
+            incoming,
+            protectedMatchIds: Set(pendingLocalMatchIds())
+        )
         saveResumableSnapshot(merged)
+        if let incomplete = lastIncompleteMatchId(),
+           merged.match(incomplete) == nil,
+           pendingLocalSyncCount(incomplete) == 0 {
+            clearIncomplete(expected: incomplete)
+        }
         return merged
+    }
+
+    /// Orders queued lifecycle transfers against scoped authoritative
+    /// snapshots. Legacy unversioned transfers remain compatible only until a
+    /// versioned phone authority has been observed for that scope.
+    public func acceptLifecycleAuthority(
+        source: String?,
+        scope: WatchSnapshotAuthorityScope?,
+        version: Int64
+    ) -> Bool {
+        let current = loadResumableSnapshot()
+        guard let accepted = current.acceptingLifecycleAuthority(
+            source: source,
+            scope: scope,
+            version: version
+        ) else { return false }
+        if accepted != current { saveResumableSnapshot(accepted) }
+        return true
     }
 
     public func saveResumableSnapshot(_ snapshot: WatchResumableSnapshot) {
@@ -336,7 +374,15 @@ public final class LocalMatchStore {
     public func applyLocalMatchUpdate(
         _ update: WatchResumableMatch
     ) -> WatchResumableSnapshot {
-        let merged = loadResumableSnapshot().applying(update)
+        let current = loadResumableSnapshot()
+        // Preserve PHONE ownership while a local Apple Watch tail is pending.
+        // Once acknowledged, a later authoritative clear may remove the row
+        // instead of retaining a permanent APPLE_WATCH orphan.
+        var ownedUpdate = update
+        if current.match(update.matchId)?.sourceDevice == "PHONE" {
+            ownedUpdate.sourceDevice = "PHONE"
+        }
+        let merged = current.applying(ownedUpdate)
         saveResumableSnapshot(merged)
         return merged
     }
@@ -451,6 +497,13 @@ public final class LocalMatchStore {
         loadEvents(matchId).filter { !$0.synced }.count
     }
 
+    /// Unsynced tail authored on this watch, excluding phone-originated rows.
+    public func pendingLocalSyncCount(_ matchId: String) -> Int {
+        loadEvents(matchId).filter {
+            !$0.synced && $0.sourceDevice == "APPLE_WATCH"
+        }.count
+    }
+
     /// Every match this watch has ever stored a journal for.
     public func knownMatchIds() -> [String] {
         defaults.stringArray(forKey: Keys.knownMatchIds) ?? []
@@ -459,6 +512,11 @@ public final class LocalMatchStore {
     public func pendingMatchIds() -> [String] {
         (defaults.stringArray(forKey: Keys.knownMatchIds) ?? [])
             .filter { pendingSyncCount($0) > 0 && loadFormat($0) != nil }
+    }
+
+    public func pendingLocalMatchIds() -> [String] {
+        (defaults.stringArray(forKey: Keys.knownMatchIds) ?? [])
+            .filter { pendingLocalSyncCount($0) > 0 && loadFormat($0) != nil }
     }
 
     public func markSynced(_ matchId: String, eventIds: Set<String>) {
@@ -524,6 +582,10 @@ private enum Keys {
 
     static func duoTeam(_ matchId: String) -> String {
         "duo_team_\(matchId)"
+    }
+
+    static func firstServer(_ matchId: String) -> String {
+        "first_server_\(matchId)"
     }
 
     static func workoutActive(_ matchId: String) -> String {

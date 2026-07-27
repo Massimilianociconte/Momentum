@@ -127,6 +127,26 @@ enum MatchStatus {
       MatchStatus.values.firstWhere((e) => e.wire == w);
 }
 
+/// Scoring rule applied when both pairs reach 40.
+///
+/// These wire values are persisted inside [MatchFormat] JSON and exchanged
+/// with every companion engine. They must remain stable across app versions.
+enum GameScoringMode {
+  advantage('ADVANTAGE'),
+  starPoint('STAR_POINT'),
+  goldenPoint('GOLDEN_POINT');
+
+  const GameScoringMode(this.wire);
+  final String wire;
+
+  static GameScoringMode? tryFromWire(String wire) {
+    for (final mode in GameScoringMode.values) {
+      if (mode.wire == wire) return mode;
+    }
+    return null;
+  }
+}
+
 /// Event types (PRD data model, MatchEvent).
 enum MatchEventType {
   matchStarted('MATCH_STARTED'),

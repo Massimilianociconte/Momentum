@@ -59,7 +59,7 @@ Le push richiedono anche il file client Android
 `apps/rallymate/android/app/google-services.json`, la capability Push
 Notifications sul target iOS e un job POST ogni minuto verso
 `/functions/v1/push-dispatch`, autenticato con
-`X-Padelandia-Push-Secret`. Non committare il file service account, la chiave
+`X-Momentum-Push-Secret`. Non committare il file service account, la chiave
 APNs `.p8` o il secret dispatcher. Attiva migrazioni push, function, secret e
 scheduler come una sola release; fino ad allora lascia lo scheduler spento.
 
@@ -69,7 +69,7 @@ Test manuale del dispatcher:
 curl --fail-with-body -X POST \
   "https://<PROJECT_REF>.supabase.co/functions/v1/push-dispatch" \
   -H "Content-Type: application/json" \
-  -H "X-Padelandia-Push-Secret: $PUSH_DISPATCH_SECRET" \
+  -H "X-Momentum-Push-Secret: $PUSH_DISPATCH_SECRET" \
   -d '{"limit":25}'
 ```
 
@@ -113,7 +113,7 @@ Verifica rapida della function:
 ```bash
 # API pubblica: il GET risponde anche sul dominio condiviso, ma Supabase forza
 # l'HTML a text/plain. Per Play Console pubblica la pagina equivalente sul sito
-# Padelandia o abilita un custom domain Supabase.
+# Momentum o abilita un custom domain Supabase.
 curl -i https://<PROJECT_REF>.supabase.co/functions/v1/delete-account
 
 # assistant richiede sempre JWT utente: Free deve ricevere plan_required,
@@ -278,16 +278,16 @@ Server API, Google Play Developer API o RevenueCat con lo stesso `storeTxId`.
   `./gradlew :app:assembleDebug` → installa su watch.
 - **Apple Watch companion**: dalla root esegui
   `ruby scripts/sync_watchos_target.rb`, poi apri
-  `apps/rallymate/ios/Runner.xcworkspace`. Il target `PadelandiaWatchApp` è
+  `apps/rallymate/ios/Runner.xcworkspace`. Il target `RallyMateWatchApp` è
   incorporato automaticamente in `Runner.app/Watch`, usa il bundle derivato
   `com.rallymate.rallymate.watchkitapp` e lo stesso team di firma di Runner.
-  Seleziona `PadelandiaWatchApp` per il debug diretto sul Watch o `Runner` per
+  Seleziona `RallyMateWatchApp` per il debug diretto sul Watch o `Runner` per
   installare telefono e companion insieme. `wear/watchos/project.yml` resta
   una spec XcodeGen opzionale per build isolate, non il percorso di release.
 - **Garmin Connect IQ**: `wear/garmin-connectiq`. Configura SDK 9.2.0 e
   developer key fuori dal repo, poi esegui `scripts/build.sh venu3` e
   `scripts/test.sh venu3`. `scripts/validate_matrix.sh` compila i 95 profili e
-  `scripts/export.sh` crea il pacchetto firmato `build/Padelandia.iq`. I bridge
+  `scripts/export.sh` crea il pacchetto firmato `build/Momentum.iq`. I bridge
   mobile usano gli SDK ufficiali Garmin.
 - **Fitbit OS**: `wear/fitbit-os`. `npm ci && npm test && npm run build &&
   npm run build:legacy` genera i binari OS 5 e OS 4. Per release passa

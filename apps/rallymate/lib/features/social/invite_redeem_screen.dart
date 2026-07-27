@@ -12,6 +12,7 @@ import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../services/cloud/cloud_service.dart';
+import '../../services/cloud/duo_service.dart';
 import '../../services/cloud/invite_service.dart';
 import '../../services/cloud/team_cloud_service.dart';
 
@@ -39,7 +40,7 @@ class _InviteRedeemScreenState extends ConsumerState<InviteRedeemScreen> {
       final returnTo = '/invite/${Uri.encodeComponent(widget.secret)}';
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Invito Padelandia'),
+          title: const Text('Invito Momentum'),
           leading: const SafeBackButton(fallback: AppLocations.home),
         ),
         body: ListView(
@@ -70,7 +71,7 @@ class _InviteRedeemScreenState extends ConsumerState<InviteRedeemScreen> {
     final preview = ref.watch(invitePreviewProvider(widget.secret));
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Invito Padelandia'),
+        title: const Text('Invito Momentum'),
         leading: const SafeBackButton(fallback: AppLocations.home),
       ),
       body: preview.when(
@@ -241,6 +242,14 @@ class _InviteRedeemScreenState extends ConsumerState<InviteRedeemScreen> {
         final format = MatchFormat.fromJson(
           jsonDecode(jsonEncode(formatRaw)) as Map<String, Object?>,
         );
+        if (!supportsDuoScoring(format)) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(duoUnsupportedFormatMessage(format))),
+            );
+          }
+          return;
+        }
         final team = TeamId.fromWire(teamRaw);
         await ref
             .read(matchRepoProvider)
@@ -281,7 +290,7 @@ class _InviteRedeemScreenState extends ConsumerState<InviteRedeemScreen> {
     'TEAM_LINK' => 'propone di collegare i vostri team',
     'MATCH' => 'ti invita a una partita',
     'DUO' => 'ti invita nella stessa partita in Duo Mode',
-    _ => 'vuole aggiungerti agli amici Padelandia',
+    _ => 'vuole aggiungerti agli amici Momentum',
   };
 
   String _cta(String kind) => switch (kind) {

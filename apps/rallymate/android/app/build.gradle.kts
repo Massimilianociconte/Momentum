@@ -73,6 +73,14 @@ android {
 
     buildTypes {
         release {
+            // R8 + resource shrinking: store builds ship minified/obfuscated
+            // code (Play best practice, smaller download size).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             val configuredRelease = signingConfigs.findByName("release")
             if (configuredRelease != null) {
                 signingConfig = configuredRelease
@@ -103,6 +111,7 @@ dependencies {
     // Garmin Connect Mobile and remains opt-in from the devices screen.
     implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.4.0@aar")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }
 
 flutter {

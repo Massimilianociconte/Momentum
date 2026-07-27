@@ -1,10 +1,10 @@
-# Padelandia Privacy Policy
+# Momentum Privacy Policy
 
 **Last updated: July 21, 2026 · Version 1.5**
 
 This policy is provided under Articles 13-14 of Regulation (EU) 2016/679
 ("**GDPR**") and the Google Play and Apple App Store policies, for users of the
-**Padelandia** application (the "App"). In case of discrepancy with the Italian
+**Momentum** application (the "App"). In case of discrepancy with the Italian
 version, the Italian version prevails for users in Italy.
 
 ## 1. Data Controller
@@ -16,7 +16,7 @@ Privacy contact: **webnovis.info@gmail.com**
 
 ## 2. Core principle: local-first
 
-Padelandia is built with **privacy by design and by default** (Art. 25 GDPR):
+Momentum is built with **privacy by design and by default** (Art. 25 GDPR):
 the App works 100% without an account. Matches, scores, statistics, training
 logs and data read directly from HealthKit/Health Connect **stay on your
 device**. The only exceptions are optional cloud features described below,
@@ -40,8 +40,8 @@ enabled cloud provider.
   consent — see Section 6. Kept locally and never used for advertising.
 - Voice scoring commands: processed by the OS speech recognizer only after an
   explicit tap; the platform may process them on-device or through its own
-  service. Padelandia receives the returned text only long enough to execute the
-  command; neither audio nor transcript is stored or sent to Padelandia servers.
+  service. Momentum receives the returned text only long enough to execute the
+  command; neither audio nor transcript is stored or sent to Momentum servers.
 
 The listed app data is stored locally and can be deleted by uninstalling the
 App. Platform speech processing is governed by the device provider's settings
@@ -85,8 +85,8 @@ calls to AI models or external services.
 
 Remote notifications are optional and are registered only after system
 permission and account sign-in. On Android, Firebase Cloud Messaging automatic
-initialization stays disabled until that choice; on iOS, Padelandia requests an
-APNs token only after authorization. Padelandia does not enable Firebase
+initialization stays disabled until that choice; on iOS, Momentum requests an
+APNs token only after authorization. Momentum does not enable Firebase
 Analytics or FCM BigQuery delivery export. Tokens and installation identifiers
 are used only to deliver and deduplicate notifications, never for advertising,
 cross-app analytics or profiling. Logout, permission withdrawal or account
@@ -120,22 +120,22 @@ If you enable the fitness integration or record a match from a smartwatch:
 
 - Native Apple Health/HealthKit and Android Health Connect integrations read
   only authorized data types on the phone and keep them on-device.
-- On Apple Watch, during an active match and only with your consent, Padelandia
+- On Apple Watch, during an active match and only with your consent, Momentum
   may start a HealthKit workout session and save it to Apple Health as a
   generic workout, together with system-collected metrics during the session
   such as duration, active calories and heart rate if authorized.
 - On Wear OS / Galaxy Watch, during an active match and only with granted
-  permissions, Padelandia uses Health Services to manage the workout session and
+  permissions, Momentum uses Health Services to manage the workout session and
   show/record local metrics such as duration, calories and heart rate when
   available.
 - If you enable Workout Detection on Wear OS, the watch locally checks only
   whether Health Services reports an active exercise and its category. This is
   used to offer an optional notification, is not uploaded, and does not use
-  location or heart rate to decide whether to prompt. Padelandia never opens
+  location or heart rate to decide whether to prompt. Momentum never opens
   itself automatically or interrupts a session owned by another app.
-- On compatible Garmin devices, explicitly starting a Padelandia match may
+- On compatible Garmin devices, explicitly starting a Momentum match may
   create a Garmin-managed Padel/Tennis FIT recording. The FIT file remains in
-  the device/Garmin Connect ecosystem; Padelandia uploads scoring events, not
+  the device/Garmin Connect ecosystem; Momentum uploads scoring events, not
   the Garmin FIT file or Garmin health metrics. An existing Garmin session is
   never adopted, changed, or ended.
 - If a Pro user separately connects **Google Health API**, the backend requests
@@ -144,16 +144,16 @@ If you enable the fitness integration or record a match from a smartwatch:
   authorized. Tokens are encrypted server-side with AES-GCM; aggregates are
   retained for no more than 30 days and are excluded from general backups.
 - Disconnecting Google Health revokes the token when possible and immediately
-  deletes Padelandia tokens and aggregates. Google Health data is never sent to
+  deletes Momentum tokens and aggregates. Google Health data is never sent to
   the AI provider or shared for advertising.
 - Direct Oura and WHOOP integrations remain disabled until approval,
   credentials and contractual review are complete. If enabled for a Pro user,
-  Padelandia requests only the scopes shown on the consent screen, encrypts
+  Momentum requests only the scopes shown on the consent screen, encrypts
   tokens with AES-GCM and stores bounded aggregates only, never raw heart-rate
   series or complete webhook payloads. Disconnecting attempts upstream
-  revocation and deletes Padelandia tokens, metrics, jobs and derived summaries.
+  revocation and deletes Momentum tokens, metrics, jobs and derived summaries.
 - Oura and WHOOP are not live scoring sensors. Their data may arrive only after
-  the manufacturer's app syncs; Padelandia keeps direct/indirect attribution
+  the manufacturer's app syncs; Momentum keeps direct/indirect attribution
   and avoids counting mirrored copies twice.
 - It is **never** used for advertising, marketing, profiling, credit or
   insurance assessment, and never sold to data brokers (per Google Health
@@ -161,7 +161,7 @@ If you enable the fitness integration or record a match from a smartwatch:
 - Permissions are granular and revocable at any time: iOS → Settings →
   Health → Data Access; Apple Watch → Health and Privacy settings; Android →
   Health Connect / app permissions; Wear OS → app permissions on the watch.
-- Padelandia **does not write data to Health Connect**. On Apple Watch, it may
+- Momentum **does not write data to Health Connect**. On Apple Watch, it may
   write the workout session to Apple Health if you authorize HealthKit; on
   supported Garmin devices it may ask the system to save the FIT session you
   explicitly started.
@@ -235,3 +235,9 @@ any legal or similarly significant effect.
 ## 12. Changes
 
 Material changes will be announced in the App at least 15 days in advance.
+
+## 13. Website
+
+This notice covers the App. The processing of data relating to visitors of
+**https://playmomentum.it** (technical hosting logs, no cookies) is described
+in the [website privacy & cookie policy](/cookie/) (Italian).

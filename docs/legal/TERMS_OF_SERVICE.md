@@ -1,10 +1,10 @@
-# Termini di servizio di Padelandia
+# Termini di servizio di Momentum
 
-**Ultimo aggiornamento: 13 luglio 2026 · Versione 1.1**
+**Ultimo aggiornamento: 27 luglio 2026 · Versione 1.2**
 
 ## 1. Chi siamo e cosa regolano questi termini
 
-I presenti Termini regolano l'uso dell'app **Padelandia** (l'"App") fornita da:
+I presenti Termini regolano l'uso dell'app **Momentum** (l'"App") fornita da:
 
 > ⚠️ **[DA COMPLETARE]** **[Nome / Ragione sociale]**, **[indirizzo]**,
 > P.IVA/C.F. **[…]** — contatto: **webnovis.info@gmail.com** (anche punto di
@@ -52,7 +52,7 @@ salvo quanto permesso da norme inderogabili.
   acconsenti all'esecuzione immediata e prendi atto della conseguente perdita
   del diritto di recesso ex art. 59.1.o Codice del Consumo, fermi restando i
   meccanismi di rimborso di Apple/Google.
-- Il piano segue l'account dello store; con account Padelandia collegato, lo
+- Il piano segue l'account dello store; con account Momentum collegato, lo
   stato premium si riflette anche sugli altri tuoi dispositivi.
 - Il backup Plus/Pro/Coach include profilo, team, partite con timeline eventi,
   progressi training e preferenze trasferibili. Dati salute, credenziali,
@@ -74,7 +74,7 @@ salvo quanto permesso da norme inderogabili.
   e moderare il servizio.
 - Le analytics avanzate sono elaborate localmente e soltanto dopo la partita
   dalla timeline degli eventi. Momentum, clutch, turning point e indici
-  Padelandia sono stime descrittive con campione e incertezza: non sono
+  Momentum sono stime descrittive con campione e incertezza: non sono
   classifiche federali, previsioni garantite, diagnosi o valutazioni
   professionali.
 - La frequenza cardiaca e gli altri dati salute restano separati dal motore di
@@ -83,7 +83,7 @@ salvo quanto permesso da norme inderogabili.
 ## 6. Marketplace Coach
 
 - I coach offrono pacchetti (schede, videoanalisi, lezioni) ad altri utenti.
-  Padelandia agisce come **intermediario tecnico**: il rapporto contrattuale
+  Momentum agisce come **intermediario tecnico**: il rapporto contrattuale
   per la prestazione resta tra coach e atleta.
 - **Commissioni piattaforma**: 15% sui contenuti digitali, 10% su lezioni
   1:1/di gruppo, trattenute sul prezzo pagato. I pagamenti transitano dagli
@@ -111,7 +111,7 @@ ospitarle e mostrarle a chi possiede il link, finché non le rimuovi.
 
 ## 9. Proprietà intellettuale
 
-App, marchio Padelandia, mascotte, grafica e contenuti di allenamento sono del
+App, marchio Momentum, mascotte, grafica e contenuti di allenamento sono del
 Titolare o dei suoi licenzianti. Le regole del padel citate derivano dai
 regolamenti ufficiali delle federazioni, a cui si rimanda per il testo
 autentico.
@@ -135,12 +135,17 @@ Modifiche sostanziali saranno comunicate nell'App con almeno 30 giorni di
 anticipo; l'uso successivo costituisce accettazione. Se non le accetti puoi
 recedere eliminando l'account (gli abbonamenti si disdicono dallo store).
 
-## 12. Legge applicabile e foro
+## 12. Legge applicabile, foro e risoluzione delle controversie
 
 Legge italiana. Per i consumatori: foro del luogo di residenza o domicilio
-del consumatore (art. 66-bis Codice del Consumo). Piattaforma ODR UE:
-https://ec.europa.eu/consumers/odr. È fatta salva la possibilità di reclamo
-diretto a **webnovis.info@gmail.com** (rispondiamo entro 30 giorni).
+del consumatore (art. 66-bis Codice del Consumo). Prima di ogni azione puoi
+inviare un reclamo diretto a **webnovis.info@gmail.com**: rispondiamo entro
+30 giorni. La piattaforma europea ODR è stata dismessa il 20 luglio 2025
+(Regolamento (UE) 2024/3228): per una risoluzione stragiudiziale puoi
+rivolgerti a un organismo ADR ai sensi degli artt. 141 ss. Codice del
+Consumo (elenco sul sito del Ministero delle Imprese e del Made in Italy) e,
+per le controversie transfrontaliere, alla rete dei Centri Europei
+Consumatori (ECC-Net).
 
 ## 13. Termini degli store
 
@@ -150,3 +155,10 @@ utenti Android le condizioni di Google Play, ove non derogate da questi
 Termini. Apple e Google non sono parti di questo contratto né responsabili
 dell'App, ma ne sono beneficiari terzi ove richiesto dalle rispettive
 condizioni.
+
+## 14. Sito web e contatti
+
+Il sito ufficiale dell'App è **https://playmomentum.it**, dove trovi anche
+l'informativa privacy (/privacy/), la privacy e cookie policy del sito
+(/cookie/) e la procedura di eliminazione dell'account (/elimina-account/).
+Per ogni comunicazione relativa a questi Termini: **webnovis.info@gmail.com**.

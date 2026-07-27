@@ -1,4 +1,4 @@
-# Padelandia — Proprietà unica della sessione allenamento · Report tecnico
+# Momentum — Proprietà unica della sessione allenamento · Report tecnico
 
 **Data:** 2026-07-25
 **Ambito:** Apple Watch (watchOS/HealthKit), Wear OS (Health Services), Garmin
@@ -33,7 +33,7 @@ punto successivo ne apriva una nuova**. Poiché watchOS ammette una sola
 `HKWorkoutSession` attiva, ogni nuova sessione RallyMate terminava quella
 dell'app Allenamento, che a sua volta — riavviata dall'utente o dal sistema —
 terminava quella di RallyMate. Da qui il ping-pong e i frammenti di durata
-arbitraria (5 min lato Padelandia, 22 min lato Fitness) su una partita di 90.
+arbitraria (5 min lato Momentum, 22 min lato Fitness) su una partita di 90.
 
 ### 1.2 Segmento scartato invece che finalizzato
 
@@ -221,7 +221,7 @@ Invarianti garantite dai test:
 
 | Modalità | Effetto |
 |---|---|
-| `RALLYMATE_MANAGED` | Padelandia crea e chiude l'unica sessione HealthKit |
+| `RALLYMATE_MANAGED` | Momentum crea e chiude l'unica sessione HealthKit |
 | `EXTERNAL_MANAGED` | Nessuna sessione. Solo scoring; il workout viene associato dopo tramite Apple Health |
 | `DISABLED` | Nessuna registrazione salute |
 
@@ -315,9 +315,9 @@ Scenari coperti dai test automatici (matrice obbligatoria):
 
 | Scenario richiesto | Copertura |
 |---|---|
-| Partita 90 min gestita solo da Padelandia | `testNinetyMinuteMatchProducesOneSavedSegment`, `testFullMatchOpensAndClosesExactlyOneRecording` |
+| Partita 90 min gestita solo da Momentum | `testNinetyMinuteMatchProducesOneSavedSegment`, `testFullMatchOpensAndClosesExactlyOneRecording` |
 | Allenamento Apple già attivo prima dell'avvio | `testPreemptionAtStartLeavesNoSegmentAndNoRetryLoop`, `testExternalModeNeverCreatesASession` |
-| Allenamento Apple avviato dopo Padelandia | `testPreemptionMidMatchSavesPartialSegmentWithoutRestart`, `testPreemptionKeepsMatchAliveAndSuppressesAutomaticRestart` |
+| Allenamento Apple avviato dopo Momentum | `testPreemptionMidMatchSavesPartialSegmentWithoutRestart`, `testPreemptionKeepsMatchAliveAndSuppressesAutomaticRestart` |
 | App Watch in background / ritorno al quadrante | `testBackgroundAndWatchFaceDoNotCloseTheRecording`, `testBackgroundBlockedStartStaysRetryable`, e le transizioni `prepareForBackground`/`prepareForInactive` dentro `testFullMatchOpensAndClosesExactlyOneRecording` |
 | Perdita connessione iPhone | `testPhoneDisconnectionDoesNotAffectTheRecording` |
 | Chiusura forzata | `testRecoveredSessionContinuesTheSameSegment`, `testRecoveryDuringStartAdoptsInsteadOfCreatingASecondSession`, `testSegmentsAndStateArePersistedForIdempotentFinalisation` |
@@ -341,7 +341,7 @@ espliciti; non sono misure raccolte su hardware.
 
 | Scenario simulato | Durata partita | Durata registrata | Segmenti | Etichetta |
 |---|---|---|---|---|
-| Partita gestita da Padelandia, 40 punti, background e wrist-down | 90 min | 90 min | 1 salvato | Dati salute completi |
+| Partita gestita da Momentum, 40 punti, background e wrist-down | 90 min | 90 min | 1 salvato | Dati salute completi |
 | Allenamento Apple avviato al minuto 5 | 90 min | 5 min | 1 salvato | **Dati salute parziali** (copertura 5,6%) |
 | Allenamento Apple già attivo all'avvio | 90 min | 0 min | 0 | Registrato da app esterna |
 | Preemption al 5' + riavvio esplicito al 20' | 90 min | 75 min | 2 salvati | **Dati salute parziali**, 2 segmenti |
@@ -377,7 +377,7 @@ minuti reali in chiaro.
    perché la sessione altrui non è leggibile in tempo reale in modo affidabile.
    I dati arrivano dopo la partita dall'import di Apple Health / Health Connect
    già presente lato iPhone.
-5. **Fitbit: capacità nuova, permesso nuovo.** Prima Padelandia su Fitbit non
+5. **Fitbit: capacità nuova, permesso nuovo.** Prima Momentum su Fitbit non
    registrava nulla. Ora può farlo, e questo richiede il permesso
    `access_exercise`: va comunicato in fase di aggiornamento store. Il wrapper è
    difensivo (feature detection + permesso) e degrada a solo-scoring.

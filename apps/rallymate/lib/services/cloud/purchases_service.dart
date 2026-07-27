@@ -272,7 +272,7 @@ abstract final class PurchasesService {
     required String expectedAppUserId,
   }) async {
     if (!isAuthenticatedBillingUserId(expectedAppUserId)) {
-      return 'Accedi al tuo account Padelandia prima di acquistare.';
+      return 'Accedi al tuo account Momentum prima di acquistare.';
     }
     if (!configured) return 'Acquisti temporaneamente non disponibili.';
     try {
@@ -422,7 +422,7 @@ abstract final class PurchasesService {
 
   static Future<String?> restore({required String expectedAppUserId}) async {
     if (!isAuthenticatedBillingUserId(expectedAppUserId)) {
-      return 'Accedi al tuo account Padelandia prima di ripristinare.';
+      return 'Accedi al tuo account Momentum prima di ripristinare.';
     }
     if (!configured) return 'Acquisti temporaneamente non disponibili.';
     try {

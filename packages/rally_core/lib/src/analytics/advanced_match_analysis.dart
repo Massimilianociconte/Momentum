@@ -741,16 +741,21 @@ class _NeutralMatchModel {
   }
 
   double _gameProbability(int a, int b) {
-    if (format.goldenPoint) {
-      if (a >= 4) return 1;
-      if (b >= 4) return 0;
-      if (a >= 3 && b >= 3) return 0.5;
-    } else {
-      if (a == 4 && b == 3) return 0.75;
-      if (b == 4 && a == 3) return 0.25;
-      if (a >= 3 && b >= 3) return 0.5;
-      if (a >= 4 && a - b >= 2) return 1;
-      if (b >= 4 && b - a >= 2) return 0;
+    switch (format.gameScoringMode) {
+      case GameScoringMode.goldenPoint:
+        if (a >= 4) return 1;
+        if (b >= 4) return 0;
+        if (a >= 3 && b >= 3) return 0.5;
+      case GameScoringMode.advantage:
+      case GameScoringMode.starPoint:
+        // Under the documented neutral 50/50 rally assumption, all deuce
+        // rounds are symmetric. AD1/AD2 carry the same 75/25 leverage as a
+        // traditional advantage; deuce 3 remains 50/50 before Star Point.
+        if (a == 4 && b == 3) return 0.75;
+        if (b == 4 && a == 3) return 0.25;
+        if (a >= 3 && b >= 3) return 0.5;
+        if (a >= 4 && a - b >= 2) return 1;
+        if (b >= 4 && b - a >= 2) return 0;
     }
     return 0.5 * _gameProbability(a + 1, b) + 0.5 * _gameProbability(a, b + 1);
   }
@@ -787,6 +792,7 @@ class _NeutralMatchModel {
         inTieBreak: true,
         tieBreakA: 0,
         tieBreakB: 0,
+        deuceNumber: 0,
       );
     }
     return state.copyWith(
@@ -794,6 +800,7 @@ class _NeutralMatchModel {
       pointsB: 0,
       gamesA: gamesA,
       gamesB: gamesB,
+      deuceNumber: 0,
     );
   }
 
@@ -815,6 +822,7 @@ class _NeutralMatchModel {
       inSuperTieBreak: decider,
       tieBreakA: 0,
       tieBreakB: 0,
+      deuceNumber: 0,
     );
   }
 }
@@ -831,6 +839,7 @@ class _ModelState {
     required this.inSuperTieBreak,
     required this.tieBreakA,
     required this.tieBreakB,
+    required this.deuceNumber,
   });
 
   factory _ModelState.fromSnapshot(PointScoreSnapshot value) => _ModelState(
@@ -844,6 +853,7 @@ class _ModelState {
     inSuperTieBreak: value.inSuperTieBreak,
     tieBreakA: value.tieBreakA,
     tieBreakB: value.tieBreakB,
+    deuceNumber: value.deuceNumber,
   );
 
   final int pointsA;
@@ -856,11 +866,12 @@ class _ModelState {
   final bool inSuperTieBreak;
   final int tieBreakA;
   final int tieBreakB;
+  final int deuceNumber;
 
   String get key =>
       '$pointsA:$pointsB:$gamesA:$gamesB:$setsA:$setsB:'
       '${inTieBreak ? 1 : 0}:${inSuperTieBreak ? 1 : 0}:'
-      '$tieBreakA:$tieBreakB';
+      '$tieBreakA:$tieBreakB:$deuceNumber';
 
   _ModelState copyWith({
     int? pointsA,
@@ -873,6 +884,7 @@ class _ModelState {
     bool? inSuperTieBreak,
     int? tieBreakA,
     int? tieBreakB,
+    int? deuceNumber,
   }) => _ModelState(
     pointsA: pointsA ?? this.pointsA,
     pointsB: pointsB ?? this.pointsB,
@@ -884,5 +896,6 @@ class _ModelState {
     inSuperTieBreak: inSuperTieBreak ?? this.inSuperTieBreak,
     tieBreakA: tieBreakA ?? this.tieBreakA,
     tieBreakB: tieBreakB ?? this.tieBreakB,
+    deuceNumber: deuceNumber ?? this.deuceNumber,
   );
 }

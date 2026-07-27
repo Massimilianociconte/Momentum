@@ -116,7 +116,7 @@ class _StartupSplash extends StatelessWidget {
                 children: [
                   const Spacer(flex: 7),
                   const Text(
-                    'Padelandia',
+                    'Momentum',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,

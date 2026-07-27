@@ -2,14 +2,16 @@ library;
 
 import 'dart:convert';
 
-/// Stable, versioned representation of a Padelandia Premium backup.
+/// Stable, versioned representation of a Momentum Premium backup.
 ///
 /// Health data, authentication tokens, billing state and device diagnostics
 /// are deliberately outside this contract. Analytics are reconstructed from
 /// matches and their event timelines instead of being duplicated.
 abstract final class BackupPayloadCodec {
   static const format = 'rallymate-backup';
-  static const currentVersion = 2;
+  // v3 makes Star Point formats fail closed on older app builds. The nested
+  // payload shape is unchanged; only the compatibility boundary is bumped.
+  static const currentVersion = 3;
   static const maxPayloadBytes = 20 * 1024 * 1024;
   static const maxRecordsPerSection = 500000;
 

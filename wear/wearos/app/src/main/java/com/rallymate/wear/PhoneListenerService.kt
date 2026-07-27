@@ -12,8 +12,57 @@ import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+
+internal const val SCORING_PROTOCOL_VERSION = 2
+internal const val STAR_POINT_CAPABILITY = "star_point_v1"
+
+/**
+ * Format schema v3: this build can score a deciding set without tie-break.
+ * Additive token — an older peer simply never advertises it, so the phone
+ * gate fails closed instead of degrading the format silently.
+ */
+internal const val DECIDING_SET_CAPABILITY = "deciding_set_no_tiebreak_v1"
+
+internal fun scoringPongPayload(nonce: String, kind: String): JSONObject =
+    JSONObject()
+        .put("nonce", nonce)
+        .put("kind", kind)
+        .put("scoringProtocolVersion", SCORING_PROTOCOL_VERSION)
+        .put(
+            "scoringCapabilities",
+            JSONArray().put(STAR_POINT_CAPABILITY).put(DECIDING_SET_CAPABILITY),
+        )
+
+internal enum class StartMatchDeliveryDecision {
+    APPLY,
+    IDEMPOTENT,
+    STALE,
+}
+
+internal fun startMatchDeliveryDecision(
+    incomingDispatchedAtMs: Long,
+    incomingMatchId: String,
+    lastDispatchedAtMs: Long,
+    lastMatchId: String?,
+): StartMatchDeliveryDecision {
+    if (lastDispatchedAtMs > 0 && incomingDispatchedAtMs <= 0) {
+        return StartMatchDeliveryDecision.STALE
+    }
+    if (incomingDispatchedAtMs < lastDispatchedAtMs) {
+        return StartMatchDeliveryDecision.STALE
+    }
+    if (
+        incomingDispatchedAtMs > 0 &&
+        incomingDispatchedAtMs == lastDispatchedAtMs &&
+        incomingMatchId == lastMatchId
+    ) {
+        return StartMatchDeliveryDecision.IDEMPOTENT
+    }
+    return StartMatchDeliveryDecision.APPLY
+}
 
 /**
  * Riceve `startMatch` dal telefono anche ad app chiusa (PRD C1 punto 7:
@@ -29,33 +78,52 @@ class PhoneListenerService : WearableListenerService() {
         const val EXTRA_MATCH_ID = "matchId"
         const val ACTION_RESUMABLE_UPDATED =
             "com.rallymate.wear.RESUMABLE_UPDATED"
+        private const val START_DELIVERY_PREFERENCES =
+            "rallymate_start_match_delivery"
+        private const val LAST_START_DISPATCHED_AT_MS =
+            "last_start_dispatched_at_ms"
+        private const val LAST_START_MATCH_ID = "last_start_match_id"
     }
 
     override fun onMessageReceived(event: MessageEvent) {
         when (event.path) {
-            SyncPaths.EVENTS_ACK -> acknowledgeEvents(event)
-            SyncPaths.START_MATCH -> handleStartMatchPayload(event.data)
-            SyncPaths.STATE_RESPONSE -> {
-                try {
-                    // Recovery: il telefono ha risposto con il log completo.
-                    val json = JSONObject(String(event.data))
-                    val matchId = json.getString("matchId")
-                    val events = MatchEvent.listFromJson(json.getString("events"))
-                    val store = LocalMatchStore(this)
-                    val format = store.loadFormat(matchId) ?: MatchFormat()
-                    if (events.isNotEmpty()) {
-                        val remoteIds = events.map { it.eventId }.toSet()
-                        val localTail = store.loadEvents(matchId).filter {
-                            it.eventId !in remoteIds
-                        }
-                        store.saveMatch(matchId, format, events + localTail)
-                    }
-                } catch (_: Exception) {
-                    // Recovery is best-effort; keep the local watch log intact.
-                }
-            }
-            SyncPaths.LIFECYCLE -> handleLifecyclePayload(event.data)
+            SyncPaths.EVENTS_ACK,
+            SyncPaths.EVENTS_ACK_V2,
+            -> acknowledgeEvents(event)
+            SyncPaths.START_MATCH,
+            SyncPaths.START_MATCH_V2,
+            -> handleStartMatchPayload(event.data)
+            SyncPaths.STATE_RESPONSE,
+            SyncPaths.STATE_RESPONSE_V2,
+            -> handleStateResponse(event)
+            SyncPaths.LIFECYCLE,
+            SyncPaths.LIFECYCLE_V2,
+            -> handleLifecyclePayload(event.data)
             SyncPaths.PING, SyncPaths.TEST_POINT -> acknowledgeTest(event)
+        }
+    }
+
+    private fun handleStateResponse(event: MessageEvent) {
+        try {
+            // Recovery: il telefono ha risposto con il log completo. A Star
+            // Point response on the legacy path is ignored fail-closed.
+            val json = JSONObject(String(event.data))
+            val matchId = json.getString("matchId")
+            val events = MatchEvent.listFromJson(json.getString("events"))
+            val store = LocalMatchStore(this)
+            val format = store.loadFormat(matchId) ?: return
+            if (event.path != SyncPaths.scoringTransport(format).stateResponse) {
+                return
+            }
+            if (events.isNotEmpty()) {
+                val remoteIds = events.map { it.eventId }.toSet()
+                val localTail = store.loadEvents(matchId).filter {
+                    it.eventId !in remoteIds
+                }
+                store.saveMatch(matchId, format, events + localTail)
+            }
+        } catch (_: Exception) {
+            // Recovery is best-effort; keep the local watch log intact.
         }
     }
 
@@ -81,6 +149,40 @@ class PhoneListenerService : WearableListenerService() {
             val json = JSONObject(String(raw))
             val lifecycle = WearMatchLifecycle.fromPayload(json) ?: return
             val store = LocalMatchStore(this)
+            val declaredScope = lifecycle.authorityScope?.let {
+                WearSnapshotAuthorityScope.fromWire(it) ?: return
+            }
+            val wireSummary = json.optString("summary").takeIf { it.isNotBlank() }
+                ?.let {
+                    runCatching {
+                        WearResumableMatch.fromJson(JSONObject(it))
+                    }.getOrNull()
+                }
+            val knownFormats = listOfNotNull(
+                lifecycle.format,
+                wireSummary?.format,
+                store.loadFormat(lifecycle.matchId),
+            )
+            val inferredScopes = knownFormats.map {
+                if (it.gameScoringMode == GameScoringMode.STAR_POINT) {
+                    WearSnapshotAuthorityScope.STAR_POINT
+                } else {
+                    WearSnapshotAuthorityScope.NON_STAR_POINT
+                }
+            }
+            if (declaredScope != null && inferredScopes.any { it != declaredScope }) {
+                return
+            }
+            val lifecycleScope = declaredScope
+                ?: inferredScopes.firstOrNull()
+            if (!store.acceptLifecycleAuthority(
+                    source = lifecycle.authoritySource,
+                    scope = lifecycleScope,
+                    version = lifecycle.authorityVersion,
+                )
+            ) {
+                return
+            }
             if (!store.markLifecycleApplied(lifecycle.idempotencyKey)) return
             val known = store.stateVersion(lifecycle.matchId)
             // A lower version never overwrites a newer local state, but a
@@ -99,9 +201,7 @@ class PhoneListenerService : WearableListenerService() {
                 // Never hijack the match currently open on this watch.
                 store.saveJournal(lifecycle.matchId, format, merged)
             }
-            val summary = json.optString("summary").takeIf { it.isNotBlank() }
-                ?.let { runCatching { WearResumableMatch.fromJson(JSONObject(it)) }.getOrNull() }
-                ?: buildSummary(store, lifecycle)
+            val summary = wireSummary ?: buildSummary(store, lifecycle)
             if (summary != null) store.applyLocalMatchUpdate(summary)
             broadcastResumableChanged()
         } catch (_: Exception) {
@@ -155,6 +255,30 @@ class PhoneListenerService : WearableListenerService() {
         try {
             val json = JSONObject(String(raw))
             val matchId = json.getString("matchId")
+            val dispatchedAtMs = json.optLong("startDispatchedAtMs", 0L)
+            val deliveryPreferences = getSharedPreferences(
+                START_DELIVERY_PREFERENCES,
+                MODE_PRIVATE,
+            )
+            when (
+                startMatchDeliveryDecision(
+                    incomingDispatchedAtMs = dispatchedAtMs,
+                    incomingMatchId = matchId,
+                    lastDispatchedAtMs = deliveryPreferences.getLong(
+                        LAST_START_DISPATCHED_AT_MS,
+                        0L,
+                    ),
+                    lastMatchId = deliveryPreferences.getString(
+                        LAST_START_MATCH_ID,
+                        null,
+                    ),
+                )
+            ) {
+                StartMatchDeliveryDecision.STALE,
+                StartMatchDeliveryDecision.IDEMPOTENT,
+                -> return
+                StartMatchDeliveryDecision.APPLY -> Unit
+            }
             val format = MatchFormat.fromJson(
                 JSONObject(json.getString("format"))
             )
@@ -206,6 +330,11 @@ class PhoneListenerService : WearableListenerService() {
                 json.optString("duoTeam").takeIf { it.isNotBlank() }
                     ?.let { runCatching { TeamId.fromWire(it) }.getOrNull() },
             )
+            // Absent on payloads from an older phone build: the stored default
+            // TEAM_A then matches what that phone's engine assumed.
+            json.optString("firstServer").takeIf { it.isNotBlank() }
+                ?.let { runCatching { TeamId.fromWire(it) }.getOrNull() }
+                ?.let { store.saveFirstServer(matchId, it) }
             val version = json.optInt("teamImageVersion", 0)
             val existing = store.loadTeamVisual(matchId)
             val expected = json.optBoolean("teamImageExpected", false)
@@ -221,6 +350,10 @@ class PhoneListenerService : WearableListenerService() {
                     },
                 ),
             )
+            deliveryPreferences.edit()
+                .putLong(LAST_START_DISPATCHED_AT_MS, dispatchedAtMs)
+                .putString(LAST_START_MATCH_ID, matchId)
+                .apply()
             startActivity(
                 MainActivityLaunchPolicy.applyTo(
                     Intent(this, MainActivity::class.java)
@@ -236,6 +369,13 @@ class PhoneListenerService : WearableListenerService() {
         try {
             val json = JSONObject(String(event.data))
             val matchId = json.getString("matchId")
+            val store = LocalMatchStore(this)
+            val format = store.loadFormat(matchId) ?: return
+            if (event.path != SyncPaths.scoringTransport(format).eventsAck) {
+                // In particular, never let a legacy phone ACK a Star Point
+                // journal it could only have interpreted as Advantage.
+                return
+            }
             val rows = json.getJSONArray("eventIds")
             val eventIds = buildSet {
                 for (index in 0 until minOf(rows.length(), 2_000)) {
@@ -248,8 +388,8 @@ class PhoneListenerService : WearableListenerService() {
             // Commit the ACK on-watch even if no UI process is waiting.  A
             // duplicate or out-of-order ACK is harmless because marking is by
             // immutable eventId.
-            LocalMatchStore(this).markSynced(matchId, eventIds)
-            EventAckRegistry.acknowledge(matchId, eventIds)
+            store.markSynced(matchId, eventIds)
+            EventAckRegistry.acknowledge(matchId, eventIds, event.path)
         } catch (_: Exception) {
             // Malformed ACKs never remove events from the durable journal.
         }
@@ -264,23 +404,23 @@ class PhoneListenerService : WearableListenerService() {
                     it.uri.path?.startsWith(SyncPaths.TEAM_IMAGE) == true ||
                         it.uri.path?.startsWith(SyncPaths.PROFILE_IMAGE) == true ||
                         it.uri.path == SyncPaths.WORKOUT_DETECTION_PREFERENCES ||
-                        it.uri.path == SyncPaths.START_MATCH ||
-                        it.uri.path == SyncPaths.RESUMABLE ||
-                        it.uri.path == SyncPaths.LIFECYCLE
+                        SyncPaths.isStartMatch(it.uri.path) ||
+                        SyncPaths.isResumable(it.uri.path) ||
+                        SyncPaths.isLifecycle(it.uri.path)
                 }
                 .forEach { item ->
                     val data = DataMapItem.fromDataItem(item).dataMap
-                    if (item.uri.path == SyncPaths.START_MATCH) {
+                    if (SyncPaths.isStartMatch(item.uri.path)) {
                         val payload = data.getByteArray("payload") ?: return@forEach
                         handleStartMatchPayload(payload)
                         return@forEach
                     }
-                    if (item.uri.path == SyncPaths.RESUMABLE) {
+                    if (SyncPaths.isResumable(item.uri.path)) {
                         val payload = data.getByteArray("payload") ?: return@forEach
                         handleResumablePayload(payload)
                         return@forEach
                     }
-                    if (item.uri.path == SyncPaths.LIFECYCLE) {
+                    if (SyncPaths.isLifecycle(item.uri.path)) {
                         val payload = data.getByteArray("payload") ?: return@forEach
                         handleLifecyclePayload(payload)
                         return@forEach
@@ -454,7 +594,7 @@ class PhoneListenerService : WearableListenerService() {
         Wearable.getMessageClient(this).sendMessage(
             event.sourceNodeId,
             SyncPaths.PONG,
-            JSONObject().put("nonce", nonce).put("kind", event.path).toString().toByteArray(),
+            scoringPongPayload(nonce, event.path).toString().toByteArray(),
         )
     }
 }

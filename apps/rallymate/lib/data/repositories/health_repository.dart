@@ -569,7 +569,7 @@ class HealthDataRepository {
   // ---------------------------------------------------------------------------
 
   /// Loads metric rows in [start, end] and collapses multi-source mirrors via
-  /// [HealthDeduplicationPolicy] (Padelandia preferred, hub mirrors dropped).
+  /// [HealthDeduplicationPolicy] (Momentum preferred, hub mirrors dropped).
   Future<List<HealthMetricRecord>> queryDeduplicatedMetrics({
     required DateTime start,
     required DateTime end,

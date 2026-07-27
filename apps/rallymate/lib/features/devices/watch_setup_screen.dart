@@ -249,7 +249,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
       icon: Icons.watch_outlined,
       title: 'Garmin Connect IQ',
       message:
-          'Padelandia usa il Mobile SDK ufficiale Garmin. Garmin Connect serve per condividere il watch con Padelandia.',
+          'Momentum usa il Mobile SDK ufficiale Garmin. Garmin Connect serve per condividere il watch con Momentum.',
       child: Column(
         children: [
           _CheckRow(
@@ -261,7 +261,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
             ok: _garminStatus['sdkReady'] == true,
           ),
           _CheckRow(
-            label: 'Garmin condiviso con Padelandia',
+            label: 'Garmin condiviso con Momentum',
             ok: _garminDevices.isNotEmpty,
           ),
         ],
@@ -273,7 +273,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
           : Icons.phonelink_setup,
       title: _garminDevices.isEmpty
           ? 'Seleziona il Garmin'
-          : 'Verifica Padelandia sul watch',
+          : 'Verifica Momentum sul watch',
       message: _garminDevices.isEmpty
           ? 'Su iPhone si aprirà Garmin Connect per scegliere quali dispositivi condividere. Su Android usiamo i Garmin già associati.'
           : 'Controlleremo installazione, connessione Bluetooth e mailbox Connect IQ.',
@@ -304,7 +304,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
               const _InfoBox(
                 icon: Icons.privacy_tip_outlined,
                 text:
-                    'La selezione è esplicita. UUID e identificativi Garmin restano sul telefono; al database arriva solo l’account Padelandia.',
+                    'La selezione è esplicita. UUID e identificativi Garmin restano sul telefono; al database arriva solo l’account Momentum.',
               ),
           ],
         ),
@@ -336,12 +336,12 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
       icon: Icons.pin_outlined,
       title: 'Prepara Fitbit OS',
       message:
-          'Genereremo un codice monouso. Nessuna password Fitbit viene condivisa con Padelandia.',
+          'Genereremo un codice monouso. Nessuna password Fitbit viene condivisa con Momentum.',
       child: const _InfoBox(
         icon: Icons.info_outline,
         text:
             'Fuori dallo Spazio Economico Europeo (SEE): apri la Gallery Fitbit, '
-            'installa Padelandia e tieni vicino telefono e watch. Il codice dura '
+            'installa Momentum e tieni vicino telefono e watch. Il codice dura '
             '10 minuti.\n\n'
             'Italia e SEE: Google ha rimosso le app di terze parti dalla Gallery '
             'Fitbit (giugno 2024). Questa integrazione non è installabile lì; '
@@ -353,7 +353,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
       title: 'Inserisci il codice in Fitbit',
       message: _fitbitCode == null
           ? 'Tocca il pulsante per generare il codice.'
-          : 'In Fitbit: Padelandia → Impostazioni → Codice di associazione.',
+          : 'In Fitbit: Momentum → Impostazioni → Codice di associazione.',
       child: _fitbitCode == null
           ? const SizedBox.shrink()
           : Semantics(
@@ -390,7 +390,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
       icon: Icons.add_circle_outline,
       title: 'Punto di prova dal Fitbit',
       message:
-          'Apri Padelandia sul Fitbit e segna un punto nuovo. Controlliamo solo '
+          'Apri Momentum sul Fitbit e segna un punto nuovo. Controlliamo solo '
           'la coda cloud: gli eventi restano in attesa e verranno applicati '
           'alla prossima sincronizzazione (nessuna cancellazione).',
       completed: _pointTested,
@@ -426,7 +426,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
           ? 'Google Health collegato'
           : 'Concedi il consenso',
       message:
-          'Padelandia richiede solo attività e metriche utili. Puoi revocare il collegamento in qualsiasi momento.',
+          'Momentum richiede solo attività e metriche utili. Puoi revocare il collegamento in qualsiasi momento.',
       child: _InfoBox(
         icon: Icons.lock_outline,
         text: _oauthStarted && _googleHealth?.connected != true
@@ -450,7 +450,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
       child: const _InfoBox(
         icon: Icons.schedule,
         text:
-            'Padelandia aggiorna il riepilogo quando apri la sezione e non usa questi dati per pubblicità o profilazione.',
+            'Momentum aggiorna il riepilogo quando apri la sezione e non usa questi dati per pubblicità o profilazione.',
         success: true,
       ),
     ),
@@ -531,8 +531,8 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
       if (!_planAllows(family, ref.read(entitlementsProvider))) {
         setState(
           () => _feedback = family.requiresPlan == 'pro'
-              ? 'Google Health e Fitbit Air richiedono Padelandia Pro.'
-              : 'Garmin e Fitbit OS con sync cloud richiedono Padelandia Plus.',
+              ? 'Google Health e Fitbit Air richiedono Momentum Pro.'
+              : 'Garmin e Fitbit OS con sync cloud richiedono Momentum Plus.',
         );
         if (mounted) {
           await pushPaywall(
@@ -641,7 +641,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
         if (registration['appInstalled'] != true) {
           await _providers.openGarminStore(device.nativeId);
           _message(
-            'Installa Padelandia dal Connect IQ Store sul Garmin, poi torna e ricontrolla.',
+            'Installa Momentum dal Connect IQ Store sul Garmin, poi torna e ricontrolla.',
           );
           return;
         }
@@ -663,7 +663,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
         final ok = await _perform(() => _providers.testGarmin(device.nativeId));
         if (ok != true) {
           _message(
-            'Nessun PONG. Apri Padelandia sul Garmin e avvicina il telefono.',
+            'Nessun PONG. Apri Momentum sul Garmin e avvicina il telefono.',
           );
           return;
         }
@@ -720,7 +720,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
         final info = await _perform(_providers.fitbitConnectionInfo);
         if (info == null || !info.isPairedLive) {
           _message(
-            'Fitbit non ha un token attivo sul server Padelandia. '
+            'Fitbit non ha un token attivo sul server Momentum. '
             'Inserisci di nuovo il codice sul watch.',
           );
           return;
@@ -742,7 +742,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
         );
         if (found != true) {
           _message(
-            'Nessun punto nuovo in coda. Apri Padelandia sul Fitbit, segna un '
+            'Nessun punto nuovo in coda. Apri Momentum sul Fitbit, segna un '
             'punto e riprova (gli eventi restano in coda).',
           );
           return;
@@ -771,7 +771,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
           });
           if (started == true) {
             setState(() => _oauthStarted = true);
-            _message('Completa il consenso Google e torna in Padelandia.');
+            _message('Completa il consenso Google e torna in Momentum.');
           }
           return;
         }
@@ -836,7 +836,7 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
       }
       _feedback = ok
           ? 'Conferma ricevuta dal watch.'
-          : 'Nessuna conferma. Apri Padelandia sul watch e riprova.';
+          : 'Nessuna conferma. Apri Momentum sul watch e riprova.';
     });
     return ok;
   }
@@ -961,8 +961,8 @@ class _WatchSetupScreenState extends ConsumerState<WatchSetupScreen> {
   }
 
   String _nativeCompanionHelp(String phonePlatform) => phonePlatform == 'ios'
-      ? 'Apri l’app Watch su iPhone, cerca Padelandia in “App disponibili” e tocca Installa.'
-      : 'Sul watch apri Google Play, cerca Padelandia e installa la companion.';
+      ? 'Apri l’app Watch su iPhone, cerca Momentum in “App disponibili” e tocca Installa.'
+      : 'Sul watch apri Google Play, cerca Momentum e installa la companion.';
 }
 
 class _Progress extends StatelessWidget {
@@ -1013,7 +1013,7 @@ class _StepIntro extends StatelessWidget {
     showIcon: true,
     title: platform == 'ios' ? 'iPhone rilevato' : 'Android rilevato',
     message:
-        'Padelandia adatterà il percorso ad Apple Watch, Wear OS, Garmin, Fitbit o servizi salute compatibili.',
+        'Momentum adatterà il percorso ad Apple Watch, Wear OS, Garmin, Fitbit o servizi salute compatibili.',
     child: const _InfoBox(
       icon: Icons.privacy_tip_outlined,
       text:
@@ -1122,7 +1122,7 @@ class _DiagnosticStep extends StatelessWidget {
       children: [
         _CheckRow(label: 'Watch associato al telefono', ok: state.paired),
         _CheckRow(
-          label: 'Companion Padelandia installata',
+          label: 'Companion Momentum installata',
           ok: state.companionInstalled,
         ),
         _CheckRow(label: 'Watch raggiungibile', ok: state.reachable),
@@ -1145,10 +1145,10 @@ class _CompanionStep extends StatelessWidget {
         ? 'Companion disponibile'
         : 'Installa la companion',
     message: state.companionInstalled
-        ? 'Padelandia è presente sul watch. Ora possiamo testare la comunicazione.'
+        ? 'Momentum è presente sul watch. Ora possiamo testare la comunicazione.'
         : family.watchOs == 'watchOS'
-        ? 'Apri l’app Watch su iPhone e installa Padelandia dalle app disponibili.'
-        : 'Sul watch apri Google Play, cerca Padelandia e completa l’installazione.',
+        ? 'Apri l’app Watch su iPhone e installa Momentum dalle app disponibili.'
+        : 'Sul watch apri Google Play, cerca Momentum e completa l’installazione.',
     child: _InfoBox(
       icon: Icons.info_outline,
       text:
@@ -1213,6 +1213,19 @@ class _DoneStep extends StatelessWidget {
         ),
         if (!healthOnly)
           _CheckRow(label: 'Scoring dal wearable', ok: connected),
+        if (!healthOnly) ...const [
+          SizedBox(height: 12),
+          _InfoBox(
+            icon: Icons.gavel_outlined,
+            text:
+                'In torneo la companion installata non è un\'autorizzazione. '
+                'I rulebook 2026 del CUPRA FIP Tour e di Premier Padel '
+                '(6.1.4 D) vietano i dispositivi elettronici dall\'inizio '
+                'dello scambio — per Premier Padel dal palleggio di '
+                'riscaldamento — fino a fine match, salvo approvazione del '
+                'Supervisor o Referee. Chiedi al giudice di gara.',
+          ),
+        ],
       ],
     ),
   );
@@ -1227,7 +1240,7 @@ class _RetiredTizenStep extends StatelessWidget {
     icon: Icons.update_disabled_outlined,
     title: done ? 'Guida Tizen completata' : 'Tizen non è più distribuibile',
     message:
-        'Samsung non accetta nuove app o aggiornamenti Tizen per Galaxy Watch. Padelandia non può pubblicare una nuova companion Tizen.',
+        'Samsung non accetta nuove app o aggiornamenti Tizen per Galaxy Watch. Momentum non può pubblicare una nuova companion Tizen.',
     child: const Column(
       children: [
         _InfoBox(

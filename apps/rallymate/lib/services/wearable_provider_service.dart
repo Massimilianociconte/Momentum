@@ -700,7 +700,7 @@ class WearableProviderService {
         'plan_required' => 'Questa integrazione richiede il piano indicato.',
         'rate_limited' => 'Troppi tentativi. Attendi qualche minuto.',
         'server_not_configured' =>
-          'Il provider non è ancora configurato sul server Padelandia.',
+          'Il provider non è ancora configurato sul server Momentum.',
         'reconnect_required' =>
           'Ricollega il provider e concedi di nuovo i permessi.',
         'provider_not_available' =>
@@ -726,7 +726,7 @@ class WearableProviderService {
     }
     if (client.auth.currentSession == null) {
       throw const WearableProviderException(
-        'Accedi al tuo account Padelandia prima di collegare il wearable.',
+        'Accedi al tuo account Momentum prima di collegare il wearable.',
       );
     }
     return client;

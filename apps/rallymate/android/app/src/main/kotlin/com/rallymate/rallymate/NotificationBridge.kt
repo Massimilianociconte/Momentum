@@ -233,7 +233,7 @@ class NotificationBridge(
 
 object RallyNotifications {
     private const val CHANNEL_ID = "padelandia_status"
-    private const val CHANNEL_NAME = "Padelandia"
+    private const val CHANNEL_NAME = "Momentum"
     private const val WORK_PREFIX = "rallymate_notification_"
 
     fun status(context: Context): Map<String, Any> {
@@ -313,7 +313,7 @@ object RallyNotifications {
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentIntent(pendingIntent)
-            .addAction(R.drawable.ic_stat_rallymate, "Apri Padelandia", pendingIntent)
+            .addAction(R.drawable.ic_stat_rallymate, "Apri Momentum", pendingIntent)
             .setAutoCancel(true)
             .setCategory(nativeCategory(category))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -338,7 +338,7 @@ object RallyNotifications {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
-                description = "Aggiornamenti partita, allenamento e riepiloghi Padelandia"
+                description = "Aggiornamenti partita, allenamento e riepiloghi Momentum"
             },
         )
     }

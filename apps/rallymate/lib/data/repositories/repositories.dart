@@ -557,6 +557,7 @@ class MatchRepository {
     String? matchId,
     bool duoMode = false,
     TeamId? duoTeam,
+    TeamId firstServer = TeamId.a,
   }) async {
     // Duo Mode: chi entra con un codice riusa il matchId condiviso della
     // sessione, così entrambi i telefoni parlano della stessa partita.
@@ -568,6 +569,7 @@ class MatchRepository {
             id: id,
             teamId: Value(teamId),
             formatJson: jsonEncode(format.toJson()),
+            firstServer: Value(firstServer.wire),
             status: const Value('IN_PROGRESS'),
             startTimeMs: Value(_nowMs()),
             myRole: Value(myRole.wire),
@@ -925,6 +927,7 @@ class MatchRepository {
       matchId: matchId,
       format: format,
       events: events,
+      firstServer: row.firstServerTeam,
       duoMode: row.duoMode,
       assignedTeam: row.duoTeam == null ? null : TeamId.fromWire(row.duoTeam!),
     );
@@ -1178,6 +1181,7 @@ class MatchRepository {
           matchId: row.id,
           format: format,
           events: events,
+          firstServer: row.firstServerTeam,
           duoMode: row.duoMode,
           assignedTeam: row.duoTeam == null ? null : myTeam,
         );

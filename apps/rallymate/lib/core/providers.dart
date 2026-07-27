@@ -176,7 +176,7 @@ final summariesProvider = FutureProvider<List<MatchSummary>>((ref) {
   return ref.watch(matchRepoProvider).completedSummaries();
 });
 
-/// Rating Padelandia (PRD F5): serie elo-lite ricalcolata in locale dallo
+/// Rating Momentum (PRD F5): serie elo-lite ricalcolata in locale dallo
 /// storico dei match completati. Deterministico e senza stato persistito.
 final ratingHistoryProvider = FutureProvider<RatingHistory>((ref) async {
   final summaries = await ref.watch(summariesProvider.future);

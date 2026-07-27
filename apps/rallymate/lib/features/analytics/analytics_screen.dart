@@ -1821,7 +1821,7 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
-/// Rating Padelandia (PRD F5): elo-lite locale che pesa le vittorie con la
+/// Rating Momentum (PRD F5): elo-lite locale che pesa le vittorie con la
 /// difficoltà dell'avversario. Serie ricalcolata dallo storico, zero stato.
 class _RatingCard extends ConsumerWidget {
   const _RatingCard();
@@ -1842,7 +1842,7 @@ class _RatingCard extends ConsumerWidget {
         : history.points;
 
     return SectionCard(
-      title: 'INDICE PADELANDIA · INDICATIVO',
+      title: 'INDICE MOMENTUM · INDICATIVO',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2000,7 +2000,7 @@ class _ExportPdfCardState extends ConsumerState<_ExportPdfCard> {
       final me = ref.read(meProvider).value;
       final name = (me?.nickname.isNotEmpty == true)
           ? me!.nickname
-          : (me?.name.isNotEmpty == true ? me!.name : 'Giocatore Padelandia');
+          : (me?.name.isNotEmpty == true ? me!.name : 'Giocatore Momentum');
       final bytes = await PdfReportService.seasonReport(
         playerName: name,
         windowLabel: 'ultime ${widget.summaries.length} partite',
@@ -2016,7 +2016,7 @@ class _ExportPdfCardState extends ConsumerState<_ExportPdfCard> {
               name: 'rallymate_report.pdf',
             ),
           ],
-          text: 'Il mio report padel — generato con Padelandia',
+          text: 'Il mio report padel — generato con Momentum',
         ),
       );
     } catch (_) {

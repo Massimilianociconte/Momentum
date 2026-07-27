@@ -1,4 +1,4 @@
-# 🎾 Padelandia
+# 🎾 Momentum
 
 **Segna i punti dal polso. Chiedi regole alla mascotte. Analizza ogni
 partita. Migliora come giocatore e come coppia.**
@@ -34,7 +34,7 @@ verità, lo stato è sempre ricostruito con il replay. L'undo funziona
 sempre (anche oltre i confini di game/set) perché è un evento anch'esso.
 Il motore è implementato tre volte con **semantica e wire format JSON
 identici** (Dart / Kotlin / Swift) e ogni port ha la stessa suite di test:
-golden point, vantaggi, tie-break 7-6, super tie-break, rotazione
+Star Point FIP 2026, golden point, vantaggi, tie-break 7-6, super tie-break, rotazione
 servizio, cambio campo, free play, undo, ricostruzione da JSON.
 
 ## Quick start
@@ -52,12 +52,12 @@ cd wear/wearos && ./gradlew :app:assembleDebug :app:testDebugUnitTest
 # 4. watchOS (engine test + target companion nel progetto iOS)
 cd wear/watchos/RallyMateCore && swift test
 cd ../../.. && ruby scripts/sync_watchos_target.rb
-# poi apri apps/rallymate/ios/Runner.xcworkspace e seleziona Runner o PadelandiaWatchApp
+# poi apri apps/rallymate/ios/Runner.xcworkspace e seleziona Runner o RallyMateWatchApp
 
 # 5. Backend
 cd backend/supabase && supabase db push && supabase functions deploy
 
-# 6. Landing Padelandia
+# 6. Landing Momentum
 cd apps/padelandia-web && npm ci && npm test
 ```
 
@@ -69,6 +69,9 @@ Contratto unico su tutte le piattaforme (eventi JSON idempotenti per
 | Percorso | Direzione | Payload |
 |---|---|---|
 | `/rallymate/start_match` | phone → watch | `{matchId, format, duoTeam?}` |
+| `/rallymate/v2/start_match` | phone → watch v2 | Star Point, stesso payload con schema esplicito |
+| `/rallymate/lifecycle` · `/rallymate/v2/lifecycle` | phone → watch | pausa/ripresa/fine + journal |
+| `/rallymate/resumable` · `/rallymate/v2/resumable` | phone → watch | snapshot autorevoli separati per compatibilità |
 | `/rallymate/events` | watch → phone | `{matchId, events[]}` |
 | `/rallymate/request_state` | watch → phone | `{matchId}` |
 | `/rallymate/state_response` | phone → watch | `{matchId, events[]}` |
@@ -79,6 +82,9 @@ team-scoped (annulla solo l'ultimo punto del proprio team).
 
 Trasporti: WatchConnectivity (iOS, con coda `transferUserInfo` offline) e
 Wearable Data Layer (Android, con store locale e flush al riaggancio).
+Star Point usa esclusivamente i path v2 dopo una prova fresca della capability
+`star_point_v1`; snapshot e lifecycle hanno una generazione autorevole monotona
+per impedire che una consegna offline fuori ordine riapra una partita rimossa.
 ⚠️ Wear OS: `applicationId` del watch **deve** restare
 `com.rallymate.rallymate` (uguale al telefono) e firmato con lo stesso
 certificato, altrimenti il Data Layer non collega le app.
@@ -105,6 +111,10 @@ Due team connessi segnano la stessa partita da due smartwatch, uno per team.
   in 2h); l'altro team entra con "Ho un codice" — anche da piano Free.
 - **Scoring**: ogni telefono/watch segna SOLO i punti del proprio team
   (barriera anti-duplicazione); undo team-scoped, identico nei tre engine.
+- **Compatibilità Star Point**: finché le RPC Duo non negoziano il protocollo
+  di punteggio v2 di entrambi i telefoni, Star Point è bloccato in modo
+  esplicito nel form, nel service e dal trigger Supabase. Golden point e
+  vantaggi restano disponibili senza variazioni.
 - **Sync**: locale-first. Push degli eventi propri su `duo_events`
   (idempotente per `eventId`, RLS autorizza solo il proprio team) + pull con
   polling 4s dalla schermata live; l'ordine autorevole è la `seq` del server
@@ -121,6 +131,8 @@ Due team connessi segnano la stessa partita da due smartwatch, uno per team.
   `[DUO][TEST-USER]`.
 - Backend: `backend/supabase/migrations/0008_duo_mode.sql`
   (`duo_sessions`, `duo_events`, RPC `duo_create_session`/`duo_join_session`).
+  Il contenimento Star Point è in
+  `20260726223000_block_star_point_duo_without_protocol_negotiation.sql`.
 
 ## Account gratuito e profilo base
 

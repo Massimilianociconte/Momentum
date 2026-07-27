@@ -1,4 +1,4 @@
-# Padelandia Fitbit OS
+# Momentum Fitbit OS
 
 Native Fitbit OS application for the supported Versa/Sense generation. This is
 separate from Fitbit Air, which has no screen and uses Google Health instead.
@@ -30,10 +30,10 @@ separate from Fitbit Air, which has no screen and uses Google Health instead.
   first-install subscription notice.
 - Completed matches expose visible New Match navigation while unsent events
   from prior matches remain in the acknowledged outbox.
-- App unload stops and saves only the exercise Padelandia still owns; the match
+- App unload stops and saves only the exercise Momentum still owns; the match
   remains resumable without leaving an Exercise API session active or reopening
   it automatically.
-- Workout start remains an explicit action inside Padelandia. Fitbit OS exposes
+- Workout start remains an explicit action inside Momentum. Fitbit OS exposes
   no documented cross-app callback that can wake this app when the system or a
   different app starts an exercise.
 
@@ -84,7 +84,7 @@ produce release artifacts in controlled CI for the selected environment.
 - Confirm the target country still permits third-party installation before
   preparing a listing. Do not submit an Italian/EEA availability claim.
 - Where available, upload OS 4 and OS 5 binaries to one Gallery listing.
-- Mark the listing as **Paid** because access depends on a Padelandia Plus
+- Mark the listing as **Paid** because access depends on a Momentum Plus
   subscription managed through Apple/Google stores.
 - Keep the in-app first-install notice aligned with the actual localized store
   price; never advertise a trial unless configured in both stores.

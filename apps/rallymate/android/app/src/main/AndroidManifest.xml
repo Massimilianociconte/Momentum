@@ -51,7 +51,7 @@
     </queries>
 
     <application
-        android:label="Padelandia"
+        android:label="Momentum"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"

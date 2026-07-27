@@ -11,7 +11,7 @@ const RM_RECORDING_MODE_KEY = "rallymate_recording_mode_v1";
 const RM_ACTIVITY_START_TOLERANCE_SECONDS = 10;
 
 // Who owns the FIT recording for a match. A Connect IQ device app may own one
-// recording session at a time, so the user picks the owner and Padelandia never
+// recording session at a time, so the user picks the owner and Momentum never
 // competes for it.
 const RM_MODE_RALLYMATE = "RALLYMATE_MANAGED";
 const RM_MODE_EXTERNAL = "EXTERNAL_MANAGED";
@@ -377,7 +377,7 @@ class RallyMateActivitySession {
             return null;
         }
         var options = {
-            :name => "Padelandia",
+            :name => "Momentum",
             :sport => ActivityRecording.SPORT_TENNIS,
             :subSport => ActivityRecording.SUB_SPORT_GENERIC
         };

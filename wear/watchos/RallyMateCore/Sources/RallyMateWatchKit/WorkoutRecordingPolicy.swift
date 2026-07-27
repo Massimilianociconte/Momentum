@@ -20,7 +20,7 @@ public enum WatchHealthRecordingMode: String, Codable, CaseIterable, Sendable, I
 
     public var title: String {
         switch self {
-        case .rallyMateManaged: "Registra con Padelandia"
+        case .rallyMateManaged: "Registra con Momentum"
         case .externalManaged: "Uso l'app Allenamento"
         case .disabled: "Non registrare"
         }
@@ -29,9 +29,9 @@ public enum WatchHealthRecordingMode: String, Codable, CaseIterable, Sendable, I
     public var subtitle: String {
         switch self {
         case .rallyMateManaged:
-            "Padelandia apre e chiude l'unico allenamento della partita."
+            "Momentum apre e chiude l'unico allenamento della partita."
         case .externalManaged:
-            "Padelandia segna solo i punti e collega dopo il workout da Salute."
+            "Momentum segna solo i punti e collega dopo il workout da Salute."
         case .disabled:
             "Solo punteggio, nessun dato salute."
         }
@@ -39,7 +39,7 @@ public enum WatchHealthRecordingMode: String, Codable, CaseIterable, Sendable, I
 
     public var shortLabel: String {
         switch self {
-        case .rallyMateManaged: "Padelandia"
+        case .rallyMateManaged: "Momentum"
         case .externalManaged: "App esterna"
         case .disabled: "Off"
         }

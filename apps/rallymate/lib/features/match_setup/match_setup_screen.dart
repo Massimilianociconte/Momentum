@@ -56,6 +56,10 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
   /// Modalità scoring: un solo device (classica) o Duo Mode (premium).
   bool _duoMode = false;
 
+  /// FIP Regola 4: chi serve per primo si decide al sorteggio. Serve, risposta,
+  /// break e hold derivano dalla rotazione, quindi va scelto prima di iniziare.
+  TeamId _firstServer = TeamId.a;
+
   /// Duo: team che questo device segnerà nella timeline condivisa.
   TeamId _duoTeam = TeamId.a;
 
@@ -107,8 +111,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
           (jsonDecode(last.formatJson) as Map).cast<String, Object?>(),
         );
       } catch (_) {}
-      if (last.teamId != null &&
-          teams.any((t) => t.id == last!.teamId)) {
+      if (last.teamId != null && teams.any((t) => t.id == last!.teamId)) {
         teamId = last.teamId;
       }
       if (last.myRole.isNotEmpty) {
@@ -182,7 +185,21 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                 ChoiceChip(
                   label: Text(f.name),
                   selected: _format.id == f.id,
-                  onSelected: (_) => setState(() => _format = f),
+                  onSelected: (selected) {
+                    if (!selected) return;
+                    final disablesDuo = _duoMode && !supportsDuoScoring(f);
+                    setState(() {
+                      _format = f;
+                      if (disablesDuo) _duoMode = false;
+                    });
+                    if (disablesDuo) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(duoUnsupportedFormatMessage(f)),
+                        ),
+                      );
+                    }
+                  },
                   selectedColor: RallyColors.lime.withValues(alpha: 0.22),
                   labelStyle: TextStyle(
                     fontWeight: FontWeight.w700,
@@ -201,6 +218,43 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               style: const TextStyle(color: Colors.white54, fontSize: 12),
             ),
           ),
+          if (!_format.freePlay) ...[
+            const SizedBox(height: 16),
+            _sectionTitle('CHI SERVE PER PRIMO'),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final entry in const [
+                  (TeamId.a, 'Noi'),
+                  (TeamId.b, 'Loro'),
+                ])
+                  ChoiceChip(
+                    label: Text(entry.$2),
+                    selected: _firstServer == entry.$1,
+                    onSelected: (selected) {
+                      if (!selected) return;
+                      setState(() => _firstServer = entry.$1);
+                    },
+                    selectedColor: RallyColors.lime.withValues(alpha: 0.22),
+                    labelStyle: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: _firstServer == entry.$1
+                          ? RallyColors.lime
+                          : Colors.white70,
+                    ),
+                  ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Deciso al sorteggio (FIP Regola 4). Serve per attribuire '
+                'correttamente servizio, risposta, break e hold.',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           _sectionTitle('TEAM'),
           if (teams.isNotEmpty)
@@ -324,9 +378,8 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               divisions: 4,
               label: '${_difficulty.score} — ${_difficultyLabel(_difficulty)}',
               activeColor: RallyColors.lime,
-              onChanged: (v) => setState(
-                () => _difficulty = OpponentDifficulty.fromScore(v),
-              ),
+              onChanged: (v) =>
+                  setState(() => _difficulty = OpponentDifficulty.fromScore(v)),
             ),
             Center(
               child: Text(
@@ -402,6 +455,12 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               _showDuoPaywall();
               return;
             }
+            if (wantDuo && !supportsDuoScoring(_format)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(duoUnsupportedFormatMessage(_format))),
+              );
+              return;
+            }
             setState(() => _duoMode = wantDuo);
           },
           child: Column(
@@ -444,9 +503,12 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                     ),
                   ],
                 ),
-                subtitle: const Text(
-                  'Ogni team segna i propri punti dal proprio smartwatch',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                subtitle: Text(
+                  supportsDuoScoring(_format)
+                      ? 'Ogni team segna i propri punti dal proprio smartwatch'
+                      : 'Non disponibile con Star Point finché entrambi i '
+                            'telefoni non negoziano il protocollo v2',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 activeColor: RallyColors.lime,
                 contentPadding: EdgeInsets.zero,
@@ -633,10 +695,20 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
     if (f.freePlay) return 'Conteggio punti libero, senza game e set';
     final parts = <String>[
       f.setsToWin == 1 ? '1 set' : 'Al meglio di ${f.maxSets} set',
-      f.goldenPoint
-          ? 'a 40 pari, prossimo punto decisivo'
-          : 'a 40 pari, vantaggio AD e due punti di scarto',
-      if (f.superTieBreakDecider) 'super tie-break al posto del 3° set',
+      switch (f.gameScoringMode) {
+        GameScoringMode.goldenPoint => 'a 40 pari, prossimo punto decisivo',
+        GameScoringMode.advantage =>
+          'a 40 pari, vantaggio AD e due punti di scarto',
+        GameScoringMode.starPoint =>
+          'due cicli di vantaggio; a parità 3 lo Star Point decide il game',
+      },
+      'set a ${f.gamesPerSet} game con 2 di scarto',
+      if (f.superTieBreakDecider)
+        'ultimo set sostituito da un tie-break a ${f.superTieBreakPoints} punti'
+      else if (!f.tieBreakInDecidingSet)
+        'set decisivo senza tie-break, a due game di scarto'
+      else if (f.tieBreakAtGamesAll)
+        'tie-break a ${f.tieBreakPoints} sul ${f.gamesPerSet}-${f.gamesPerSet}',
     ];
     return parts.join(' · ');
   }
@@ -668,6 +740,16 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
   Future<void> _start({bool toWatch = false}) async {
     setState(() => _creating = true);
     try {
+      // Defense in depth for restored/racing form state: do not create a local
+      // match before the authoritative Duo compatibility gate.
+      if (_duoMode && !supportsDuoScoring(_format)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(duoUnsupportedFormatMessage(_format))),
+          );
+        }
+        return;
+      }
       final teams = ref.read(teamRepoProvider);
       final players = ref.read(playerRepoProvider);
       final ents = ref.read(entitlementsProvider);
@@ -689,7 +771,8 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
             pushPaywall(
               context,
               plan: Plan.plus,
-              reason: 'Team illimitati con Plus. Le funzioni Free restano attive.',
+              reason:
+                  'Team illimitati con Plus. Le funzioni Free restano attive.',
               returnTo: '/match/new',
             );
           }
@@ -758,6 +841,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               location: _composedLocation(),
               duoMode: true,
               duoTeam: _duoTeam,
+              firstServer: _firstServer,
             );
         final res = await ref
             .read(duoServiceProvider)
@@ -765,6 +849,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               matchId: match.id,
               format: _format,
               myTeam: _duoTeam,
+              firstServer: _firstServer,
             );
         if (res.error != null) {
           // Delete only after a definitive server rejection. A timeout or a
@@ -797,14 +882,15 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
             tags: _tags,
             difficulty: _difficulty,
             location: _composedLocation(),
+            firstServer: _firstServer,
           );
       if (toWatch) {
         final devices =
             ref.read(connectedDevicesProvider).valueOrNull ?? const [];
         final ready = devices.where(isScoringWearableReady).toList();
         final native = ref.read(watchSyncProvider);
-        final canDispatch = ready.isNotEmpty ||
-            (native.companionInstalled && native.paired);
+        final canDispatch =
+            ready.isNotEmpty || (native.companionInstalled && native.paired);
         if (!canDispatch) {
           if (mounted) {
             final goSetup = await showModalBottomSheet<bool>(
@@ -829,10 +915,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                         'Completa la configurazione guidata dello smartwatch '
                         'prima di inviare la partita al polso. Puoi comunque '
                         'segnare sul telefono.',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          height: 1.35,
-                        ),
+                        style: TextStyle(color: Colors.white70, height: 1.35),
                       ),
                       const SizedBox(height: 16),
                       FilledButton(

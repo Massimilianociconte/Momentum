@@ -81,6 +81,7 @@ class LiveMatchController
       matchId: arg,
       format: format,
       events: events,
+      firstServer: row.firstServerTeam,
       duoMode: row.duoMode,
       assignedTeam: duoTeam,
       sourceUserId: row.duoMode ? ref.read(duoServiceProvider).userId : null,
@@ -178,6 +179,7 @@ class LiveMatchController
       matchId: arg,
       format: current.format,
       events: events,
+      firstServer: row.firstServerTeam,
       duoMode: row.duoMode,
       assignedTeam: duoTeam,
       sourceUserId: row.duoMode ? ref.read(duoServiceProvider).userId : null,
@@ -210,6 +212,7 @@ class LiveMatchController
     int? freePlayB,
     int? tieBreakA,
     int? tieBreakB,
+    int? deuceNumber,
   }) {
     // Duo: absolute score edits never leave the phone (server forbids
     // SCORE_EDITED). Refuse locally to avoid irreversible timeline forks.
@@ -225,6 +228,7 @@ class LiveMatchController
         freePlayB: freePlayB,
         tieBreakA: tieBreakA,
         tieBreakB: tieBreakB,
+        deuceNumber: deuceNumber,
       ),
     );
   }
@@ -263,8 +267,9 @@ class LiveMatchController
   Future<void> _mutateGuarded(
     ScoringResult Function(PadelScoringEngine) op,
   ) async {
-    final blocked =
-        await ref.read(matchScoringLockProvider).isPhoneScoringBlocked(arg);
+    final blocked = await ref
+        .read(matchScoringLockProvider)
+        .isPhoneScoringBlocked(arg);
     if (blocked) {
       final current = state.valueOrNull;
       if (current == null) return;
@@ -337,7 +342,8 @@ class LiveMatchController
     final completedNow =
         result.state.isCompleted &&
         result.transitions.contains(ScoreTransition.matchWon);
-    final reopenedFromComplete = current.score.isCompleted &&
+    final reopenedFromComplete =
+        current.score.isCompleted &&
         !result.state.isCompleted &&
         result.transitions.contains(ScoreTransition.undone);
     if (reopenedFromComplete) {
@@ -395,6 +401,7 @@ class LiveMatchController
       matchId: arg,
       format: current.format,
       events: events,
+      firstServer: row.firstServerTeam,
       duoMode: row.duoMode,
       assignedTeam: duoTeam,
       sourceUserId: row.duoMode ? ref.read(duoServiceProvider).userId : null,

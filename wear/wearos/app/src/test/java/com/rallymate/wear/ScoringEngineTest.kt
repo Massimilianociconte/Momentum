@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.json.JSONObject
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
 
@@ -53,6 +54,98 @@ class ScoringEngineTest {
         }
     }
 
+    /** Like [winGame] but returns the transitions of the game-winning point. */
+    private fun playGame(e: ScoringEngine, team: TeamId): List<Transition> {
+        val games = if (team == TeamId.A) e.state.gamesA else e.state.gamesB
+        val sets = if (team == TeamId.A) e.state.setsA else e.state.setsB
+        while (true) {
+            val transitions = e.addPoint(team).second
+            val g = if (team == TeamId.A) e.state.gamesA else e.state.gamesB
+            val s = if (team == TeamId.A) e.state.setsA else e.state.setsB
+            if (g > games || s > sets || e.state.completed) return transitions
+        }
+    }
+
+    private fun reachStarPoint(e: ScoringEngine) {
+        repeat(3) {
+            e.addPoint(TeamId.A)
+            e.addPoint(TeamId.B)
+        }
+        assertEquals(1, e.state.deuceNumber)
+        assertEquals("DEUCE 1 · VANTAGGI", e.state.pointSituation())
+
+        e.addPoint(TeamId.A)
+        assertEquals("AD 1 · VANTAGGIO NOI", e.state.pointSituation())
+        e.addPoint(TeamId.B)
+        assertEquals(2, e.state.deuceNumber)
+        assertEquals("DEUCE 2 · VANTAGGI", e.state.pointSituation())
+
+        e.addPoint(TeamId.B)
+        assertEquals("AD 2 · VANTAGGIO LORO", e.state.pointSituation())
+        e.addPoint(TeamId.A)
+        assertEquals(3, e.state.deuceNumber)
+        assertTrue(e.state.starPointActive)
+        assertEquals("STAR POINT", e.state.pointSituation())
+    }
+
+    @Test
+    fun matchFormatV3_roundTripAndLegacyFallbackAreDeterministic() {
+        val encoded = MatchFormat.STAR_POINT_BO3.toJson()
+        assertEquals(3, encoded.getInt("formatSchemaVersion"))
+        assertEquals("STAR_POINT", encoded.getString("gameScoringMode"))
+        assertFalse(encoded.has("schemaVersion"))
+        assertFalse(encoded.has("mode"))
+        assertFalse(encoded.getBoolean("goldenPoint"))
+        assertEquals(
+            MatchFormat.STAR_POINT_BO3,
+            MatchFormat.fromJson(encoded),
+        )
+        assertEquals(
+            MatchFormat.CURRENT_SCHEMA_VERSION,
+            MatchFormat.fromJson(encoded).formatSchemaVersion,
+        )
+
+        val legacyGolden = MatchFormat.fromJson(
+            JSONObject()
+                .put("id", "LEGACY_GOLDEN")
+                .put("goldenPoint", true),
+        )
+        val legacyAdvantage = MatchFormat.fromJson(
+            JSONObject()
+                .put("id", "LEGACY_ADV")
+                .put("goldenPoint", false),
+        )
+        assertEquals(GameScoringMode.GOLDEN_POINT, legacyGolden.gameScoringMode)
+        assertEquals(GameScoringMode.ADVANTAGE, legacyAdvantage.gameScoringMode)
+
+        val canonicalV2WinsOverLegacy = MatchFormat.fromJson(
+            JSONObject()
+                .put("id", "STAR_POINT_BO3")
+                .put("formatSchemaVersion", 2)
+                .put("gameScoringMode", "STAR_POINT")
+                .put("mode", "GOLDEN_POINT")
+                .put("goldenPoint", true),
+        )
+        assertEquals(
+            GameScoringMode.STAR_POINT,
+            canonicalV2WinsOverLegacy.gameScoringMode,
+        )
+        val transientAliasFallback = MatchFormat.fromJson(
+            JSONObject()
+                .put("id", "STAR_POINT_BO3")
+                .put("schemaVersion", 2)
+                .put("mode", "STAR_POINT")
+                .put("goldenPoint", true),
+        )
+        assertEquals(
+            GameScoringMode.STAR_POINT,
+            transientAliasFallback.gameScoringMode,
+        )
+        assertEquals(GameScoringMode.GOLDEN_POINT, MatchFormat().gameScoringMode)
+        assertEquals(MatchFormat.GOLDEN_BO3, MatchFormat.PRESETS.first())
+        assertTrue(MatchFormat.STAR_POINT_BO3 in MatchFormat.PRESETS)
+    }
+
     @Test
     fun goldenPoint_fourPointsWinGame() {
         val e = engine().also { it.start() }
@@ -68,7 +161,7 @@ class ScoringEngineTest {
         repeat(3) { e.addPoint(TeamId.A); e.addPoint(TeamId.B) }
         assertEquals(
             "40 PARI · PUNTO DECISIVO",
-            e.state.pointSituation(goldenPoint = true),
+            e.state.pointSituation(),
         )
         e.addPoint(TeamId.B)
         assertEquals(1, e.state.gamesB)
@@ -76,19 +169,24 @@ class ScoringEngineTest {
 
     @Test
     fun advantage_deuceAdGame() {
-        val e = engine(MatchFormat(id = "ADV_BO3", goldenPoint = false))
+        val e = engine(
+            MatchFormat(
+                id = "ADV_BO3",
+                gameScoringMode = GameScoringMode.ADVANTAGE,
+            ),
+        )
             .also { it.start() }
         repeat(3) { e.addPoint(TeamId.A); e.addPoint(TeamId.B) }
+        assertEquals(0, e.state.deuceNumber)
         assertEquals(
             "40 PARI · VANTAGGI",
-            e.state.pointSituation(goldenPoint = false),
+            e.state.pointSituation(),
         )
         e.addPoint(TeamId.A) // AD A
         assertEquals("AD", e.state.pointsLabel(TeamId.A))
         assertEquals(
             "VANTAGGIO CASA · GAME POINT",
             e.state.pointSituation(
-                goldenPoint = false,
                 teamALabel = "CASA",
                 teamBLabel = "OSPITI",
             ),
@@ -97,7 +195,7 @@ class ScoringEngineTest {
         assertEquals("40", e.state.pointsLabel(TeamId.A))
         assertEquals(
             "40 PARI · VANTAGGI",
-            e.state.pointSituation(goldenPoint = false),
+            e.state.pointSituation(),
         )
         e.addPoint(TeamId.B)
         e.addPoint(TeamId.B)
@@ -106,7 +204,12 @@ class ScoringEngineTest {
 
     @Test
     fun advantage_alternatesThroughDeuceAndUndoRestoresDeuce() {
-        val e = engine(MatchFormat(id = "ADV_BO3", goldenPoint = false))
+        val e = engine(
+            MatchFormat(
+                id = "ADV_BO3",
+                gameScoringMode = GameScoringMode.ADVANTAGE,
+            ),
+        )
             .also { it.start() }
         repeat(3) { e.addPoint(TeamId.A); e.addPoint(TeamId.B) }
 
@@ -131,6 +234,110 @@ class ScoringEngineTest {
         e.undo()
         assertEquals("40", e.state.pointsLabel(TeamId.A))
         assertEquals("40", e.state.pointsLabel(TeamId.B))
+    }
+
+    @Test
+    fun starPoint_twoAdvantageCyclesThenNextPointWins() {
+        val e = engine(MatchFormat.STAR_POINT_BO3).also { it.start() }
+        reachStarPoint(e)
+
+        assertEquals(
+            "La coppia in risposta sceglie il lato",
+            e.state.pointSituationHint(),
+        )
+        assertEquals(
+            "Star Point. Punto decisivo. La coppia in risposta sceglie il lato.",
+            e.state.pointSituationAccessibility(),
+        )
+        e.addPoint(TeamId.B)
+        assertEquals(1, e.state.gamesB)
+        assertEquals(0, e.state.deuceNumber)
+        assertFalse(e.state.starPointActive)
+    }
+
+    @Test
+    fun starPoint_advantageCanStillBeConvertedBeforeThirdDeuce() {
+        val e = engine(MatchFormat.STAR_POINT_BO3).also { it.start() }
+        repeat(3) {
+            e.addPoint(TeamId.A)
+            e.addPoint(TeamId.B)
+        }
+        e.addPoint(TeamId.A)
+        e.addPoint(TeamId.A)
+
+        assertEquals(1, e.state.gamesA)
+        assertEquals(0, e.state.deuceNumber)
+    }
+
+    @Test
+    fun starPoint_undoAcrossThirdDeuceAndGameRebuildsExactState() {
+        val e = engine(MatchFormat.STAR_POINT_BO3).also { it.start() }
+        reachStarPoint(e)
+
+        e.undo()
+        assertEquals(2, e.state.deuceNumber)
+        assertEquals(TeamId.B, e.state.advantage)
+        assertEquals("AD 2 · VANTAGGIO LORO", e.state.pointSituation())
+
+        // Reapply the cancelled return-to-deuce as a fresh event.
+        e.addPoint(TeamId.A)
+        assertTrue(e.state.starPointActive)
+        e.addPoint(TeamId.A)
+        assertEquals(1, e.state.gamesA)
+
+        e.undo()
+        assertEquals(0, e.state.gamesA)
+        assertEquals(3, e.state.deuceNumber)
+        assertTrue(e.state.starPointActive)
+        assertEquals("STAR POINT", e.state.pointSituation())
+    }
+
+    @Test
+    fun starPoint_journalReplayPreservesThirdDeuce() {
+        val e = engine(MatchFormat.STAR_POINT_BO3).also { it.start() }
+        reachStarPoint(e)
+
+        val replayed = engine(MatchFormat.STAR_POINT_BO3)
+        replayed.loadEvents(
+            MatchEvent.listFromJson(MatchEvent.listToJson(e.allEvents)),
+        )
+        assertEquals(e.state, replayed.state)
+        assertEquals(3, replayed.state.deuceNumber)
+        assertTrue(replayed.state.starPointActive)
+    }
+
+    @Test
+    fun scoreEditResetsOrExplicitlyRestoresStarPointContext() {
+        val e = engine(MatchFormat.STAR_POINT_BO3).also { it.start() }
+        reachStarPoint(e)
+        val resetEdit = MatchEvent(
+            eventId = "edit-reset",
+            matchId = "m1",
+            timestampMs = 100,
+            type = EventType.SCORE_EDITED,
+            payload = JSONObject()
+                .put("pointsA", 3)
+                .put("pointsB", 3)
+                .put("gamesA", 0)
+                .put("gamesB", 0),
+        )
+        e.loadEvents(e.allEvents + resetEdit)
+        assertEquals(1, e.state.deuceNumber)
+        assertFalse(e.state.starPointActive)
+
+        val restoreEdit = resetEdit.copy(
+            eventId = "edit-restore",
+            timestampMs = 101,
+            payload = JSONObject()
+                .put("pointsA", 3)
+                .put("pointsB", 3)
+                .put("gamesA", 0)
+                .put("gamesB", 0)
+                .put("deuceNumber", 3),
+        )
+        e.loadEvents(e.allEvents + restoreEdit)
+        assertEquals(3, e.state.deuceNumber)
+        assertTrue(e.state.starPointActive)
     }
 
     @Test
@@ -211,17 +418,33 @@ class ScoringEngineTest {
 
     @Test
     fun applicationAck_isMatchScopedAndAcceptsOnlyAcknowledgedIds() = runBlocking {
-        val waiter = EventAckRegistry.register("match-a", setOf("e1", "e2"))
+        val waiter = EventAckRegistry.register(
+            "match-a",
+            setOf("e1", "e2"),
+            SyncPaths.EVENTS_ACK,
+        )
 
-        EventAckRegistry.acknowledge("match-b", setOf("e1", "e2"))
+        EventAckRegistry.acknowledge(
+            "match-b",
+            setOf("e1", "e2"),
+            SyncPaths.EVENTS_ACK,
+        )
         assertFalse(waiter.result.isCompleted)
 
-        EventAckRegistry.acknowledge("match-a", setOf("old", "e2"))
+        EventAckRegistry.acknowledge(
+            "match-a",
+            setOf("old", "e2"),
+            SyncPaths.EVENTS_ACK,
+        )
         assertEquals(setOf("e2"), waiter.result.await())
 
         // Duplicate/out-of-order ACKs have no effect on an already completed
         // waiter and can never acknowledge a different event implicitly.
-        EventAckRegistry.acknowledge("match-a", setOf("e1"))
+        EventAckRegistry.acknowledge(
+            "match-a",
+            setOf("e1"),
+            SyncPaths.EVENTS_ACK,
+        )
         assertEquals(setOf("e2"), waiter.result.await())
     }
 
@@ -396,6 +619,92 @@ class ScoringEngineTest {
         val (events, _) = e.undo(TeamId.B)
         assertTrue(events.isEmpty())
         assertEquals("15", e.state.pointsLabel(TeamId.A))
+    }
+
+    // FIP Rules of Padel, Rule 11 (Change of ends): every odd game, and at the
+    // end of a set only when that set's total number of games is odd.
+
+    @Test
+    fun changeOfEnds_setWonSixFour_doesNotChangeEnds() {
+        val e = engine().also { it.start() }
+        repeat(4) {
+            playGame(e, TeamId.A)
+            playGame(e, TeamId.B)
+        }
+        playGame(e, TeamId.A)
+        val transitions = playGame(e, TeamId.A) // 6-4 → set
+        assertTrue(Transition.SET_WON in transitions)
+        assertFalse(Transition.SIDE_CHANGE in transitions)
+        assertFalse(e.state.sideChangePending)
+    }
+
+    @Test
+    fun changeOfEnds_deferredChangeHappensAfterFirstGameOfNextSet() {
+        val e = engine().also { it.start() }
+        repeat(4) {
+            playGame(e, TeamId.A)
+            playGame(e, TeamId.B)
+        }
+        playGame(e, TeamId.A)
+        playGame(e, TeamId.A) // 6-4, no change of ends yet
+        val transitions = playGame(e, TeamId.B) // first game of set 2
+        assertTrue(Transition.SIDE_CHANGE in transitions)
+        assertTrue(e.state.sideChangePending)
+    }
+
+    @Test
+    fun changeOfEnds_setWonSixThree_changesEnds() {
+        val e = engine().also { it.start() }
+        repeat(3) {
+            playGame(e, TeamId.A)
+            playGame(e, TeamId.B)
+        }
+        playGame(e, TeamId.A)
+        playGame(e, TeamId.A)
+        val transitions = playGame(e, TeamId.A) // 6-3 → set
+        assertTrue(Transition.SET_WON in transitions)
+        assertTrue(Transition.SIDE_CHANGE in transitions)
+        assertTrue(e.state.sideChangePending)
+    }
+
+    @Test
+    fun changeOfEnds_setWonSixLove_doesNotChangeEnds() {
+        val e = engine().also { it.start() }
+        repeat(5) { playGame(e, TeamId.A) }
+        val transitions = playGame(e, TeamId.A) // 6-0 → set
+        assertFalse(Transition.SIDE_CHANGE in transitions)
+        assertFalse(e.state.sideChangePending)
+    }
+
+    @Test
+    fun changeOfEnds_setWonOnTieBreak_changesEnds() {
+        val e = engine().also { it.start() }
+        repeat(6) {
+            playGame(e, TeamId.A)
+            playGame(e, TeamId.B)
+        }
+        assertTrue(e.state.inTieBreak)
+        var transitions: List<Transition> = emptyList()
+        repeat(7) { transitions = e.addPoint(TeamId.A).second }
+        assertTrue(Transition.SET_WON in transitions)
+        assertTrue(Transition.SIDE_CHANGE in transitions)
+        assertTrue(e.state.sideChangePending)
+    }
+
+    @Test
+    fun changeOfEnds_matchWinningSet_leavesNoPendingChange() {
+        val e = engine().also { it.start() }
+        winSet(e, TeamId.A)
+        repeat(3) {
+            playGame(e, TeamId.A)
+            playGame(e, TeamId.B)
+        }
+        playGame(e, TeamId.A)
+        playGame(e, TeamId.A)
+        val transitions = playGame(e, TeamId.A) // 6-3 → set and match
+        assertTrue(Transition.MATCH_WON in transitions)
+        assertTrue(e.state.completed)
+        assertFalse(e.state.sideChangePending)
     }
 
     @Test

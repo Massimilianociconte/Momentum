@@ -21,6 +21,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rally_core/rally_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/providers.dart';
 import '../data/db/database.dart';
@@ -39,6 +40,8 @@ class WatchSyncState {
     this.deviceName = '',
     this.status = 'CHECKING',
     this.capabilities = const [],
+    this.scoringProtocolVersion = 0,
+    this.scoringCapabilityProbed = false,
   });
 
   final bool supported;
@@ -51,6 +54,8 @@ class WatchSyncState {
   final String deviceName;
   final String status;
   final List<String> capabilities;
+  final int scoringProtocolVersion;
+  final bool scoringCapabilityProbed;
 
   /// Companion can receive durable match payloads (installed + paired).
   /// Real-time messaging still requires [reachable].
@@ -69,12 +74,113 @@ class WatchSyncState {
     capabilities: ((value['capabilities'] as List?) ?? const [])
         .map((item) => item.toString())
         .toList(growable: false),
+    scoringProtocolVersion:
+        (value['scoringProtocolVersion'] as num?)?.toInt() ?? 0,
+    scoringCapabilityProbed: value['scoringCapabilityProbed'] == true,
   );
 }
 
 class WatchSyncService extends Notifier<WatchSyncState> {
   static const _channel = MethodChannel('com.rallymate/watch');
   static const _nativeTimeout = Duration(seconds: 10);
+  static const _phoneAuthorityVersionStorageKey =
+      'watch_sync_phone_authority_version_v1';
+  static const _maxPhoneAuthorityVersion = 0x7FFFFFFFFFFFFFFF;
+
+  /// Runtime-only proof produced by a successful native `refreshStatus`.
+  ///
+  /// This deliberately does not come from the persisted diagnostics row:
+  /// the phone and companion can be updated independently, so an old v2 row
+  /// must never authorize a Star Point payload after a probe failure.
+  bool _starPointCapabilityFreshlyProven = false;
+
+  /// A successful explicit probe grants one immediate Star Point dispatch.
+  ///
+  /// [WearableMatchDispatcher] probes before choosing the target. Consuming
+  /// this permit in [sendMatchToWatch] avoids a second Apple Watch round trip,
+  /// while direct callers still have to perform their own fresh probe.
+  bool _starPointDispatchPermit = false;
+
+  /// Keeps startup refreshes and explicit authorization probes in FIFO order.
+  /// Without this queue, a slower stale startup response could overwrite a
+  /// later failed explicit probe and accidentally re-authorize Star Point.
+  Future<void> _nativeProbeTail = Future<void>.value();
+  Future<void> _resumablePublishTail = Future<void>.value();
+  Future<void> _authorityVersionTail = Future<void>.value();
+
+  /// Monotonic phone-side generation for authoritative resumable snapshots.
+  ///
+  /// A reconnect can redeliver an older Data Item/application context after a
+  /// newer clear. The watch rejects that stale generation instead of
+  /// resurrecting a removed Star Point match.
+  int _lastPhoneAuthorityVersion = 0;
+  SharedPreferences? _authorityVersionPreferences;
+  bool _authorityVersionInitialized = false;
+  bool _authorityVersionStorageFailedClosed = false;
+
+  /// Atomically reserves and persists the next phone authority generation.
+  ///
+  /// Lifecycle messages and resumable snapshots intentionally share this
+  /// allocator. Persisting the high-water mark before returning means a
+  /// process relaunch or a wall-clock rollback cannot reuse an emitted value.
+  /// An unreadable/corrupt value or a failed write is not recoverable safely
+  /// in-process: publishing a guessed generation could resurrect stale state,
+  /// so every later allocation remains fail-closed for this service instance.
+  Future<int?> _nextPhoneAuthorityVersion() {
+    final completer = Completer<int?>();
+    _authorityVersionTail = _authorityVersionTail.then((_) async {
+      if (_authorityVersionStorageFailedClosed) {
+        completer.complete(null);
+        return;
+      }
+      try {
+        final preferences = _authorityVersionPreferences ??=
+            await SharedPreferences.getInstance();
+        if (!_authorityVersionInitialized) {
+          final stored = preferences.get(_phoneAuthorityVersionStorageKey);
+          if (stored != null &&
+              (stored is! int ||
+                  stored <= 0 ||
+                  stored >= _maxPhoneAuthorityVersion)) {
+            _authorityVersionStorageFailedClosed = true;
+            completer.complete(null);
+            return;
+          }
+          _lastPhoneAuthorityVersion = stored as int? ?? 0;
+          _authorityVersionInitialized = true;
+        }
+
+        final wallClock = DateTime.now().microsecondsSinceEpoch;
+        final base = wallClock > _lastPhoneAuthorityVersion
+            ? wallClock
+            : _lastPhoneAuthorityVersion;
+        if (base <= 0 || base >= _maxPhoneAuthorityVersion - 1) {
+          _authorityVersionStorageFailedClosed = true;
+          completer.complete(null);
+          return;
+        }
+        final next = base + 1;
+
+        // Advance the in-memory high-water even if the platform reports an
+        // ambiguous failed write, so this process can never reuse [next].
+        _lastPhoneAuthorityVersion = next;
+        final persisted = await preferences.setInt(
+          _phoneAuthorityVersionStorageKey,
+          next,
+        );
+        if (!persisted) {
+          _authorityVersionStorageFailedClosed = true;
+          completer.complete(null);
+          return;
+        }
+        completer.complete(next);
+      } catch (_) {
+        _authorityVersionStorageFailedClosed = true;
+        completer.complete(null);
+      }
+    });
+    return completer.future;
+  }
 
   @override
   WatchSyncState build() {
@@ -87,22 +193,137 @@ class WatchSyncService extends Notifier<WatchSyncState> {
     return const WatchSyncState();
   }
 
-  Future<WatchSyncState> refresh() async {
+  Future<T> _serializeNativeProbe<T>(Future<T> Function() operation) {
+    final completer = Completer<T>();
+    _nativeProbeTail = _nativeProbeTail.then((_) async {
+      try {
+        completer.complete(await operation());
+      } catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    });
+    return completer.future;
+  }
+
+  Future<WatchSyncState> refresh() => _serializeNativeProbe(_refreshNow);
+
+  Future<WatchSyncState> _refreshNow() async {
+    final next = await _freshNativeStatus();
+    if (next == null) {
+      _revokeStarPointCapabilityProof();
+      return state;
+    }
+    try {
+      await _applyStatus(next, freshNativeProbe: true);
+    } catch (_) {
+      _revokeStarPointCapabilityProof();
+    }
+    return state;
+  }
+
+  /// Proves that the companion currently speaks the Star Point v2 protocol.
+  ///
+  /// The method always invokes the native bridge. A cached Riverpod/Drift
+  /// capability is never accepted as authority, and every transport failure
+  /// revokes the previous proof.
+  Future<bool> proveStarPointCapability() =>
+      _serializeNativeProbe(_proveStarPointCapabilityNow);
+
+  Future<bool> _proveStarPointCapabilityNow() async {
+    _starPointDispatchPermit = false;
+    final next = await _freshNativeStatus();
+    if (next == null) {
+      _revokeStarPointCapabilityProof();
+      return false;
+    }
+    try {
+      await _applyStatus(next, freshNativeProbe: true);
+    } catch (_) {
+      _revokeStarPointCapabilityProof();
+      return false;
+    }
+    final supported = _supportsStarPoint(next);
+    _starPointDispatchPermit = supported;
+    return supported;
+  }
+
+  Future<WatchSyncState?> _freshNativeStatus() async {
     try {
       final res = await _channel
           .invokeMapMethod<String, Object?>('refreshStatus')
           .timeout(_nativeTimeout);
-      if (res != null) {
-        await _applyStatus(WatchSyncState.fromMap(res));
-      }
+      if (res == null) return null;
+      return WatchSyncState.fromMap(res);
     } on MissingPluginException {
-      // Native side not wired yet (e.g. tests): stay disconnected.
+      return null;
     } on PlatformException {
-      // Watch support unavailable on this device.
+      return null;
     } on TimeoutException {
-      // Native bridge not responding: preserve the last known state.
+      return null;
+    } on TypeError {
+      // Malformed native capability payloads fail closed.
+      return null;
     }
-    return state;
+  }
+
+  bool _supportsStarPoint(WatchSyncState value) =>
+      value.scoringCapabilityProbed &&
+      value.scoringProtocolVersion >= 2 &&
+      value.capabilities.contains('star_point_v1');
+
+  bool _supportsDecidingSet(WatchSyncState value) =>
+      value.scoringCapabilityProbed &&
+      value.capabilities.contains('deciding_set_no_tiebreak_v1');
+
+  /// Proves that the companion can score a deciding set without tie-break
+  /// (format schema v3).
+  ///
+  /// Unlike the Star Point path this keeps no permit: every dispatch probes
+  /// the bridge again, which is strictly more conservative. A companion that
+  /// does not advertise the token would silently play a tie-break at 6-6 and
+  /// diverge from the phone.
+  Future<bool> proveDecidingSetCapability() =>
+      _serializeNativeProbe(_proveDecidingSetCapabilityNow);
+
+  Future<bool> _proveDecidingSetCapabilityNow() async {
+    final next = await _freshNativeStatus();
+    if (next == null) return false;
+    try {
+      await _applyStatus(next, freshNativeProbe: true);
+    } catch (_) {
+      return false;
+    }
+    return _supportsDecidingSet(next);
+  }
+
+  bool _sameCapabilities(List<String> left, List<String> right) {
+    final leftSet = left.toSet();
+    final rightSet = right.toSet();
+    return leftSet.length == rightSet.length && leftSet.containsAll(rightSet);
+  }
+
+  void _revokeStarPointCapabilityProof() {
+    final changed =
+        _starPointCapabilityFreshlyProven || _starPointDispatchPermit;
+    _starPointCapabilityFreshlyProven = false;
+    _starPointDispatchPermit = false;
+    if (changed) {
+      // Re-publish immediately without Star Point rows. This is one-way and
+      // never calls refreshStatus, so it cannot form a probe/snapshot loop.
+      unawaited(publishResumableMatches());
+    }
+  }
+
+  Future<bool> _authorizeStarPointDispatch() async {
+    if (_starPointDispatchPermit) {
+      _starPointDispatchPermit = false;
+      return _starPointCapabilityFreshlyProven;
+    }
+    final supported = await proveStarPointCapability();
+    // Consume the permit created by this probe; it cannot authorize a later
+    // unrelated transfer.
+    _starPointDispatchPermit = false;
+    return supported;
   }
 
   Future<bool> testConnection({bool point = false}) async {
@@ -127,7 +348,27 @@ class WatchSyncService extends Notifier<WatchSyncState> {
     }
   }
 
-  Future<void> _applyStatus(WatchSyncState next) async {
+  Future<void> _applyStatus(
+    WatchSyncState next, {
+    bool freshNativeProbe = false,
+  }) async {
+    final previous = state;
+    final previousStarPointProof = _starPointCapabilityFreshlyProven;
+    if (freshNativeProbe) {
+      _starPointCapabilityFreshlyProven = _supportsStarPoint(next);
+      if (!_starPointCapabilityFreshlyProven) {
+        _starPointDispatchPermit = false;
+      }
+    } else if (!_supportsStarPoint(next)) {
+      // A native connection change can revoke, but never grant, authority.
+      _starPointCapabilityFreshlyProven = false;
+      _starPointDispatchPermit = false;
+    }
+    final capabilityChanged =
+        previous.scoringProtocolVersion != next.scoringProtocolVersion ||
+        previous.scoringCapabilityProbed != next.scoringCapabilityProbed ||
+        !_sameCapabilities(previous.capabilities, next.capabilities) ||
+        previousStarPointProof != _starPointCapabilityFreshlyProven;
     state = next;
     if (next.platformLabel.isEmpty) return;
     final provider = switch (next.platformLabel) {
@@ -168,6 +409,8 @@ class WatchSyncService extends Notifier<WatchSyncState> {
           capabilitiesJson: jsonEncode({
             'provider': provider,
             'features': next.capabilities,
+            'scoringProtocolVersion': next.scoringProtocolVersion,
+            'scoringCapabilityProbed': next.scoringCapabilityProbed,
             'paired': next.paired,
             'companionInstalled': next.companionInstalled,
             'reachable': next.reachable,
@@ -177,6 +420,12 @@ class WatchSyncService extends Notifier<WatchSyncState> {
           setupStep: setupStep.clamp(0, 6),
           connected: next.connected || next.reachable,
         );
+    if (capabilityChanged) {
+      // A newly compatible companion receives Star Point resumables; a
+      // downgrade gets the filtered snapshot. publishResumableMatches does
+      // not probe, therefore this cannot recurse into _applyStatus.
+      unawaited(publishResumableMatches());
+    }
   }
 
   String? _deviceId(String platform) {
@@ -271,15 +520,28 @@ class WatchSyncService extends Notifier<WatchSyncState> {
     String? assistantPublishableKey,
     int? assistantExpiresAtMs,
     List<String> teamNames = const [],
+
     /// When set, bootstraps mid-match handoff so the watch does not start 0–0.
     List<MatchEvent>? events,
   }) async {
+    if (format.gameScoringMode == GameScoringMode.starPoint &&
+        !await _authorizeStarPointDispatch()) {
+      return false;
+    }
+    if (format.requiresDecidingSetProtocol &&
+        !await proveDecidingSetCapability()) {
+      return false;
+    }
     // Always prefer an explicit journal; otherwise load durable local log.
-    final journal = events ??
-        await ref.read(matchRepoProvider).eventsFor(matchId);
+    final journal =
+        events ?? await ref.read(matchRepoProvider).eventsFor(matchId);
+    // The serving rotation is part of the match, not of the format: without it
+    // the companion would replay every hold and break for the wrong pair.
+    final row = await ref.read(matchRepoProvider).byId(matchId);
     final args = <String, Object?>{
       'matchId': matchId,
       'format': jsonEncode(format.toJson()),
+      'firstServer': (row?.firstServerTeam ?? TeamId.a).wire,
       // Critical: watch must replay phone log for mid-match / live handoff.
       'events': jsonEncode(journal.map((e) => e.toJson()).toList()),
       if (duoTeam != null) 'duoTeam': duoTeam.wire,
@@ -313,6 +575,10 @@ class WatchSyncService extends Notifier<WatchSyncState> {
       }
       // Session may still be activating after pairing / app reinstall.
       await refresh();
+      if (format.gameScoringMode == GameScoringMode.starPoint &&
+          !_starPointCapabilityFreshlyProven) {
+        return false;
+      }
       if (!state.companionInstalled && !state.paired) return false;
       ok =
           await _channel
@@ -342,7 +608,8 @@ class WatchSyncService extends Notifier<WatchSyncState> {
     String? status,
   }) async {
     try {
-      final journal = events ?? await ref.read(matchRepoProvider).eventsFor(matchId);
+      final journal =
+          events ?? await ref.read(matchRepoProvider).eventsFor(matchId);
       final row = await ref.read(matchRepoProvider).byId(matchId);
       MatchFormat? resolvedFormat = format;
       Map<String, Object?>? summary;
@@ -358,7 +625,23 @@ class WatchSyncService extends Notifier<WatchSyncState> {
           summary = null;
         }
       }
-      final ok = await _channel
+      if (resolvedFormat?.gameScoringMode == GameScoringMode.starPoint &&
+          !await _authorizeStarPointDispatch()) {
+        return false;
+      }
+      if (resolvedFormat?.requiresDecidingSetProtocol == true &&
+          !await proveDecidingSetCapability()) {
+        return false;
+      }
+      final authorityVersion = await _nextPhoneAuthorityVersion();
+      if (authorityVersion == null) return false;
+      final authorityScope = resolvedFormat == null
+          ? null
+          : (resolvedFormat.gameScoringMode == GameScoringMode.starPoint
+                ? 'STAR_POINT'
+                : 'NON_STAR_POINT');
+      final ok =
+          await _channel
               .invokeMethod<bool>('matchLifecycle', {
                 'matchId': matchId,
                 'action': action,
@@ -368,6 +651,11 @@ class WatchSyncService extends Notifier<WatchSyncState> {
                 'stateVersion': journal.length,
                 'idempotencyKey': '$matchId#$action#${journal.length}',
                 'ts': DateTime.now().millisecondsSinceEpoch,
+                if (authorityScope != null) ...<String, Object?>{
+                  'authoritySource': 'PHONE',
+                  'authorityScope': authorityScope,
+                  'authorityVersion': authorityVersion,
+                },
                 if (resolvedFormat != null)
                   'format': jsonEncode(resolvedFormat.toJson()),
                 'events': jsonEncode(
@@ -392,41 +680,87 @@ class WatchSyncService extends Notifier<WatchSyncState> {
 
   /// Publishes the snapshot of resumable matches through the "latest state"
   /// channel (application context on iOS, Data Item on Wear OS).
-  Future<bool> publishResumableMatches() async {
+  Future<bool> publishResumableMatches() {
+    final publication = _resumablePublishTail.then(
+      (_) => _publishResumableMatchesNow(),
+    );
+    // Keep every write FIFO. Otherwise two best-effort refreshes could leave
+    // an older Data Item as the persistent reconnect value even though an
+    // already-running watch correctly rejected it by authorityVersion.
+    _resumablePublishTail = publication.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return publication;
+  }
+
+  Future<bool> _publishResumableMatchesNow() async {
     try {
       final repo = ref.read(matchRepoProvider);
       final rows = await repo.resumableMatches();
-      final entries = <Map<String, Object?>>[];
-      var newest = 0;
+      final legacyEntries = <Map<String, Object?>>[];
+      final v2Entries = <Map<String, Object?>>[];
       for (final row in rows) {
         // One corrupt row must never suppress the whole snapshot.
         try {
           final journal = await repo.eventsFor(row.id);
           final summary = await _summaryFor(row, journal: journal);
-          entries.add(summary);
-          final updatedAt = summary['updatedAtMs'] as int? ?? 0;
-          if (updatedAt > newest) newest = updatedAt;
+          final starPoint = _summaryUsesStarPoint(summary);
+          v2Entries.add(summary);
+          // Garmin and every schema-v1 companion always get a useful filtered
+          // snapshot instead of losing all resumable matches.
+          if (!starPoint) {
+            legacyEntries.add(summary);
+          }
         } catch (_) {
           continue;
         }
       }
-      final active = rows
-          .where((row) => row.status == MatchStatus.inProgress.wire)
-          .firstOrNull;
       // Connect IQ uses its own transport: push the same snapshot there so a
-      // Garmin knows about the paused matches too.
-      unawaited(_publishToGarmin(entries));
-      return await _channel
-              .invokeMethod<bool>('publishResumableMatches', {
-                'matches': jsonEncode(entries),
-                'stateVersion': entries.length,
-                'lastUpdatedAtMs': newest == 0
-                    ? DateTime.now().millisecondsSinceEpoch
-                    : newest,
-                if (active != null) 'activeMatchId': active.id,
-              })
-              .timeout(_nativeTimeout, onTimeout: () => false) ??
-          false;
+      // Garmin knows about compatible paused matches too.
+      unawaited(_publishToGarmin(legacyEntries));
+
+      final authorityVersion = await _nextPhoneAuthorityVersion();
+      if (authorityVersion == null) return false;
+      final hasStarPoint = v2Entries.any(_summaryUsesStarPoint);
+      final mayPublishStarPoint =
+          hasStarPoint && _starPointCapabilityFreshlyProven;
+
+      if (!mayPublishStarPoint) {
+        // Clear the v2 slot first, even after a capability downgrade. The
+        // native bridge only permits this capability-less write when it is an
+        // authenticated, authoritative and empty STAR_POINT snapshot.
+        final v2ClearOk = await _publishNativeResumableSnapshot(
+          const <Map<String, Object?>>[],
+          requiresScoringV2: true,
+          authorityVersion: authorityVersion,
+          clearScoringV2Slot: true,
+        );
+        // Keep a deterministic clear-before-legacy order for every transport.
+        // Apple stores the two snapshots under distinct keys in its single
+        // application-context envelope; Wear OS stores distinct Data Items.
+        final legacyOk = await _publishNativeResumableSnapshot(
+          legacyEntries,
+          requiresScoringV2: false,
+          authorityVersion: authorityVersion,
+        );
+        return legacyOk && v2ClearOk;
+      }
+
+      // With a freshly proven v2 companion, publish the compatible partition
+      // first and the full snapshot second. Both transports retain independent
+      // v1/v2 slots, and the scoped authority makes delivery order harmless.
+      final legacyOk = await _publishNativeResumableSnapshot(
+        legacyEntries,
+        requiresScoringV2: false,
+        authorityVersion: authorityVersion,
+      );
+      final v2Ok = await _publishNativeResumableSnapshot(
+        v2Entries,
+        requiresScoringV2: true,
+        authorityVersion: authorityVersion,
+      );
+      return legacyOk && v2Ok;
     } on MissingPluginException {
       return false;
     } on PlatformException {
@@ -464,6 +798,50 @@ class WatchSyncService extends Notifier<WatchSyncState> {
     }
   }
 
+  Future<bool> _publishNativeResumableSnapshot(
+    List<Map<String, Object?>> entries, {
+    required bool requiresScoringV2,
+    required int authorityVersion,
+    bool clearScoringV2Slot = false,
+  }) async {
+    var newest = 0;
+    for (final entry in entries) {
+      final updatedAt = entry['updatedAtMs'] as int? ?? 0;
+      if (updatedAt > newest) newest = updatedAt;
+    }
+    final active = entries
+        .where(
+          (entry) => entry['status']?.toString() == MatchStatus.inProgress.wire,
+        )
+        .firstOrNull;
+    return await _channel
+            .invokeMethod<bool>('publishResumableMatches', {
+              'matches': jsonEncode(entries),
+              'stateVersion': entries.length,
+              'requiresScoringV2': requiresScoringV2,
+              'authoritative': true,
+              'authoritySource': 'PHONE',
+              'authorityScope': requiresScoringV2
+                  ? 'STAR_POINT'
+                  : 'NON_STAR_POINT',
+              'authorityVersion': authorityVersion,
+              'clearScoringV2Slot': clearScoringV2Slot,
+              'lastUpdatedAtMs': newest == 0
+                  ? DateTime.now().millisecondsSinceEpoch
+                  : newest,
+              if (active != null)
+                'activeMatchId': active['matchId']?.toString(),
+            })
+            .timeout(_nativeTimeout, onTimeout: () => false) ??
+        false;
+  }
+
+  bool _summaryUsesStarPoint(Map<String, Object?> summary) {
+    final format = summary['format'];
+    return format is Map &&
+        format['gameScoringMode']?.toString() == GameScoringMode.starPoint.wire;
+  }
+
   /// Compact, wearable-sized description of a match. The journal itself is
   /// delivered separately by [sendMatchLifecycle].
   Future<Map<String, Object?>> _summaryFor(
@@ -477,6 +855,7 @@ class WatchSyncService extends Notifier<WatchSyncState> {
       matchId: row.id,
       format: format,
       events: journal,
+      firstServer: row.firstServerTeam,
       duoMode: row.duoMode,
       assignedTeam: row.duoTeam == null ? null : TeamId.fromWire(row.duoTeam!),
     );
@@ -492,8 +871,7 @@ class WatchSyncService extends Notifier<WatchSyncState> {
       'matchId': row.id,
       'status': row.status,
       'stateVersion': journal.length,
-      'updatedAtMs':
-          journal.lastOrNull?.timestampMs ?? row.startTimeMs ?? 0,
+      'updatedAtMs': journal.lastOrNull?.timestampMs ?? row.startTimeMs ?? 0,
       'pausedAtMs': row.status == MatchStatus.paused.wire ? pausedAt : null,
       'teamLabel': team?.name ?? row.opponentLabel,
       'scoreLine':

@@ -301,7 +301,7 @@ class RallyNotificationService {
   Future<bool> scheduleWeeklyRecap(DateTime scheduledAt) {
     return schedule(
       id: 'weekly_recap',
-      title: 'Riepilogo Padelandia',
+      title: 'Riepilogo Momentum',
       body: 'Controlla trend, partite e allenamenti della settimana.',
       scheduledAt: scheduledAt,
       category: 'recap',

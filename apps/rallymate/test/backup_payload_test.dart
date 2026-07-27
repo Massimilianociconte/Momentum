@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rallymate/services/cloud/backup_payload.dart';
 
 void main() {
-  test('backup v2 is hierarchical and round-trips every user record', () {
+  test('backup v3 is hierarchical and round-trips every user record', () {
     final payload = BackupPayloadCodec.encode(
       players: [
         {'id': 'p1', 'name': 'Marco'},
@@ -89,6 +89,23 @@ void main() {
 
     expect(decoded.players.single['id'], 'legacy-player');
     expect(decoded.preferences, isEmpty);
+  });
+
+  test('legacy v2 hierarchical backups remain restorable', () {
+    final payload = BackupPayloadCodec.encode(
+      players: const [],
+      teams: const [],
+      matches: const [
+        {'id': 'legacy-v2-match', 'formatJson': '{}'},
+      ],
+      events: const [],
+      trainingLogs: const [],
+      preferences: const {'source': 'v2'},
+    )..['v'] = 2;
+
+    final decoded = BackupPayloadCodec.decode(payload);
+    expect(decoded.matches.single['id'], 'legacy-v2-match');
+    expect(decoded.preferences['source'], 'v2');
   });
 
   test('backup strips device-local image paths from every payload', () {

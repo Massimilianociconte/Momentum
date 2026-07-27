@@ -28,14 +28,19 @@ final class ScoringVectorConformanceTests: XCTestCase {
     }
 
     private func format(from json: [String: Any]) -> MatchFormat {
-        MatchFormat(
+        let legacyGolden = json["goldenPoint"] as? Bool ?? true
+        let mode = (json["gameScoringMode"] as? String)
+            .flatMap(GameScoringMode.init(rawValue:))
+        return MatchFormat(
             id: json["id"] as? String ?? "GOLDEN_BO3",
             name: json["name"] as? String ?? "Custom",
             setsToWin: json["setsToWin"] as? Int ?? 2,
             gamesPerSet: json["gamesPerSet"] as? Int ?? 6,
-            goldenPoint: json["goldenPoint"] as? Bool ?? true,
+            goldenPoint: legacyGolden,
+            gameScoringMode: mode,
             tieBreakAtGamesAll: json["tieBreakAtGamesAll"] as? Bool ?? true,
             tieBreakPoints: json["tieBreakPoints"] as? Int ?? 7,
+            tieBreakInDecidingSet: json["tieBreakInDecidingSet"] as? Bool ?? true,
             superTieBreakDecider: json["superTieBreakDecider"] as? Bool ?? false,
             superTieBreakPoints: json["superTieBreakPoints"] as? Int ?? 10,
             freePlay: json["freePlay"] as? Bool ?? false
@@ -57,6 +62,7 @@ final class ScoringVectorConformanceTests: XCTestCase {
     private func assertSnapshot(
         _ engine: ScoringEngine,
         freePlay: Bool,
+        contractVersion: Int,
         expect: [String: Any],
         _ context: String
     ) {
@@ -86,6 +92,33 @@ final class ScoringVectorConformanceTests: XCTestCase {
         XCTAssertEqual(s.tieBreakB, expect["tieBreakB"] as? Int, "\(context) tieBreakB")
         XCTAssertEqual(s.freePlayA, expect["freePlayA"] as? Int, "\(context) freePlayA")
         XCTAssertEqual(s.freePlayB, expect["freePlayB"] as? Int, "\(context) freePlayB")
+        if contractVersion >= 2 {
+            guard
+                let expectedDeuceNumber = expect["deuceNumber"] as? Int,
+                let expectedIsStarPoint = expect["isStarPoint"] as? Bool
+            else {
+                XCTFail(
+                    "\(context) contratto v2 senza deuceNumber/isStarPoint"
+                )
+                return
+            }
+            XCTAssertEqual(
+                s.deuceNumber,
+                expectedDeuceNumber,
+                "\(context) deuceNumber"
+            )
+            XCTAssertEqual(
+                s.isStarPoint,
+                expectedIsStarPoint,
+                "\(context) isStarPoint"
+            )
+        } else if let expectedDeuceNumber = expect["deuceNumber"] as? Int {
+            XCTAssertEqual(
+                s.deuceNumber,
+                expectedDeuceNumber,
+                "\(context) deuceNumber"
+            )
+        }
 
         let expectedSets = expect["completedSets"] as? [[String: Any]] ?? []
         XCTAssertEqual(
@@ -116,6 +149,7 @@ final class ScoringVectorConformanceTests: XCTestCase {
         guard
             let document = try JSONSerialization.jsonObject(with: data)
                 as? [String: Any],
+            let contractVersion = document["version"] as? Int,
             let vectors = document["vectors"] as? [[String: Any]]
         else {
             return XCTFail("scoring_vectors.json non leggibile")
@@ -146,6 +180,22 @@ final class ScoringVectorConformanceTests: XCTestCase {
                 let stepTeam = team(step["team"])
                 switch step["op"] as? String {
                 case "point": engine.addPoint(stepTeam!)
+                case "edit":
+                    guard let rawPayload = step["payload"] as? [String: Any] else {
+                        XCTFail("\(id)#\(i): payload edit mancante")
+                        continue
+                    }
+                    let payload = rawPayload.compactMapValues { $0 as? Int }
+                    engine.loadEvents(engine.allEvents + [
+                        MatchEvent(
+                            eventId: "evt_\(id)_edit_\(i)",
+                            matchId: "vec_\(id)",
+                            ts: 1_760_000_000_000 + Int64(i),
+                            type: .scoreEdited,
+                            sourceMethod: "MANUAL_EDIT",
+                            payload: payload
+                        ),
+                    ])
                 case "undo": engine.undo(team: stepTeam)
                 case "pause": engine.pause()
                 case "resume": engine.resume()
@@ -156,8 +206,13 @@ final class ScoringVectorConformanceTests: XCTestCase {
                     XCTFail("\(id)#\(i): expect mancante")
                     continue
                 }
-                assertSnapshot(engine, freePlay: format.freePlay,
-                               expect: expect, "\(id)#\(i)")
+                assertSnapshot(
+                    engine,
+                    freePlay: format.freePlay,
+                    contractVersion: contractVersion,
+                    expect: expect,
+                    "\(id)#\(i)"
+                )
             }
         }
         XCTAssertGreaterThan(executed, 0, "Nessun vettore swift eseguito")

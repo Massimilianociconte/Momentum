@@ -4,6 +4,27 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Same keystore as the phone app: Data Layer pairing requires that both
+// APKs share applicationId AND signing certificate. All-or-nothing check
+// mirrors apps/rallymate/android/app/build.gradle.kts.
+val releaseSigningValues = mapOf(
+    "RALLYMATE_ANDROID_KEYSTORE_PATH" to
+        providers.environmentVariable("RALLYMATE_ANDROID_KEYSTORE_PATH").orNull,
+    "RALLYMATE_ANDROID_KEYSTORE_PASSWORD" to
+        providers.environmentVariable("RALLYMATE_ANDROID_KEYSTORE_PASSWORD").orNull,
+    "RALLYMATE_ANDROID_KEY_ALIAS" to
+        providers.environmentVariable("RALLYMATE_ANDROID_KEY_ALIAS").orNull,
+    "RALLYMATE_ANDROID_KEY_PASSWORD" to
+        providers.environmentVariable("RALLYMATE_ANDROID_KEY_PASSWORD").orNull,
+)
+val hasAnyReleaseSigningValue = releaseSigningValues.values.any { !it.isNullOrBlank() }
+val hasCompleteReleaseSigning = releaseSigningValues.values.all { !it.isNullOrBlank() }
+
+check(!hasAnyReleaseSigningValue || hasCompleteReleaseSigning) {
+    "Android release signing is only partially configured. Set all four " +
+        "RALLYMATE_ANDROID_KEYSTORE_* / RALLYMATE_ANDROID_KEY_* variables."
+}
+
 android {
     namespace = "com.rallymate.wear"
     compileSdk = 35
@@ -14,8 +35,25 @@ android {
         applicationId = "com.rallymate.rallymate"
         minSdk = 30 // Wear OS 3+
         targetSdk = 35
-        versionCode = 1
+        // Keep versionName in sync with the phone app (pubspec.yaml). Play
+        // requires a versionCode distinct from the phone AAB: wear uses the
+        // 1xxx range so both artifacts can live in the same release.
+        versionCode = 1001
         versionName = "0.1.0"
+    }
+
+    signingConfigs {
+        if (hasCompleteReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseSigningValues.getValue("RALLYMATE_ANDROID_KEYSTORE_PATH")!!)
+                storePassword =
+                    releaseSigningValues.getValue("RALLYMATE_ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = releaseSigningValues.getValue("RALLYMATE_ANDROID_KEY_ALIAS")
+                keyPassword = releaseSigningValues.getValue("RALLYMATE_ANDROID_KEY_PASSWORD")
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
     }
 
     buildTypes {
@@ -26,6 +64,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 

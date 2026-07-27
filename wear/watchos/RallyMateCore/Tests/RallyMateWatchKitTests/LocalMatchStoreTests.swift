@@ -169,6 +169,48 @@ final class LocalMatchStoreTests: XCTestCase {
         XCTAssertNil(store.consumeSystemQuickStart())
     }
 
+    func testStarPointFormatAndDeucePhaseSurviveLocalPersistence() throws {
+        let engine = ScoringEngine(
+            matchId: "star-offline",
+            format: .starPointBo3
+        )
+        engine.start()
+        for _ in 0 ..< 3 {
+            engine.addPoint(.a)
+            engine.addPoint(.b)
+        }
+        engine.addPoint(.a)
+        engine.addPoint(.b)
+        engine.addPoint(.b)
+        engine.addPoint(.a)
+        XCTAssertEqual(engine.state.deuceNumber, 3)
+
+        store.saveMatch(
+            matchId: "star-offline",
+            format: .starPointBo3,
+            events: engine.allEvents
+        )
+        store.saveLastFormat(.starPointBo3)
+        store.requestSystemQuickStart(format: .starPointBo3)
+
+        let restoredFormat = try XCTUnwrap(store.loadFormat("star-offline"))
+        XCTAssertEqual(restoredFormat, .starPointBo3)
+        XCTAssertEqual(restoredFormat.gameScoringMode, .starPoint)
+        XCTAssertEqual(store.loadLastFormat(), .starPointBo3)
+        XCTAssertEqual(store.consumeSystemQuickStart(), .starPointBo3)
+        XCTAssertNil(store.consumeSystemQuickStart())
+
+        let restored = ScoringEngine(
+            matchId: "star-offline",
+            format: restoredFormat
+        )
+        restored.loadEvents(store.loadEvents("star-offline"))
+        XCTAssertEqual(restored.state, engine.state)
+        XCTAssertEqual(restored.state.deuceNumber, 3)
+        restored.addPoint(.a)
+        XCTAssertEqual(restored.state.gamesA, 1)
+    }
+
     func testWorkoutDetectionPreferencesAreLocalAndExplicit() {
         let preferences = WatchWorkoutDetectionPreferences(
             mode: .quickStart,

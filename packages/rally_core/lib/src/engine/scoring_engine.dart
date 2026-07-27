@@ -312,6 +312,7 @@ class PadelScoringEngine {
     int? freePlayB,
     int? tieBreakA,
     int? tieBreakB,
+    int? deuceNumber,
     SourceDevice device = SourceDevice.phone,
   }) {
     if (_state.status == MatchStatus.paused || _state.isCompleted) {
@@ -335,6 +336,7 @@ class PadelScoringEngine {
         'freePlayB': ?freePlayB,
         'tieBreakA': ?tieBreakA,
         'tieBreakB': ?tieBreakB,
+        'deuceNumber': ?deuceNumber,
       },
     );
     _events.add(e);
@@ -616,12 +618,23 @@ class _WorkingState {
   int tbA = 0, tbB = 0;
   TeamId tbFirstServer = TeamId.a;
   int freeA = 0, freeB = 0;
+  int deuceNumber = 0;
   int totalGamesPlayed = 0;
   bool sideChangePending = false;
   TeamId? winner;
 
   int get setIndex => setsA + setsB;
   int get gameIndexInSet => gamesA + gamesB;
+
+  /// The set currently in play is the last one the match can have.
+  bool get inDecidingSet =>
+      setsA == format.setsToWin - 1 && setsB == format.setsToWin - 1;
+
+  /// Whether gamesPerSet-all opens a tie-break in the set being played.
+  /// FIP Rule 1, Option 1.4 allows the deciding set to be played out instead.
+  bool get tieBreakAvailable =>
+      format.tieBreakAtGamesAll &&
+      (format.tieBreakInDecidingSet || !inDecidingSet);
 
   TeamId? leadingTeam() {
     if (format.freePlay) {
@@ -647,15 +660,24 @@ class _WorkingState {
       return s;
     }
     final s = <TeamId>{};
-    if (format.goldenPoint) {
-      if (pointsA >= 3 && pointsB >= 3) return {TeamId.a, TeamId.b};
-      if (pointsA == 3) s.add(TeamId.a);
-      if (pointsB == 3) s.add(TeamId.b);
-    } else {
-      if (pointsA == 4) return {TeamId.a}; // AD A
-      if (pointsB == 4) return {TeamId.b};
-      if (pointsA == 3 && pointsB < 3) s.add(TeamId.a);
-      if (pointsB == 3 && pointsA < 3) s.add(TeamId.b);
+    switch (format.gameScoringMode) {
+      case GameScoringMode.goldenPoint:
+        if (pointsA >= 3 && pointsB >= 3) return {TeamId.a, TeamId.b};
+        if (pointsA == 3) s.add(TeamId.a);
+        if (pointsB == 3) s.add(TeamId.b);
+      case GameScoringMode.starPoint:
+        if (pointsA == 3 && pointsB == 3 && deuceNumber >= 3) {
+          return {TeamId.a, TeamId.b};
+        }
+        if (pointsA == 4) return {TeamId.a}; // Advantage 1/2 for A.
+        if (pointsB == 4) return {TeamId.b};
+        if (pointsA == 3 && pointsB < 3) s.add(TeamId.a);
+        if (pointsB == 3 && pointsA < 3) s.add(TeamId.b);
+      case GameScoringMode.advantage:
+        if (pointsA == 4) return {TeamId.a}; // AD A
+        if (pointsB == 4) return {TeamId.b};
+        if (pointsA == 3 && pointsB < 3) s.add(TeamId.a);
+        if (pointsB == 3 && pointsA < 3) s.add(TeamId.b);
     }
     return s;
   }
@@ -666,7 +688,7 @@ class _WorkingState {
     final g = t == TeamId.a ? gamesA : gamesB;
     final o = t == TeamId.a ? gamesB : gamesA;
     final afterG = g + 1;
-    if (format.tieBreakAtGamesAll && afterG > format.gamesPerSet) {
+    if (tieBreakAvailable && afterG > format.gamesPerSet) {
       return true; // winning the 7th game after 6-6 is impossible here, safe
     }
     return afterG >= format.gamesPerSet && afterG - o >= 2;
@@ -705,6 +727,10 @@ class _WorkingState {
       matchPointFor: mp,
       breakPointFor: bp,
       isDeucePoint: deuce,
+      isStarPoint:
+          deuce &&
+          format.gameScoringMode == GameScoringMode.starPoint &&
+          deuceNumber >= 3,
       sourceDevice: event.sourceDevice as SourceDevice,
       sourceMethod: event.sourceMethod as SourceMethod,
       scoreBefore: analyticsSnapshot(),
@@ -725,6 +751,7 @@ class _WorkingState {
     tieBreakB: tbB,
     freePlayA: freeA,
     freePlayB: freeB,
+    deuceNumber: deuceNumber,
     completed: status == MatchStatus.completed,
     winner: winner,
   );
@@ -754,53 +781,69 @@ class _WorkingState {
   }
 
   List<ScoreTransition> _applyGamePoint(TeamId team) {
-    bool gameWon = false;
-    if (format.goldenPoint) {
-      if (team == TeamId.a) {
-        pointsA++;
-      } else {
-        pointsB++;
-      }
-      gameWon = pointsA >= 4 || pointsB >= 4;
-    } else {
-      // Advantage scoring is an explicit state machine. Keeping AD as the
-      // only 4-3 state avoids transient 4-4/5-3 values during replay/sync.
-      if (pointsA == 4 && pointsB == 3) {
-        if (team == TeamId.a) {
-          gameWon = true;
-        } else {
-          pointsA = 3;
-          pointsB = 3;
-        }
-      } else if (pointsB == 4 && pointsA == 3) {
-        if (team == TeamId.b) {
-          gameWon = true;
-        } else {
-          pointsA = 3;
-          pointsB = 3;
-        }
-      } else if (pointsA == 3 && pointsB == 3) {
-        if (team == TeamId.a) {
-          pointsA = 4;
-        } else {
-          pointsB = 4;
-        }
-      } else {
+    TeamId? gameWinner;
+    switch (format.gameScoringMode) {
+      case GameScoringMode.goldenPoint:
         if (team == TeamId.a) {
           pointsA++;
         } else {
           pointsB++;
         }
-        gameWon =
-            (pointsA >= 4 && pointsA - pointsB >= 2) ||
-            (pointsB >= 4 && pointsB - pointsA >= 2);
-      }
+        if (pointsA >= 4 || pointsB >= 4) gameWinner = team;
+      case GameScoringMode.advantage:
+      case GameScoringMode.starPoint:
+        final starPoint = format.gameScoringMode == GameScoringMode.starPoint;
+        // Advantage and Star Point use the same explicit AD state. Star Point
+        // permits only two advantage cycles; deuce 3 is a deciding rally.
+        if (pointsA == 4 && pointsB == 3) {
+          if (team == TeamId.a) {
+            gameWinner = team;
+          } else {
+            pointsA = 3;
+            pointsB = 3;
+            if (starPoint) {
+              deuceNumber = (deuceNumber + 1).clamp(1, 3);
+            }
+          }
+        } else if (pointsB == 4 && pointsA == 3) {
+          if (team == TeamId.b) {
+            gameWinner = team;
+          } else {
+            pointsA = 3;
+            pointsB = 3;
+            if (starPoint) {
+              deuceNumber = (deuceNumber + 1).clamp(1, 3);
+            }
+          }
+        } else if (pointsA == 3 && pointsB == 3) {
+          if (starPoint && deuceNumber >= 3) {
+            gameWinner = team;
+          } else if (team == TeamId.a) {
+            pointsA = 4;
+          } else {
+            pointsB = 4;
+          }
+        } else {
+          if (team == TeamId.a) {
+            pointsA++;
+          } else {
+            pointsB++;
+          }
+          if (starPoint && pointsA == 3 && pointsB == 3 && deuceNumber == 0) {
+            deuceNumber = 1;
+          }
+          if ((pointsA >= 4 && pointsA - pointsB >= 2) ||
+              (pointsB >= 4 && pointsB - pointsA >= 2)) {
+            gameWinner = team;
+          }
+        }
     }
-    if (!gameWon) return const [ScoreTransition.point];
+    if (gameWinner == null) return const [ScoreTransition.point];
 
-    final gWinner = pointsA > pointsB ? TeamId.a : TeamId.b;
+    final gWinner = gameWinner;
     pointsA = 0;
     pointsB = 0;
+    deuceNumber = 0;
     if (gWinner == TeamId.a) {
       gamesA++;
     } else {
@@ -813,12 +856,9 @@ class _WorkingState {
       ScoreTransition.point,
       ScoreTransition.gameWon,
     ];
-    if ((gamesA + gamesB).isOdd) {
-      sideChangePending = true;
-      transitions.add(ScoreTransition.sideChange);
-    }
 
-    // Set won outright?
+    // Set won outright? _completeSet owns the end-of-set change of ends, which
+    // follows the same odd-total rule applied below to mid-set games.
     final leaderGames = gWinner == TeamId.a ? gamesA : gamesB;
     final otherGames = gWinner == TeamId.a ? gamesB : gamesA;
     if (leaderGames >= format.gamesPerSet && leaderGames - otherGames >= 2) {
@@ -826,8 +866,13 @@ class _WorkingState {
       return transitions;
     }
 
-    // Enter tie-break?
-    if (format.tieBreakAtGamesAll &&
+    if ((gamesA + gamesB).isOdd) {
+      sideChangePending = true;
+      transitions.add(ScoreTransition.sideChange);
+    }
+
+    // Enter tie-break? Not in a deciding set played to two games of margin.
+    if (tieBreakAvailable &&
         gamesA == format.gamesPerSet &&
         gamesB == format.gamesPerSet) {
       inTieBreak = true;
@@ -893,6 +938,7 @@ class _WorkingState {
     gamesB = 0;
     pointsA = 0;
     pointsB = 0;
+    deuceNumber = 0;
     if (inTieBreak) {
       // New set starts with the team that did not serve first in the TB.
       servingTeam = tbFirstServer.opponent;
@@ -900,17 +946,26 @@ class _WorkingState {
     inTieBreak = false;
     tbA = 0;
     tbB = 0;
-    sideChangePending = true;
 
-    final transitions = <ScoreTransition>[
-      ScoreTransition.setWon,
-      ScoreTransition.sideChange,
-    ];
+    // FIP Rules of Padel (Rule 11 — Change of ends): teams change ends at the
+    // end of every odd game, and at the end of a set only when the set's total
+    // number of games is odd. After an even set (6-0, 6-2, 6-4) the change is
+    // deferred to the end of the first game of the next set, which the
+    // per-game odd rule in _applyGamePoint already produces. A set won on a
+    // tie-break is 7-6 = 13 games, so it always changes ends.
+    final setTotalGames = result.gamesA + result.gamesB;
+    final changeEnds = setTotalGames.isOdd;
+    sideChangePending = changeEnds;
+
+    final transitions = <ScoreTransition>[ScoreTransition.setWon];
+    if (changeEnds) transitions.add(ScoreTransition.sideChange);
 
     final winSets = setWinner == TeamId.a ? setsA : setsB;
     if (winSets >= format.setsToWin) {
       status = MatchStatus.completed;
       winner = setWinner;
+      // The match is over: there is no next game to change ends for.
+      sideChangePending = false;
       transitions.add(ScoreTransition.matchWon);
       return transitions;
     }
@@ -951,8 +1006,13 @@ class _WorkingState {
   void applyEdit(Map<String, Object?> p) {
     pointsA = (p['pointsA'] as int?)?.clamp(0, 4) ?? pointsA;
     pointsB = (p['pointsB'] as int?)?.clamp(0, 4) ?? pointsB;
-    gamesA = (p['gamesA'] as int?)?.clamp(0, format.gamesPerSet + 1) ?? gamesA;
-    gamesB = (p['gamesB'] as int?)?.clamp(0, format.gamesPerSet + 1) ?? gamesB;
+    // A deciding set without tie-break has no 7-game ceiling (8-6, 9-7, …),
+    // so the bound follows the set actually in play instead of a constant.
+    final maxGames = tieBreakAvailable
+        ? format.gamesPerSet + 1
+        : format.gamesPerSet * 4;
+    gamesA = (p['gamesA'] as int?)?.clamp(0, maxGames) ?? gamesA;
+    gamesB = (p['gamesB'] as int?)?.clamp(0, maxGames) ?? gamesB;
     if (format.freePlay) {
       freeA = (p['freePlayA'] as int?)?.clamp(0, 9999) ?? freeA;
       freeB = (p['freePlayB'] as int?)?.clamp(0, 9999) ?? freeB;
@@ -966,11 +1026,56 @@ class _WorkingState {
       tbA = (p['tieBreakA'] as int?)?.clamp(0, target + 10) ?? tbA;
       tbB = (p['tieBreakB'] as int?)?.clamp(0, target + 10) ?? tbB;
     }
+    _normalizeEditedGamePoints(p['deuceNumber'] as int?);
+  }
+
+  void _normalizeEditedGamePoints(int? editedDeuceNumber) {
+    if (format.freePlay ||
+        inTieBreak ||
+        inSuperTieBreak ||
+        format.gameScoringMode == GameScoringMode.goldenPoint) {
+      pointsA = pointsA.clamp(0, 3);
+      pointsB = pointsB.clamp(0, 3);
+      deuceNumber = 0;
+      return;
+    }
+
+    // AD is valid only as 4-3 or 3-4. Normalize corrupted/legacy absolute
+    // edits instead of letting 4-4 or 4-2 leak into replay.
+    if (pointsA == 4 && pointsB == 4) {
+      pointsA = 3;
+      pointsB = 3;
+    } else {
+      if (pointsA == 4 && pointsB != 3) pointsA = 3;
+      if (pointsB == 4 && pointsA != 3) pointsB = 3;
+    }
+
+    if (format.gameScoringMode != GameScoringMode.starPoint) {
+      deuceNumber = 0;
+      return;
+    }
+
+    final inDeucePhase =
+        (pointsA == 3 && pointsB == 3) ||
+        (pointsA == 4 && pointsB == 3) ||
+        (pointsB == 4 && pointsA == 3);
+    if (!inDeucePhase) {
+      deuceNumber = 0;
+      return;
+    }
+
+    // Legacy SCORE_EDITED events did not carry a phase. A 40-40 edit therefore
+    // deterministically restarts from deuce 1 instead of inheriting stale state.
+    deuceNumber = (editedDeuceNumber ?? 1).clamp(1, 3);
+    if ((pointsA == 4 || pointsB == 4) && deuceNumber == 3) {
+      // Deuce 3 is already the deciding Star Point and has no advantage state.
+      deuceNumber = 2;
+    }
   }
 
   MatchState snapshot() {
     TeamId? advantage;
-    if (!format.goldenPoint) {
+    if (format.gameScoringMode != GameScoringMode.goldenPoint) {
       if (pointsA == 4 && pointsB == 3) advantage = TeamId.a;
       if (pointsB == 4 && pointsA == 3) advantage = TeamId.b;
     }
@@ -980,6 +1085,7 @@ class _WorkingState {
         pointsA.clamp(0, 3),
         pointsB.clamp(0, 3),
         advantage: advantage,
+        deuceNumber: deuceNumber,
       ),
       gamesA: gamesA,
       gamesB: gamesB,

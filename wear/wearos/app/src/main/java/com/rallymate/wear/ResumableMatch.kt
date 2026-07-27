@@ -114,12 +114,32 @@ data class WearResumableMatch(
     }
 }
 
+enum class WearSnapshotAuthorityScope(val wire: String) {
+    NON_STAR_POINT("NON_STAR_POINT"),
+    STAR_POINT("STAR_POINT"),
+    ;
+
+    fun owns(match: WearResumableMatch): Boolean =
+        (match.format.gameScoringMode == GameScoringMode.STAR_POINT) ==
+            (this == STAR_POINT)
+
+    companion object {
+        fun fromWire(value: String?): WearSnapshotAuthorityScope? =
+            entries.firstOrNull { it.wire == value }
+    }
+}
+
 /** Snapshot published through the "latest state" channel (a Data Item). */
 data class WearResumableSnapshot(
     val stateVersion: Int = 0,
     val lastUpdatedAtMs: Long = 0,
     val activeMatchId: String? = null,
     val matches: List<WearResumableMatch> = emptyList(),
+    val authoritative: Boolean = false,
+    val authoritySource: String? = null,
+    val authorityScope: String? = null,
+    val authorityVersion: Long = 0,
+    val authorityVersions: Map<String, Long> = emptyMap(),
 ) {
     fun match(matchId: String): WearResumableMatch? =
         matches.firstOrNull { it.matchId == matchId }
@@ -134,9 +154,56 @@ data class WearResumableSnapshot(
      * a terminal status always wins; otherwise the higher `stateVersion`;
      * equal versions keep the most recently updated entry.
      */
-    fun merging(incoming: WearResumableSnapshot): WearResumableSnapshot {
+    fun merging(
+        incoming: WearResumableSnapshot,
+        protectedMatchIds: Set<String> = emptySet(),
+    ): WearResumableSnapshot {
+        val declaresAuthority =
+            incoming.authoritative ||
+                incoming.authoritySource != null ||
+                incoming.authorityScope != null ||
+                incoming.authorityVersion > 0
+        val incomingScope = WearSnapshotAuthorityScope.fromWire(
+            incoming.authorityScope,
+        ).takeIf {
+            incoming.authoritative &&
+                incoming.authoritySource == "PHONE" &&
+                incoming.authorityVersion > 0
+        }
+        // Partial or unknown authority metadata must not silently fall back to
+        // legacy additive merge semantics.
+        if (declaresAuthority && incomingScope == null) return this
+        val knownAuthorityVersions = authorityVersions.toMutableMap()
+        val knownGlobalVersion = authorityVersions.values.maxOrNull() ?: 0L
+        if (incomingScope != null) {
+            val knownVersion = knownAuthorityVersions[incomingScope.wire] ?: 0L
+            // A delayed Data Item must never resurrect a match removed by a
+            // newer authoritative clear.
+            if (incoming.authorityVersion < knownVersion) return this
+        }
+
         val byId = matches.associateBy { it.matchId }.toMutableMap()
-        for (candidate in incoming.matches) {
+        if (incomingScope != null) {
+            val incomingIds = incoming.matches
+                .filter(incomingScope::owns)
+                .mapTo(mutableSetOf()) { it.matchId }
+            byId.entries.removeAll { (matchId, match) ->
+                match.sourceDevice == "PHONE" &&
+                    incomingScope.owns(match) &&
+                    matchId !in incomingIds &&
+                    matchId !in protectedMatchIds
+            }
+            knownAuthorityVersions[incomingScope.wire] = incoming.authorityVersion
+        }
+        val incomingCandidates = if (incomingScope == null) {
+            incoming.matches
+        } else {
+            // The v2 wire payload intentionally contains the full list, but
+            // its STAR_POINT authority owns only Star Point rows. The legacy
+            // slot independently owns every other scoring mode.
+            incoming.matches.filter(incomingScope::owns)
+        }
+        for (candidate in incomingCandidates) {
             val existing = byId[candidate.matchId]
             byId[candidate.matchId] = if (existing == null) {
                 candidate
@@ -145,11 +212,37 @@ data class WearResumableSnapshot(
             }
         }
         val newerIncoming = incoming.stateVersion >= stateVersion
+        val mergedActiveMatchId = if (incomingScope == null) {
+            if (newerIncoming) incoming.activeMatchId else activeMatchId
+        } else {
+            val incomingActive = incoming.activeMatchId?.takeIf { activeId ->
+                incoming.matches.any {
+                    it.matchId == activeId && incomingScope.owns(it)
+                }
+            }
+            val currentActive = activeMatchId
+            val currentActiveOwned = currentActive != null &&
+                matches.any {
+                    it.matchId == currentActive && incomingScope.owns(it)
+                }
+            when {
+                incomingActive != null &&
+                    incoming.authorityVersion >= knownGlobalVersion -> incomingActive
+                currentActiveOwned && currentActive !in protectedMatchIds -> null
+                currentActive != null && byId.containsKey(currentActive) -> currentActive
+                else -> null
+            }
+        }
         return WearResumableSnapshot(
             stateVersion = maxOf(stateVersion, incoming.stateVersion),
             lastUpdatedAtMs = maxOf(lastUpdatedAtMs, incoming.lastUpdatedAtMs),
-            activeMatchId = if (newerIncoming) incoming.activeMatchId else activeMatchId,
+            activeMatchId = mergedActiveMatchId,
             matches = byId.values.sortedByDescending { it.updatedAtMs },
+            authoritative = incoming.authoritative,
+            authoritySource = incoming.authoritySource,
+            authorityScope = incoming.authorityScope,
+            authorityVersion = incoming.authorityVersion,
+            authorityVersions = knownAuthorityVersions,
         )
     }
 
@@ -162,11 +255,49 @@ data class WearResumableSnapshot(
         )
     )
 
+    /**
+     * Records a lifecycle generation without applying snapshot absence rules.
+     * Returns null when a delayed lifecycle is older than the authoritative
+     * snapshot already accepted for the same scoring scope.
+     */
+    fun acceptingLifecycleAuthority(
+        source: String?,
+        scope: WearSnapshotAuthorityScope?,
+        version: Long,
+    ): WearResumableSnapshot? {
+        if (scope == null) {
+            return takeIf { source == null && version <= 0 }
+        }
+        val known = authorityVersions[scope.wire] ?: 0L
+        if (source == null && version <= 0) return takeIf { known == 0L }
+        if (source != "PHONE" || version <= 0 || version < known) return null
+        if (version == known) return this
+        return copy(
+            authorityVersions = authorityVersions + (scope.wire to version),
+        )
+    }
+
     fun toJson(): String = JSONObject()
         .put("stateVersion", stateVersion)
         .put("lastUpdatedAtMs", lastUpdatedAtMs)
         .put("matches", JSONArray(WearResumableMatch.listToJson(matches)))
-        .apply { activeMatchId?.let { put("activeMatchId", it) } }
+        .apply {
+            activeMatchId?.let { put("activeMatchId", it) }
+            if (authoritative) put("authoritative", true)
+            authoritySource?.let { put("authoritySource", it) }
+            authorityScope?.let { put("authorityScope", it) }
+            if (authorityVersion > 0) put("authorityVersion", authorityVersion)
+            if (authorityVersions.isNotEmpty()) {
+                put(
+                    "authorityVersions",
+                    JSONObject().apply {
+                        authorityVersions.forEach { (scope, version) ->
+                            put(scope, version)
+                        }
+                    },
+                )
+            }
+        }
         .toString()
 
     companion object {
@@ -193,6 +324,13 @@ data class WearResumableSnapshot(
                 matches = WearResumableMatch.listFromJson(
                     root.optJSONArray("matches")?.toString() ?: "[]"
                 ),
+                authoritative = root.optBoolean("authoritative", false),
+                authoritySource = root.optString("authoritySource")
+                    .takeIf { it.isNotBlank() },
+                authorityScope = root.optString("authorityScope")
+                    .takeIf { it.isNotBlank() },
+                authorityVersion = root.optLong("authorityVersion", 0),
+                authorityVersions = authorityVersionsFrom(root),
             )
         }.getOrDefault(EMPTY)
 
@@ -206,7 +344,25 @@ data class WearResumableSnapshot(
                 matches = WearResumableMatch.listFromJson(
                     json.optString("matches", "[]")
                 ),
+                authoritative = json.optBoolean("authoritative", false),
+                authoritySource = json.optString("authoritySource")
+                    .takeIf { it.isNotBlank() },
+                authorityScope = json.optString("authorityScope")
+                    .takeIf { it.isNotBlank() },
+                authorityVersion = json.optLong("authorityVersion", 0),
             )
+
+        private fun authorityVersionsFrom(root: JSONObject): Map<String, Long> {
+            val json = root.optJSONObject("authorityVersions") ?: return emptyMap()
+            return buildMap {
+                val keys = json.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val value = json.optLong(key, 0)
+                    if (value > 0) put(key, value)
+                }
+            }
+        }
     }
 }
 
@@ -220,6 +376,9 @@ data class WearMatchLifecycle(
     val timestampMs: Long,
     val format: MatchFormat?,
     val events: List<MatchEvent>,
+    val authoritySource: String? = null,
+    val authorityScope: String? = null,
+    val authorityVersion: Long = 0,
 ) {
     companion object {
         fun fromPayload(json: JSONObject): WearMatchLifecycle? {
@@ -249,6 +408,11 @@ data class WearMatchLifecycle(
                 events = json.optString("events").takeIf { it.isNotBlank() }
                     ?.let { MatchEvent.listFromJson(it) }
                     .orEmpty(),
+                authoritySource = json.optString("authoritySource")
+                    .takeIf { it.isNotBlank() },
+                authorityScope = json.optString("authorityScope")
+                    .takeIf { it.isNotBlank() },
+                authorityVersion = json.optLong("authorityVersion", 0),
             )
         }
     }

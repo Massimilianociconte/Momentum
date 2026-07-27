@@ -6,11 +6,17 @@ import 'enums.dart';
 /// Points inside a normal game, in tennis notation.
 /// 0,1,2,3 = 0/15/30/40; ad = advantage (only with advantage scoring).
 class GamePoints {
-  const GamePoints(this.a, this.b, {this.advantage});
+  const GamePoints(this.a, this.b, {this.advantage, this.deuceNumber = 0})
+    : assert(deuceNumber >= 0 && deuceNumber <= 3);
 
   final int a;
   final int b;
   final TeamId? advantage;
+
+  /// Star Point phase: 0 before deuce, then deuce/advantage 1, 2 or 3.
+  ///
+  /// At 40-40 with value 3 the next rally is the deciding Star Point.
+  final int deuceNumber;
 
   static const labels = ['0', '15', '30', '40'];
 
@@ -25,25 +31,36 @@ class GamePoints {
   /// The score remains the source of truth; this copy only explains what the
   /// next rally means and can be announced by accessibility services.
   String? situationLabel({
-    required bool goldenPoint,
+    required GameScoringMode gameScoringMode,
     String teamALabel = 'NOI',
     String teamBLabel = 'LORO',
   }) {
     final holder = advantage;
     if (holder != null) {
       final label = holder == TeamId.a ? teamALabel : teamBLabel;
+      if (gameScoringMode == GameScoringMode.starPoint) {
+        final number = deuceNumber.clamp(1, 2);
+        return 'VANTAGGIO $number $label · un punto per il game';
+      }
       return 'VANTAGGIO $label · un punto per il game';
     }
     if (isDeuce) {
-      return goldenPoint
-          ? '40 PARI · prossimo punto decisivo'
-          : '40 PARI · si gioca ai vantaggi';
+      return switch (gameScoringMode) {
+        GameScoringMode.goldenPoint => '40 PARI · prossimo punto decisivo',
+        GameScoringMode.advantage => '40 PARI · si gioca ai vantaggi',
+        GameScoringMode.starPoint when deuceNumber >= 3 =>
+          'STAR POINT · prossimo punto decide il game',
+        GameScoringMode.starPoint =>
+          'PARITÀ ${deuceNumber.clamp(1, 2)} · prossimo punto vale '
+              'VANTAGGIO ${deuceNumber.clamp(1, 2)}',
+      };
     }
     return null;
   }
 
-  /// Deuce with golden point → next point wins the game.
   bool get isDeuce => advantage == null && a >= 3 && b >= 3;
+
+  bool get isStarPoint => isDeuce && deuceNumber >= 3;
 }
 
 /// A finished set, with optional tie-break detail.
@@ -159,6 +176,8 @@ class MatchState {
     'pointsA': points.a,
     'pointsB': points.b,
     'advantage': points.advantage?.wire,
+    'deuceNumber': points.deuceNumber,
+    'isStarPoint': points.isStarPoint,
     'gamesA': gamesA,
     'gamesB': gamesB,
     'setsA': setsA,

@@ -8,11 +8,11 @@
         "components": [
           {
             "/": "/invite/*",
-            "comment": "Inviti opachi Padelandia"
+            "comment": "Inviti opachi Momentum"
           },
           {
             "/": "/recap/*",
-            "comment": "Riepiloghi condivisi Padelandia"
+            "comment": "Riepiloghi condivisi Momentum"
           }
         ]
       }

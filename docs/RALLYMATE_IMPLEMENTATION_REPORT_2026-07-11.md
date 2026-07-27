@@ -1,10 +1,10 @@
-# Padelandia - Implementation and release-readiness report
+# Momentum - Implementation and release-readiness report
 
 Date: 2026-07-11
 
 ## Executive status
 
-The implemented Padelandia path is now offline-first and uses real local or
+The implemented Momentum path is now offline-first and uses real local or
 Supabase data for teams, social discovery, friendship, invitations, scoring and
 Duo Mode. Apple Watch and Wear OS remain the only watch runtimes declared as
 supported. Garmin, Fitbit OS, Tizen and other non-Wear platforms are explicitly

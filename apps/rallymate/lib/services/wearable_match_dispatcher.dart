@@ -63,6 +63,16 @@ bool isScoringWearableReady(ConnectedDevice device) {
   return false;
 }
 
+const _starPointCompanionUnavailableMessage =
+    'Questo companion non ha ancora il motore Star Point FIP 2026. '
+    'Aggiorna Momentum sul watch e verifica di nuovo la connessione; '
+    'la partita resta disponibile sul telefono senza cambiare formato.';
+
+const _decidingSetCompanionUnavailableMessage =
+    'Questo companion non sa ancora giocare il set decisivo senza tie-break. '
+    'Aggiorna Momentum sul watch e verifica di nuovo la connessione; '
+    'la partita resta disponibile sul telefono senza cambiare formato.';
+
 class WearableDispatchResult {
   const WearableDispatchResult({
     required this.sent,
@@ -95,6 +105,39 @@ class WearableMatchDispatcher {
         ready.where((device) => device.isDefault).firstOrNull ??
         ready.firstOrNull;
     final provider = selected == null ? '' : wearableProviderFor(selected);
+    final starPoint = format.gameScoringMode == GameScoringMode.starPoint;
+    if (starPoint) {
+      // Star Point is implemented by the versioned native Apple Watch/Wear OS
+      // engines only. A persisted feature row is diagnostic, not authority.
+      final nativeTarget =
+          provider.isEmpty ||
+          provider == 'APPLE_WATCH' ||
+          provider == 'WEAR_OS';
+      if (!nativeTarget) {
+        return WearableDispatchResult(
+          sent: false,
+          provider: provider.isEmpty ? 'NATIVE_WATCH' : provider,
+          message: _starPointCompanionUnavailableMessage,
+        );
+      }
+    }
+    // Same reasoning for the deciding set played without tie-break: it is a
+    // format schema v3 field. Garmin and Fitbit read the format with v2 keys
+    // and would open a tie-break at 6-6, so the phone refuses instead of
+    // letting the two devices score different matches.
+    if (format.requiresDecidingSetProtocol) {
+      final nativeTarget =
+          provider.isEmpty ||
+          provider == 'APPLE_WATCH' ||
+          provider == 'WEAR_OS';
+      if (!nativeTarget) {
+        return WearableDispatchResult(
+          sent: false,
+          provider: provider.isEmpty ? 'NATIVE_WATCH' : provider,
+          message: _decidingSetCompanionUnavailableMessage,
+        );
+      }
+    }
 
     try {
       switch (provider) {
@@ -136,16 +179,14 @@ class WearableMatchDispatcher {
           // Sticky reclaim still lets the user take phone control; if Fitbit
           // never opens, reclaim or finish clears the lock.
           if (queued) {
-            await ref
-                .read(matchScoringLockProvider)
-                .lock(matchId, 'FITBIT_OS');
+            await ref.read(matchScoringLockProvider).lock(matchId, 'FITBIT_OS');
           }
           return WearableDispatchResult(
             sent: queued,
             provider: provider,
             message: queued
                 ? 'Partita pronta sul Fitbit. Punteggio sul watch per evitare '
-                    'doppi punti; usa “Telefono” in live se vuoi segnare qui.'
+                      'doppi punti; usa “Telefono” in live se vuoi segnare qui.'
                 : 'Il Fitbit non ha confermato la coda partita.',
           );
         case 'GOOGLE_HEALTH':
@@ -170,6 +211,29 @@ class WearableMatchDispatcher {
               auth.profileLinked &&
               session != null &&
               CloudConfig.supabaseConfigured;
+          // Probe immediately before the transfer. The service grants exactly
+          // one dispatch permit, so no exception or unrelated operation can
+          // leave a reusable Star Point authorization behind.
+          if (starPoint &&
+              !await ref
+                  .read(watchSyncProvider.notifier)
+                  .proveStarPointCapability()) {
+            return WearableDispatchResult(
+              sent: false,
+              provider: provider.isEmpty ? 'NATIVE_WATCH' : provider,
+              message: _starPointCompanionUnavailableMessage,
+            );
+          }
+          if (format.requiresDecidingSetProtocol &&
+              !await ref
+                  .read(watchSyncProvider.notifier)
+                  .proveDecidingSetCapability()) {
+            return WearableDispatchResult(
+              sent: false,
+              provider: provider.isEmpty ? 'NATIVE_WATCH' : provider,
+              message: _decidingSetCompanionUnavailableMessage,
+            );
+          }
           final sent = await ref
               .read(watchSyncProvider.notifier)
               .sendMatchToWatch(
@@ -248,7 +312,7 @@ class WearableMatchDispatcher {
       return const WearableDispatchResult(
         sent: false,
         provider: 'GARMIN_CONNECT_IQ',
-        message: 'Installa prima Padelandia dal Connect IQ Store.',
+        message: 'Installa prima Momentum dal Connect IQ Store.',
       );
     }
     // Durable-ish start: retry with REQUEST_SYNC between attempts so a watch
@@ -285,15 +349,15 @@ class WearableMatchDispatcher {
       _ when result.accepted =>
         'Partita inviata al Garmin. I tap sul telefono restano bloccati per evitare punti doppi.',
       'pending_match_not_synchronized' =>
-        'Il Garmin ha una partita non ancora sincronizzata. Apri Padelandia sul watch, attendi la sync e riprova.',
+        'Il Garmin ha una partita non ancora sincronizzata. Apri Momentum sul watch, attendi la sync e riprova.',
       'active_match_in_progress' =>
         'C’è già una partita in corso sul Garmin. Completala o sincronizzala prima di inviarne un’altra.',
       'timeout' =>
-        'Nessuna conferma dal Garmin. Apri Padelandia sul watch e riprova.',
+        'Nessuna conferma dal Garmin. Apri Momentum sul watch e riprova.',
       'transport_failed' =>
-        'Garmin non raggiungibile. Apri Garmin Connect e Padelandia sul watch.',
+        'Garmin non raggiungibile. Apri Garmin Connect e Momentum sul watch.',
       _ =>
-        'Il Garmin non ha accettato la partita. Apri Padelandia sul watch e riprova.',
+        'Il Garmin non ha accettato la partita. Apri Momentum sul watch e riprova.',
     };
     return WearableDispatchResult(
       sent: result.accepted,
@@ -329,6 +393,10 @@ class WearableMatchDispatcher {
     final format = MatchFormat.fromJson(
       (jsonDecode(row.formatJson) as Map).cast<String, Object?>(),
     );
+    if (format.gameScoringMode == GameScoringMode.starPoint) {
+      await _rejectGarminResume(nativeId, matchId, 'format_unsupported');
+      return;
+    }
     final result = await ref
         .read(wearableProviderServiceProvider)
         .startGarminMatch(
@@ -385,8 +453,7 @@ class WearableMatchDispatcher {
           'type': supported[i].type.wire,
           'sourceMethod': supported[i].sourceMethod.wire,
           'target': supported[i].payload?['targetEventId']?.toString(),
-          if (supported[i].teamId != null)
-            'teamId': supported[i].teamId!.wire,
+          if (supported[i].teamId != null) 'teamId': supported[i].teamId!.wire,
           'sequence': i + 1,
           'timestampMs': supported[i].timestampMs,
         },

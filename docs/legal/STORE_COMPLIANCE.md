@@ -1,4 +1,4 @@
-# Padelandia — Guida operativa compliance store
+# Momentum — Guida operativa compliance store
 
 **Aggiornata al 15 luglio 2026.** Obiettivo: approvazione al primo tentativo su
 Google Play e App Store. Le sezioni ⚠️ richiedono un'azione prima della
@@ -11,7 +11,7 @@ submission.
 | # | Azione | Stato |
 |---|---|---|
 | 1 | ⚠️ Completare Titolare/ragione sociale in PRIVACY_POLICY(.EN) e TERMS_OF_SERVICE | da fare |
-| 2 | ⚠️ Pubblicare Privacy, Termini e pagina eliminazione su un **URL HTTPS pubblico stabile**. Il dominio condiviso Supabase forza HTML/XHTML a `text/plain`; usare il sito Padelandia oppure un custom domain | da fare |
+| 2 | ⚠️ Pubblicare Privacy, Termini e pagina eliminazione su un **URL HTTPS pubblico stabile**. Il dominio condiviso Supabase forza HTML/XHTML a `text/plain`; usare il sito Momentum oppure un custom domain | da fare |
 | 3 | `delete-account` è attiva e il POST autenticato è il percorso in-app; il GET restituisce le istruzioni, ma la pagina web professionale va ospitata come indicato al punto 2 | backend attivo / URL web da fare |
 | 4 | Configurare in build gli URL pubblici: `--dart-define=RALLYMATE_PRIVACY_URL=...` e `--dart-define=RALLYMATE_TERMS_URL=...`; il paywall e la schermata Privacy li leggono da `CloudConfig` | da fare |
 | 5 | ⚠️ Creare account demo per i reviewer: almeno 1 Pro, consigliati 2 account per social/matchmaking; indicare credenziali nelle Review Notes | da fare |
@@ -45,7 +45,7 @@ sito/custom domain con le stesse istruzioni del GET `delete-account`.
 | Messaggi → Altri messaggi in-app | Sì | No | Sì | Funzionalità dell'app (richieste social) |
 | Attività nell'app → Contenuti generati dagli utenti | Sì | No | Sì | Funzionalità dell'app (card Wrapped pubblicate, backup Plus) |
 | Cronologia acquisti | Sì | No | Sì | Funzionalità dell'app (stato abbonamento) |
-| ID del dispositivo o altri ID | Sì, solo dopo consenso notifiche e login: Firebase Installation ID (FID) e UUID casuale dell'installazione Padelandia | No | Sì | Funzionalità dell'app (recapito e deduplicazione push) |
+| ID del dispositivo o altri ID | Sì, solo dopo consenso notifiche e login: Firebase Installation ID (FID) e UUID casuale dell'installazione Momentum | No | Sì | Funzionalità dell'app (recapito e deduplicazione push) |
 | Salute e fitness | **Sì** per Google Health Pro e, solo dopo attivazione, Oura/WHOOP diretti; HealthKit/Health Connect nativi restano locali | No | Sì (opt-in OAuth) | Funzionalità dell'app, riepilogo fitness |
 | Posizione | No | — | — | — (mai raccolta) |
 | Audio → Registrazioni vocali | No (elaborazione effimera on-device per i comandi punteggio: rientra nell'esenzione "ephemeral processing") | — | — | — |
@@ -66,7 +66,7 @@ Oura/WHOOP come raccolti finché i rollout restano disattivati e nessun utente
 può collegarli; aggiornare il form prima di abilitarli in produzione.
 
 Per FCM dichiarare **Device or other IDs**: Firebase Installations genera un
-identificativo per installazione e Padelandia conserva token/UUID soltanto dopo
+identificativo per installazione e Momentum conserva token/UUID soltanto dopo
 il consenso. Finalità esclusiva App functionality; facoltativo; nessuna
 condivisione pubblicitaria, tracking, Firebase Analytics o export BigQuery.
 
@@ -103,7 +103,7 @@ Requisiti policy (tutti già rispettati dall'app — non regredire):
   `POST_NOTIFICATIONS` (reminder locali e push operative social/account, solo
   dopo consenso). Nessuna posizione.
 - **Target SDK**: a luglio 2026 Google richiede API 35 per nuove app/update
-  mobile e API 34 per Wear OS. Padelandia usa target 36 sul telefono e 35 sul
+  mobile e API 34 per Wear OS. Momentum usa target 36 sul telefono e 35 sul
   modulo Wear OS; ricontrollare comunque la pagina ufficiale al submit.
 - **Contenuti**: nessuna pubblicità; questionario IARC → app sportiva, chat
   tra utenti moderata (social) → rating atteso PEGI 3/Everyone con
@@ -152,14 +152,14 @@ NSPrivacyTracking=false e required-reason API dichiarate).
   eliminazione immediata server-side). Non nascondere il bottone.
 - **5.1.1(v) Account opzionale**: ✅ onboarding con email per Free e alternativa
   “Continua offline”; le funzioni locali non richiedono dati personali.
-- **5.1.3 Health**: ✅ dati HealthKit mai nel cloud Padelandia/ads/terzi; usage
+- **5.1.3 Health**: ✅ dati HealthKit mai nel cloud Momentum/ads/terzi; usage
   description specifiche; entitlement HealthKit attivo. La watch app può
   scrivere una sessione workout in Apple Salute solo con consenso; non scrive
   dati falsi/inaccurati e non promette diagnosi mediche.
 - **Analytics sportive**: ✅ calcolo deterministico post-partita sul dispositivo,
   separato dai dati salute e senza provider AI; campione e incertezza sono
   visibili. Store listing e screenshot non devono presentare momentum, clutch
-  o indice Padelandia come diagnosi, previsione garantita o ranking ufficiale.
+  o indice Momentum come diagnosi, previsione garantita o ranking ufficiale.
 - **3.1.2 Abbonamenti**: nella pagina prodotto e nel paywall mostrare: nome
   piano, durata, prezzo/mese, cosa include; link a Privacy Policy e Terms
   (EULA) obbligatori nei metadati App Store Connect. Il paywall mostra piani,
@@ -237,7 +237,7 @@ Fonti operative verificate:
 ### 2.4 Review Notes (template da incollare)
 
 ```
-Padelandia is a local-first padel scoring & training app.
+Momentum is a local-first padel scoring & training app.
 Demo account: [email] / [password] (Pro plan enabled).
 - Cloud features (account, social, backup) require the demo login.
 - Pallino Assistant (AI) is available with the demo account; it is
@@ -249,7 +249,7 @@ Demo account: [email] / [password] (Pro plan enabled).
   start scoring a match.
 - Voice scoring uses the platform speech recognizer after an explicit tap. The
   operating system may process recognition on-device or through its own service;
-  audio and transcripts are never sent to Padelandia servers.
+  audio and transcripts are never sent to Momentum servers.
 - Apple Watch companion app syncs scoring via WatchConnectivity.
 - Account deletion: Profile → Manage account → "Elimina account e dati
   cloud".
@@ -277,7 +277,7 @@ Demo account: [email] / [password] (Pro plan enabled).
 ## 4. Provider smartwatch e sportwatch
 
 - **Apple Watch**: usare HealthKit/HKWorkoutSession solo durante una partita
-  attiva e con consenso. Non salvare dati salute in iCloud o cloud Padelandia;
+  attiva e con consenso. Non salvare dati salute in iCloud o cloud Momentum;
   non promettere diagnosi o accuratezza medica. `StartWorkoutIntent`/Siri può
   aprire un avvio scelto dall'utente; le API pubbliche non consentono di
   intercettare live un workout avviato da Allenamento o da un'altra app.
@@ -289,12 +289,12 @@ Demo account: [email] / [password] (Pro plan enabled).
   package/signature registrati. Il rilevamento opzionale usa
   `ACTIVITY_RECOGNITION`, un `PassiveListenerService` e notifiche normali: niente
   polling, full-screen intent o apertura forzata. Se l'esercizio appartiene a
-  un'altra app, Padelandia resta in scoring-only e non lo sostituisce.
+  un'altra app, Momentum resta in scoring-only e non lo sostituisce.
 - **Garmin Connect IQ**: UUID, lista device target, scoring offline, bridge
   mobile e unit-test binary sono presenti. Prima della pubblicazione servono
   developer key/SDK custoditi fuori dal repo, esecuzione `monkeydo` interattiva
   e test su almeno un watch fisico per famiglia esportata. Il permesso `Fit`
-  serve alla sessione avviata esplicitamente da Padelandia; il sub-sport Padel è
+  serve alla sessione avviata esplicitamente da Momentum; il sub-sport Padel è
   disponibile su API 4.1.6+, con fallback Tennis/generico. Non esiste un evento
   background pubblico di inizio attività esterna. Non dichiarare supporto
   Garmin pubblico finche il modulo non supera la review Connect IQ.
@@ -310,7 +310,7 @@ Demo account: [email] / [password] (Pro plan enabled).
   sul wearable. Servono verifica OAuth/Google Health e security assessment
   prima di superare 100 utenti. La migrazione dal Fitbit Web API legacy va
   completata prima dello shutdown annunciato per settembre 2026.
-- **Tizen**: Samsung non accetta più app nuove o aggiornamenti Tizen. Padelandia
+- **Tizen**: Samsung non accetta più app nuove o aggiornamenti Tizen. Momentum
   mostra solo una guida di migrazione verso Galaxy Watch4+ con Wear OS.
 
 ## 5. Cosa NON fa l'app (da mantenere così — semplifica tutto)

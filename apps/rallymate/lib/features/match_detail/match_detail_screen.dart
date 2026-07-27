@@ -41,6 +41,7 @@ final matchDetailProvider = FutureProvider.autoDispose
         matchId: id,
         format: format,
         events: events,
+        firstServer: row.firstServerTeam,
       );
       final stats = MatchStats.fromRecords(
         engine.pointRecords,
@@ -144,7 +145,7 @@ class _Detail extends ConsumerWidget {
         leading: const SafeBackButton(fallback: AppLocations.home),
         actions: [
           IconButton(
-            tooltip: 'Padelandia Wrapped',
+            tooltip: 'Momentum Wrapped',
             icon: const Icon(Icons.ios_share),
             onPressed: () => context.push('/match/${row.id}/wrapped'),
           ),

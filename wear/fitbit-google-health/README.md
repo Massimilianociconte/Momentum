@@ -1,11 +1,11 @@
-# Padelandia Google Health / Fitbit Air
+# Momentum Google Health / Fitbit Air
 
 Fitbit Air is screenless. It is integrated as a health data source through the
-official Google Health API and cannot host Padelandia's live scoring UI. Live
+official Google Health API and cannot host Momentum's live scoring UI. Live
 Fitbit scoring is a separate Fitbit OS module in `../fitbit-os`.
 
 Google Health data arrives after provider/device synchronization. It is not a
-real-time wearable callback and cannot open Padelandia or display an interactive
+real-time wearable callback and cannot open Momentum or display an interactive
 match prompt on Fitbit Air. Pixel Watch uses the separate Wear OS Health
 Services implementation.
 
@@ -22,7 +22,7 @@ Services implementation.
   processing.
 - Maximum 30-day retention for daily summaries.
 - Disconnect revokes Google consent, destroys encrypted tokens and deletes
-  Padelandia summaries.
+  Momentum summaries.
 - RLS exposes only a user's own aggregate rows; token tables stay server-only.
 
 The requested day is a civil day from 00:00 to the following 00:00, not a
@@ -66,7 +66,7 @@ second function and send the exact authorization header stored in the secret.
 3. Complete Google's verification and Health API policy review. Google requires
    an independent security assessment before scaling beyond 100 users.
 4. Declare Health and Fitness collection in Play Data Safety and App Store
-   privacy labels because these opt-in aggregates reach Padelandia's backend.
+   privacy labels because these opt-in aggregates reach Momentum's backend.
 5. Test consent granted/denied, expired refresh token, revocation, webhook
   signature failure, timezone/day boundaries and account deletion.
 6. Complete migration before the announced September 2026 shutdown of the

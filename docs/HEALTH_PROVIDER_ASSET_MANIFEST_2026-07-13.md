@@ -10,7 +10,7 @@ Data: 13 luglio 2026
 - integrazione: la card usa `RallyColors.surface` (`#16202F`) sopra
   `RallyColors.night` (`#0C1220`), quindi l'asset eredita sempre il colore
   effettivo della UI;
-- contenuto: prodotto isolato e realistico, illuminazione lime/cyan Padelandia,
+- contenuto: prodotto isolato e realistico, illuminazione lime/cyan Momentum,
   nessuna schermata, metrica o capability inventata;
 - budget: meno di 600 KB per asset;
 - QA automatico: oltre 75% pixel trasparenti, zero fondo bianco opaco e fascia
@@ -21,7 +21,7 @@ Data: 13 luglio 2026
 | Asset | Uso | Dimensione indicativa | Direzione Imagen riproducibile |
 |---|---|---:|---|
 | `device_oura_ring_onboarding.png` | Oura hub e direct | 287 KB | anello smart nero premium, sensori interni visibili, vista prodotto isolata |
-| `device_whoop_onboarding.png` | WHOOP direct | 444 KB | fascia fitness senza display, tessuto tecnico nero, accenti Padelandia |
+| `device_whoop_onboarding.png` | WHOOP direct | 444 KB | fascia fitness senza display, tessuto tecnico nero, accenti Momentum |
 | `device_helio_strap_onboarding.png` | Helio Strap via hub | 401 KB | fascia biometrica da braccio, modulo realistico, posa pubblicitaria pulita |
 | `device_ringconn_onboarding.png` | RingConn via hub | 391 KB | smart ring elegante con dettagli sensore, nessuna UI inventata |
 | `device_ultrahuman_onboarding.png` | Ultrahuman via hub | 404 KB | smart ring premium isolato, metallo scuro, riflessi lime/cyan controllati |
@@ -45,5 +45,5 @@ Percorso: `apps/rallymate/assets/onboarding/health/`.
 - Android: `docs/evidence/health-provider-oura-android.png`
 
 Entrambe mostrano che la trasparenza elimina l'effetto etichetta e lascia
-coincidere esattamente il fondale del prodotto con la card Padelandia.
+coincidere esattamente il fondale del prodotto con la card Momentum.
 

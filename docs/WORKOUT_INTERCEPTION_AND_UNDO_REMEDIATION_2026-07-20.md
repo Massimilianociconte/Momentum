@@ -1,4 +1,4 @@
-# Padelandia — Intercettazione Sessioni Workout & Undo Multi-passo · Report Tecnico
+# Momentum — Intercettazione Sessioni Workout & Undo Multi-passo · Report Tecnico
 
 **Data:** 2026-07-20
 **Ambito:** companion Apple Watch (watchOS) e Wear OS · associazione dati salute · pulsante Undo
@@ -15,7 +15,7 @@ ammette **un solo proprietario di sessione workout alla volta**, questo
 **interrompeva la sessione già avviata** da Apple Fitness/altre app registrata in
 Salute.
 
-La correzione adotta un'architettura **ibrida**: Padelandia recupera prima una
+La correzione adotta un'architettura **ibrida**: Momentum recupera prima una
 propria sessione eventualmente sopravvissuta a un crash; se rileva un workout di
 **un'altra app** entra in **osservazione passiva read-only** (legge FC/calorie
 senza possedere una sessione, quindi senza interromperla); solo se non c'è alcun
@@ -36,7 +36,7 @@ entrambe mostrano "Annulla ultimo punto" quando l'annullamento è possibile.
 - `WatchWorkoutSessionManager.start(matchId:)` creava **sempre** un
   `HKWorkoutSession` + `HKLiveWorkoutBuilder`.
 - HealthKit consente un solo owner di workout attivo: avviare la sessione
-  Padelandia **terminava/soppiantava** una sessione esterna già in corso
+  Momentum **terminava/soppiantava** una sessione esterna già in corso
   (es. allenamento "Padel/Tennis" avviato da Apple Fitness).
 - Nessun rilevamento di sessioni esterne, nessun recupero della propria
   sessione dopo un crash → rischio di sessione orfana o dato di partita senza
@@ -52,11 +52,11 @@ entrambe mostrano "Annulla ultimo punto" quando l'annullamento è possibile.
 ## 3. Correzione applicata
 
 ### 3.1 Apple Watch — architettura ibrida
-File: `wear/watchos/PadelandiaCore/Sources/PadelandiaWatchKit/WorkoutSessionManager.swift`
+File: `wear/watchos/RallyMateCore/Sources/RallyMateWatchKit/WorkoutSessionManager.swift`
 
 Nuovo flusso in `start(matchId:)`:
 1. **`recoverOwnSession()`** — `recoverActiveWorkoutSession` per riagganciare una
-   sessione Padelandia sopravvissuta a un riavvio/crash (nessun doppione).
+   sessione Momentum sopravvissuta a un riavvio/crash (nessun doppione).
 2. **`isExternalWorkoutActive()`** — `HKSampleQuery` sul workout più recente per
    capire se un'altra app possiede una sessione attiva.
    - Se **sì** → **`startPassiveObservation()`**: registra `HKObserverQuery` per
@@ -79,7 +79,7 @@ File: `wear/wearos/app/src/main/java/com/rallymate/wear/MatchWorkoutService.kt`
 - `UNKNOWN` → `stopWithoutEndingExercise()`.
 - Nuova sessione **solo** in assenza di conflitto.
 - `WorkoutDetection.kt`: prompt opt-in non intrusivo, disattivato se c'è già una
-  partita Padelandia o se lo stato non è `OTHER_APP_IN_PROGRESS`.
+  partita Momentum o se lo stato non è `OTHER_APP_IN_PROGRESS`.
 
 ### 3.3 Associazione dati salute (lato telefono)
 File: `apps/rallymate/lib/services/match_health_sync.dart`
@@ -167,8 +167,8 @@ In Duo Mode l'undo resta **team-scoped**.
 
 | Suite | Comando | Risultato |
 |---|---|---|
-| watchOS PadelandiaCore + WatchKit (host) | `swift test` | **41 test, 0 failure** |
-| watchOS compilazione target-reale | `xcodebuild -scheme PadelandiaWatchKit -sdk watchsimulator26.5` | **BUILD SUCCEEDED** (compila il codice `#if os(watchOS)`) |
+| watchOS RallyMateCore + WatchKit (host) | `swift test` | **41 test, 0 failure** |
+| watchOS compilazione target-reale | `xcodebuild -scheme RallyMateWatchKit -sdk watchsimulator26.5` | **BUILD SUCCEEDED** (compila il codice `#if os(watchOS)`) |
 | Wear OS | `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest` (JBR Android Studio) | **BUILD SUCCESSFUL** |
 | Flutter app (ciclo precedente) | `flutter test` | 131 test passati |
 | rally_core (ciclo precedente) | `dart test` | 84 test passati |

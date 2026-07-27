@@ -286,7 +286,7 @@ class MatchWorkoutService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Padelandia")
+            .setContentTitle("Momentum")
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_rally_ongoing)
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
@@ -321,7 +321,7 @@ class MatchWorkoutService : Service() {
     private fun createChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Partita Padelandia",
+            "Partita Momentum",
             NotificationManager.IMPORTANCE_LOW,
         )
         channel.description = "Sessione workout e always-on durante una partita."

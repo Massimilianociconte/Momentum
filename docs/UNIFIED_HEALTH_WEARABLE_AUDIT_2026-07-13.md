@@ -1,4 +1,4 @@
-# Padelandia: audit e implementazione wearable salute unificata
+# Momentum: audit e implementazione wearable salute unificata
 
 Data verifica: 13 luglio 2026
 
@@ -31,7 +31,7 @@ flowchart LR
   L --> N["Normalizzazione e deduplica"]
   D --> N
   N --> A["Associazione prudente alla partita"]
-  A --> X["Analytics Padelandia"]
+  A --> X["Analytics Momentum"]
 ```
 
 Contratto comune: `HealthDataProvider` espone connessione, stato,
@@ -80,7 +80,7 @@ liste duplicate sparse nelle schermate.
 
 ## Normalizzazione e deduplica
 
-- Padelandia è sorgente preferita per i workout creati dall'app, così una copia
+- Momentum è sorgente preferita per i workout creati dall'app, così una copia
   riflessa da HealthKit/Health Connect non duplica la partita.
 - Le preferenze per metrica sono esplicite e modificabili.
 - Gli aggregati conservano Data Origin/source bundle e device metadata.

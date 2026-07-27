@@ -30,7 +30,7 @@ class PrivacyScreen extends StatelessWidget {
           const SectionCard(
             title: 'DATI LOCALI',
             child: _PrivacyText(
-              'Padelandia funziona offline: profilo, team, partite, eventi, '
+              'Momentum funziona offline: profilo, team, partite, eventi, '
               'statistiche e allenamenti vengono salvati sul dispositivo. '
               'La partita e il punteggio sono ricostruiti dal log eventi locale.',
             ),
@@ -41,7 +41,7 @@ class PrivacyScreen extends StatelessWidget {
             child: _PrivacyText(
               'Il microfono viene usato solo quando tocchi il comando vocale '
               'durante una partita. Il riconoscimento è gestito dal servizio '
-              'vocale del sistema; Padelandia non conserva audio o trascrizioni '
+              'vocale del sistema; Momentum non conserva audio o trascrizioni '
               'e non c\'è ascolto continuo in background.',
             ),
           ),
@@ -59,7 +59,7 @@ class PrivacyScreen extends StatelessWidget {
           const SectionCard(
             title: 'NOTIFICHE',
             child: _PrivacyText(
-              'Le notifiche sono facoltative. Padelandia usa reminder locali e, '
+              'Le notifiche sono facoltative. Momentum usa reminder locali e, '
               'solo dopo il consenso e l’accesso a un account, push operative '
               'per richieste social, inviti, coach e aggiornamenti importanti. '
               'Per recapitarle salva un identificativo casuale '
@@ -73,7 +73,7 @@ class PrivacyScreen extends StatelessWidget {
             title: 'SALUTE E FITNESS',
             child: _PrivacyText(
               'Le integrazioni salute sono disponibili solo per utenti Pro e '
-              'restano facoltative. Su Android Padelandia legge da Google Health '
+              'restano facoltative. Su Android Momentum legge da Google Health '
               'Connect passi, calorie attive, minuti di esercizio e frequenza '
               'cardiaca media. Su iOS legge gli stessi riepiloghi da Apple '
               'Salute/HealthKit quando concedi il permesso. I permessi sono '
@@ -108,7 +108,7 @@ class PrivacyScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 _PrivacyText(
-                  'Puoi usare Padelandia senza account. Se accedi, puoi uscire '
+                  'Puoi usare Momentum senza account. Se accedi, puoi uscire '
                   'o eliminare account e dati cloud dalla schermata Account. '
                   'La cancellazione richiede doppia conferma e rimuove i dati '
                   'cloud associati, salvo eventuali obblighi legali di '
@@ -252,7 +252,7 @@ class _SocialPrivacyCardState extends ConsumerState<_SocialPrivacyCard> {
               ),
               const SizedBox(height: 8),
               const _PrivacyText(
-                'Padelandia usa solo la zona scelta nel profilo. Coordinate '
+                'Momentum usa solo la zona scelta nel profilo. Coordinate '
                 'precise, seriali e identificativi hardware non sono pubblicati.',
               ),
               const Divider(height: 24),
@@ -267,7 +267,7 @@ class _SocialPrivacyCardState extends ConsumerState<_SocialPrivacyCard> {
               _PrivacyToggle(
                 value: settings.showActivity,
                 title: 'Mostra ultima attività',
-                subtitle: 'Condividi quando hai usato di recente Padelandia.',
+                subtitle: 'Condividi quando hai usato di recente Momentum.',
                 enabled: !_busy && settings.socialEnabled,
                 onChanged: (value) =>
                     _save(settings.copyWith(showActivity: value)),

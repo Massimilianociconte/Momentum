@@ -28,6 +28,31 @@ import 'cloud_service.dart';
 
 const _netTimeout = Duration(seconds: 12);
 
+const duoStarPointUnsupportedMessage =
+    'Star Point richiede due dispositivi con protocollo di punteggio v2 e '
+    'per ora non è disponibile in Duo Mode. Usa Singolo dispositivo.';
+
+const duoDecidingSetUnsupportedMessage =
+    'Il set decisivo senza tie-break richiede due dispositivi con schema '
+    'formato v3 e per ora non è disponibile in Duo Mode. '
+    'Usa Singolo dispositivo.';
+
+/// Formats both Duo devices are guaranteed to score identically.
+///
+/// A device on an older build ignores fields it does not know: Star Point
+/// would degrade to Advantage and a deciding set without tie-break would open
+/// a tie-break at 6-6. Both cases produce two different matches, so they are
+/// refused rather than negotiated.
+bool supportsDuoScoring(MatchFormat format) =>
+    format.gameScoringMode != GameScoringMode.starPoint &&
+    !format.requiresDecidingSetProtocol;
+
+/// Message explaining why [supportsDuoScoring] refused [format].
+String duoUnsupportedFormatMessage(MatchFormat format) =>
+    format.gameScoringMode == GameScoringMode.starPoint
+    ? duoStarPointUnsupportedMessage
+    : duoDecidingSetUnsupportedMessage;
+
 /// Tipi di evento che viaggiano sulla timeline cloud. I derivati
 /// (GAME_COMPLETED, SET_COMPLETED, SIDE_CHANGE) restano locali: ogni replay
 /// li rigenera e duplicarli in cloud è solo rumore/costo.
@@ -52,6 +77,7 @@ class DuoSessionInfo {
     required this.status,
     this.joinCode,
     this.format,
+    this.firstServer = TeamId.a,
     this.guestJoined = false,
   });
 
@@ -61,6 +87,11 @@ class DuoSessionInfo {
   final String status; // PENDING | ACTIVE | FINALIZING | COMPLETED | CANCELLED
   final String? joinCode;
   final MatchFormat? format;
+
+  /// Coppia al servizio nel primo game (FIP Regola 4). Entrambi i device
+  /// devono rigiocare il journal condiviso con lo stesso valore, altrimenti
+  /// servizio, risposta, break e hold finiscono sulla coppia sbagliata.
+  final TeamId firstServer;
   final bool guestJoined;
 }
 
@@ -96,7 +127,19 @@ class DuoService {
     required String matchId,
     required MatchFormat format,
     TeamId myTeam = TeamId.a,
+    TeamId firstServer = TeamId.a,
   }) async {
+    // Fail closed before auth, local pending markers or remote mutations. Until
+    // Duo negotiates the scoring protocol of both phones, a legacy peer would
+    // decode Star Point's goldenPoint=false fallback as ADVANTAGE and would
+    // open a tie-break in a deciding set meant to be played out.
+    if (!supportsDuoScoring(format)) {
+      return (
+        session: null,
+        error: duoUnsupportedFormatMessage(format),
+        canDiscardLocal: true,
+      );
+    }
     final c = _client;
     if (c == null) {
       return (
@@ -142,6 +185,7 @@ class DuoService {
               'p_match_id': matchId,
               'p_format': format.toJson(),
               'p_team': myTeam.wire,
+              'p_first_server': firstServer.wire,
             },
           )
           .timeout(_netTimeout);
@@ -160,6 +204,7 @@ class DuoService {
         status: data['status'] as String? ?? 'PENDING',
         joinCode: data['joinCode'] as String?,
         format: format,
+        firstServer: firstServer,
       );
       await ref
           .read(matchRepoProvider)
@@ -226,6 +271,14 @@ class DuoService {
       final format = MatchFormat.fromJson(
         ((data['format'] as Map?) ?? const {}).cast<String, Object?>(),
       );
+      if (!supportsDuoScoring(format)) {
+        return (session: null, error: duoUnsupportedFormatMessage(format));
+      }
+      // Assente se la sessione è stata creata da un client precedente: quel
+      // client aveva rigiocato con TEAM_A, che resta quindi il default giusto.
+      final firstServer = data['firstServer'] == TeamId.b.wire
+          ? TeamId.b
+          : TeamId.a;
       final matchId = data['matchId'] as String;
       final info = DuoSessionInfo(
         sessionId: data['sessionId'] as String,
@@ -233,6 +286,7 @@ class DuoService {
         myTeam: myTeam,
         status: data['status'] as String? ?? 'ACTIVE',
         format: format,
+        firstServer: firstServer,
         guestJoined: true,
       );
 
@@ -244,6 +298,7 @@ class DuoService {
         format: format,
         duoMode: true,
         duoTeam: myTeam,
+        firstServer: firstServer,
       );
       await repo.linkDuoSession(
         matchId,
@@ -449,6 +504,18 @@ class DuoService {
     final match = await repo.byId(matchId);
     final sessionId = match?.duoSessionId;
     if (match == null || !match.duoMode || sessionId == null) return false;
+    try {
+      final format = MatchFormat.fromJson(
+        (jsonDecode(match.formatJson) as Map).cast<String, Object?>(),
+      );
+      if (!supportsDuoScoring(format)) {
+        debugPrint('[DUO] sync ignorato: Star Point richiede protocollo v2');
+        return false;
+      }
+    } catch (_) {
+      debugPrint('[DUO] sync ignorato: formato partita non valido');
+      return false;
+    }
     if (match.duoOwnerUserId != null && match.duoOwnerUserId != uid) {
       debugPrint('[DUO] sync ignorato: sessione collegata a un altro account');
       return false;

@@ -1,4 +1,4 @@
-# Padelandia Performance Intelligence v2
+# Momentum Performance Intelligence v2
 
 **Metodo tecnico · versione 2 · 13 luglio 2026**
 
@@ -20,7 +20,7 @@ versionata e puo' sempre essere rigenerato dagli eventi originali.
 ### Tassi e incertezza
 
 Punti, servizio, risposta, pressione, break, salvataggi e chiusura sono
-conteggi binomiali. Padelandia mostra sempre successi/campione e un intervallo
+conteggi binomiali. Momentum mostra sempre successi/campione e un intervallo
 di Wilson bilaterale al 90%, che resta definito anche con campioni piccoli e
 non produce l'illusione di precisione degli intervalli Wald.
 

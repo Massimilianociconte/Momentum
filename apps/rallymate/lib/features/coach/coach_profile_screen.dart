@@ -165,7 +165,7 @@ class CoachProfileScreen extends ConsumerWidget {
                     onPressed: () => SharePlus.instance.share(
                       ShareParams(
                         text:
-                            'Coach ${p.displayName} su Padelandia'
+                            'Coach ${p.displayName} su Momentum'
                             '${p.club.isNotEmpty ? ' · ${p.club}' : ''} — '
                             'programmi e lezioni di padel.',
                       ),

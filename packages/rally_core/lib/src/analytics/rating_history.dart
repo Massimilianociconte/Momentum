@@ -1,4 +1,4 @@
-/// Rating Padelandia (PRD F5): elo-lite personale calcolato in locale dalla
+/// Rating Momentum (PRD F5): elo-lite personale calcolato in locale dalla
 /// cronologia dei match completati.
 ///
 /// L'avversario di ogni partita non ha un rating reale: viene stimato dal
