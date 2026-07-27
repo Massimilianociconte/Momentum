@@ -15,7 +15,9 @@
   },
 
   // Pannello raggiungibile da admin.playmomentum.it; l'URL workers.dev
-  // resta attivo perché è quello configurato nella Action del GPT.
+  // va tenuto attivo esplicitamente (con le routes wrangler lo spegne di
+  // default) perché è quello configurato nella Action del GPT.
+  "workers_dev": true,
   "routes": [
     { "pattern": "admin.playmomentum.it", "custom_domain": true }
   ],
