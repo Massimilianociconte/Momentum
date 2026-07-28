@@ -66,7 +66,23 @@ validate_config() {
   printf 'Secrets exposed: no\n'
 }
 
-has_release_flag() {
+# `flutter build` compila in release SENZA che si passi `--release`: cercare
+# quel flag lasciava passare senza controlli proprio il comando che si usa
+# davvero (`build-apk` liscio), che è come sono state prodotte le preview
+# pubbliche. Si guarda quindi l'opposto: è un binario di release a meno che
+# non sia stato chiesto esplicitamente debug o profile.
+builds_release_binary() {
+  for arg in "$@"; do
+    case "$arg" in
+      --debug|--profile) return 1 ;;
+    esac
+  done
+  return 0
+}
+
+# Percorso store: `--release` esplicito o bundle. Qui serve anche il billing
+# funzionante, non solo gli URL legali.
+is_store_build() {
   for arg in "$@"; do
     [ "$arg" = "--release" ] && return 0
   done
@@ -87,14 +103,33 @@ require_public_https_url() {
   esac
 }
 
+# Privacy e termini: obbligatori in qualsiasi binario distribuito. Il paywall
+# li espone e senza di essi mostra "non configurata in questa build".
 validate_release_common() {
   require_public_https_url RALLYMATE_PRIVACY_URL
   require_public_https_url RALLYMATE_TERMS_URL
+}
+
+# Il link base HTTPS si pretende solo sul percorso store, dove gli App Links
+# sono configurati. Finché il dominio non serve /invite/* (oggi risponde 404,
+# vedi docs/deployment/DEEP_LINKS.md punto 3), impostarlo PEGGIORA gli inviti:
+# InviteService ripiega su rallymate://invite/<token>, che apre l'app, mentre
+# un URL HTTPS senza pagina porterebbe l'utente su un 404.
+validate_store_links() {
   require_public_https_url RALLYMATE_LINK_BASE_URL
 }
 
+# Gli URL legali servono a QUALSIASI build distribuita: il paywall li mostra
+# e senza di essi scrive "non configurata in questa build".
 validate_release_android() {
   validate_release_common
+}
+
+# La chiave di billing serve solo dove gli acquisti devono funzionare. Senza,
+# PurchasesService.configured resta false e l'app disattiva gli acquisti in
+# modo pulito: bloccare per questo una preview sarebbe un falso positivo.
+validate_store_android() {
+  validate_store_links
   key=$(env_value REVENUECAT_ANDROID_KEY)
   case "$key" in
     goog_*) ;;
@@ -105,6 +140,10 @@ validate_release_android() {
 
 validate_release_ios() {
   validate_release_common
+}
+
+validate_store_ios() {
+  validate_store_links
   key=$(env_value REVENUECAT_IOS_KEY)
   case "$key" in
     appl_*) ;;
@@ -127,31 +166,36 @@ case "$command" in
     ;;
   build-apk)
     validate_config >/dev/null
-    if has_release_flag "$@"; then validate_release_android; fi
+    if builds_release_binary "$@"; then validate_release_android; fi
+    if is_store_build "$@"; then validate_store_android; fi
     cd "$APP_ROOT"
     exec flutter build apk --dart-define-from-file="$CONFIG_FILE" "$@"
     ;;
   build-appbundle)
     validate_config >/dev/null
     validate_release_android
+    validate_store_android
     cd "$APP_ROOT"
     exec flutter build appbundle --dart-define-from-file="$CONFIG_FILE" "$@"
     ;;
   configure-ios)
     validate_config >/dev/null
-    if has_release_flag "$@"; then validate_release_ios; fi
+    if builds_release_binary "$@"; then validate_release_ios; fi
+    if is_store_build "$@"; then validate_store_ios; fi
     cd "$APP_ROOT"
     exec flutter build ios --config-only --dart-define-from-file="$CONFIG_FILE" "$@"
     ;;
   build-ios)
     validate_config >/dev/null
-    if has_release_flag "$@"; then validate_release_ios; fi
+    if builds_release_binary "$@"; then validate_release_ios; fi
+    if is_store_build "$@"; then validate_store_ios; fi
     cd "$APP_ROOT"
     exec flutter build ios --dart-define-from-file="$CONFIG_FILE" "$@"
     ;;
   build-ipa)
     validate_config >/dev/null
     validate_release_ios
+    validate_store_ios
     cd "$APP_ROOT"
     exec flutter build ipa --dart-define-from-file="$CONFIG_FILE" "$@"
     ;;
