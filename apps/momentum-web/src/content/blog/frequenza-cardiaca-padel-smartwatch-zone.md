@@ -2,8 +2,8 @@
 title: "Frequenza cardiaca nel padel: come leggere smartwatch, zone e carico di allenamento"
 description: "Frequenza cardiaca nel padel: zone, precisione dello smartwatch e metriche utili per allenarsi meglio senza farsi ingannare dai dati."
 pubDate: "2026-07-30"
-updatedDate: "2026-07-30T19:15:48.744Z"
-draft: true
+updatedDate: "2026-07-30T19:18:50.525Z"
+draft: false
 author: "Momentum"
 tags: ["padel","frequenza cardiaca","smartwatch","zone cardiache","carico di allenamento","HRV","statistiche"]
 category: "Allenamento"
